@@ -271,6 +271,12 @@ Devise.setup do |config|
   # ==> OmniAuth
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
+  # omniauth_openid_connect sends no redirect_uri unless one is configured, so build it from the public base URL.
+  neon_auth_base_url = APP_CONFIG.base_url.to_s
+  unless neon_auth_base_url.empty? || neon_auth_base_url.start_with?('http')
+    neon_auth_base_url = "#{neon_auth_base_url.start_with?('localhost') ? 'http' : 'https'}://#{neon_auth_base_url}"
+  end
+
   config.omniauth :openid_connect,
                   name:           :neon,
                   issuer:         APP_CONFIG.neon_auth.issuer,
@@ -279,8 +285,9 @@ Devise.setup do |config|
                   discovery:      true,
                   pkce:           true,
                   client_options: {
-                    identifier: APP_CONFIG.neon_auth.client_id,
-                    secret:     APP_CONFIG.neon_auth.client_secret
+                    identifier:   APP_CONFIG.neon_auth.client_id,
+                    secret:       APP_CONFIG.neon_auth.client_secret,
+                    redirect_uri: "#{neon_auth_base_url.chomp('/')}/users/auth/neon/callback"
                   }
 
   # ==> Warden configuration
