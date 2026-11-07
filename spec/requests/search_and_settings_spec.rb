@@ -30,6 +30,15 @@ RSpec.describe 'Search and settings' do
     expect(search).to be_empty
   end
 
+  it 'never lists fully booked trips, even when one seat is enough' do
+    full_trip = create(:itinerary, num_people: 2)
+    create(:booking, :confirmed, itinerary: full_trip, seats: 2)
+    roomy = create(:itinerary, num_people: 4)
+
+    expect(search.pluck('id')).to eq [roomy.id.to_s]
+    expect(search(seats: '1').pluck('id')).to eq [roomy.id.to_s]
+  end
+
   it 'filters by seats needed' do
     full_trip = create(:itinerary, num_people: 2)
     create(:booking, :confirmed, itinerary: full_trip, seats: 2)

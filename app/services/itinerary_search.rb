@@ -22,7 +22,8 @@ class ItinerarySearch
     # Apply non-geographical filters
     filters = extract_filters_from_params
     itineraries = Itinerary.not_cancelled.includes(:user).where(filters)
-    itineraries = itineraries.where(SEATS_CONDITION, seats: seats_needed) if seats_needed > 1
+    # Fully booked trips never show up: a rider needs at least one free seat.
+    itineraries = itineraries.where(SEATS_CONDITION, seats: seats_needed)
 
     # Get itineraries from A to B
     from_a_to_b_itineraries = itineraries.where(*geographic_conditions(start_location, end_location)).where(leave_date: now..)
