@@ -1,0 +1,5 @@
+- if platform_setting.announcement_active? && platform_setting.announcement.present?
+  .announcement role='status'
+    .container
+      span.fas.fa-bullhorn<> aria-hidden='true'
+      = platform_setting.announcement

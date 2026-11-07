@@ -1,30 +1,32 @@
-= title User.model_name.human(count: :lots)
+- title t('admin_extra.users')
 .container
+  == render 'admin/nav'
   == render 'shared/flash_messages'
-  .page-header
-    h1
-      = yield :title
-      small< = @users.count
-  .table-responsive
-    table.table
-      thead
-        th = User.human_attribute_name :name
-        th = User.human_attribute_name :email
-        th = t('helpers.actions')
-      tbody
-        - @users.each do |user|
-          tr.align-middle
-            td = link_to user, user_path(user)
-            td = user.email
-            td
+  h1.page-title
+    = yield :title
+    small.text-body-secondary< = @users.total_count
+  = form_with url: admin_users_path, method: :get, class: 'filter-bar' do |f|
+    = f.search_field :q, value: params[:q], placeholder: t('admin_extra.search_users'), class: 'form-control', style: 'max-width: 320px'
+    = f.select :filter, [[t('admin_extra.filters.all'), ''], [t('admin_extra.filters.banned'), 'banned'], [t('admin_extra.filters.verified'), 'verified'], [t('admin_extra.filters.unverified'), 'unverified'], [t('admin_extra.filters.staff'), 'staff']], { selected: params[:filter] }, class: 'form-select', style: 'max-width: 200px'
+    = f.button t('admin_extra.filter'), class: 'btn btn-primary'
+  .stack
+    - @users.each do |user|
+      .surface
+        .row-card
+          .row-card__main
+            span.row-card__title = link_to user, admin_user_path(user)
+            small.text-body-secondary = [user.email, user.phone].compact_blank.join(' · ')
+            .d-flex.flex-wrap.gap-1.mt-1
+              - if user.admin?
+                span.chip = t('admin_extra.roles.admin')
+              - elsif user.moderator?
+                span.chip = t('admin_extra.roles.moderator')
+              - if user.verified?
+                span.chip
+                  span.fas.fa-circle-check<> aria-hidden='true'
+                  = t('verification.badge')
               - if user.banned?
-                = link_to unban_admin_user_path(user.id), method: :post, data: { confirm: t('helpers.links.confirm') }, class: 'btn btn-sm btn-warning' do
-                  = t('helpers.links.user.unban')
-              - else
-                = link_to ban_admin_user_path(user.id), method: :post, data: { confirm: t('helpers.links.confirm') }, class: 'btn btn-sm btn-warning' do
-                  span.fas.fa-ban<>
-                  = t('helpers.links.user.ban')
-                = link_to login_as_admin_user_path(user.id), method: :get, class: 'btn btn-sm btn-secondary ms-2' do
-                  span.fas.fa-sign-in-alt<>
-                  = t('.login_as')
+                span.chip.chip--danger = t('admin_extra.banned')
+          .row-card__actions
+            = link_to t('admin_extra.view'), admin_user_path(user), class: 'btn btn-outline-primary btn-sm'
   == paginate @users

@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
-    @reviews = @user.reviews_received.includes(:reviewer).recent.limit(10)
+    @reviews = @user.reviews_received.visible.includes(:reviewer).recent.limit(10)
   end
 
   def update

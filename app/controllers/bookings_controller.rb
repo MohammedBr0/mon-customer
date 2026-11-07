@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class BookingsController < ApplicationController
-  before_action :set_booking, only: %i[confirm decline cancel]
+  before_action :set_booking, only: %i[confirm decline cancel skip_date]
   before_action :require_driver, only: %i[confirm decline]
-  before_action :require_participant, only: :cancel
+  before_action :require_participant, only: %i[cancel skip_date]
 
   def index
     @bookings = current_user.bookings.includes(itinerary: :user).order(created_at: :desc)
@@ -40,6 +40,16 @@ class BookingsController < ApplicationController
     redirect_back_or_to bookings_path, flash: { error: t('flash.bookings.invalid') }
   end
 
+  # A commuter (or the driver) drops a single day from a multi-day booking.
+  def skip_date
+    date = Date.iso8601(params[:date].to_s)
+    @booking.skip_date!(date, by: current_user)
+    BookingMailer.with(booking: @booking, date:, by: current_user).date_skipped.deliver_later
+    redirect_back_or_to bookings_path, flash: { success: t('flash.bookings.date_skipped') }
+  rescue ArgumentError, Booking::InvalidTransition
+    redirect_back_or_to bookings_path, flash: { error: t('flash.bookings.invalid') }
+  end
+
   private
 
   def set_booking
@@ -68,6 +78,6 @@ class BookingsController < ApplicationController
   end
 
   def booking_params
-    params.fetch(:booking, {}).permit(:seats, :note)
+    params.fetch(:booking, {}).permit(:seats, :note, ride_dates: [])
   end
 end

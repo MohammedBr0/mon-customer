@@ -1,0 +1,23 @@
+- title t('admin_extra.reports')
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  .filter-bar
+    - Report::STATUSES.each do |status|
+      = link_to t("admin_extra.report_status.#{status}"), admin_reports_path(status:), class: ['btn btn-sm', (@status == status ? 'btn-primary' : 'btn-outline-primary')]
+  - if @reports.empty?
+    .surface.empty
+      span.fas.fa-flag aria-hidden='true'
+      = t('admin_extra.no_reports')
+  - else
+    .stack
+      - @reports.each do |report|
+        = link_to admin_report_path(report), class: 'surface text-decoration-none text-reset' do
+          .row-card
+            .row-card__main
+              span.row-card__title = t("reports.reasons.#{report.reason}")
+              small.text-body-secondary = "#{t("reports.types.#{report.reportable_type}")}: #{report.reportable_label}"
+              small.d-block.text-body-secondary = "#{report.reporter} · #{l(report.created_at.to_date, format: :long)}"
+            span.chip class=('chip--warn' if report.open?) = t("admin_extra.report_status.#{report.status}")
+  == paginate @reports

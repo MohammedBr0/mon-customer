@@ -2,7 +2,7 @@
 
 module Admin
   # Super admins decide which vehicle details drivers are asked for.
-  class VehicleFieldsController < BaseController
+  class VehicleFieldsController < SuperController
     before_action :set_field, only: %i[edit update destroy move]
 
     def index
@@ -18,6 +18,7 @@ module Admin
     def create
       @field = VehicleField.new(field_params)
       if @field.save
+        audit!('vehicle_field.create', @field, key: @field.key)
         redirect_to admin_vehicle_fields_path, flash: { success: t('flash.admin.vehicle_fields.created') }
       else
         render :new, status: :unprocessable_entity
@@ -26,6 +27,7 @@ module Admin
 
     def update
       if @field.update(field_params.except(:key))
+        audit!('vehicle_field.update', @field, key: @field.key)
         redirect_to admin_vehicle_fields_path, flash: { success: t('flash.admin.vehicle_fields.updated') }
       else
         render :edit, status: :unprocessable_entity
@@ -35,6 +37,7 @@ module Admin
     # Removing a field also removes the answers drivers gave for it the next time they save.
     def destroy
       @field.destroy
+      audit!('vehicle_field.destroy', @field, key: @field.key)
       redirect_to admin_vehicle_fields_path, flash: { success: t('flash.admin.vehicle_fields.destroyed') }
     end
 

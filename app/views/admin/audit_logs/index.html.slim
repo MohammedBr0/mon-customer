@@ -1,0 +1,23 @@
+- title t('admin_extra.audit_log')
+.container
+  == render 'admin/nav'
+  h1.page-title = yield :title
+  p.text-body-secondary = t('admin_extra.audit_intro')
+  = form_with url: admin_audit_logs_path, method: :get, class: 'filter-bar' do |f|
+    = f.select :prefix, [[t('admin_extra.filters.all'), '']] + %w[settings vehicle_field popular_route user booking itinerary report review bookings].map { |area| [area.humanize, area] }, { selected: params[:prefix] }, class: 'form-select', style: 'max-width: 220px'
+    = f.button t('admin_extra.filter'), class: 'btn btn-primary'
+  - if @logs.empty?
+    .surface.empty = t('admin_extra.no_logs')
+  - else
+    .stack
+      - @logs.each do |log|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = log.action
+              small.text-body-secondary = "#{log.actor} · #{l(log.created_at.in_time_zone('Nairobi'), format: :short)}"
+              - if log.subject_label.present?
+                small.d-block = log.subject_label
+              - if log.details.present?
+                small.d-block.text-body-secondary = log.details.map { |key, value| "#{key}: #{value.is_a?(Hash) ? value.map { |k, v| "#{k}=#{v}" }.join(' ') : value}" }.join(' · ')
+  == paginate @logs

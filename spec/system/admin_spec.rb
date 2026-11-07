@@ -19,34 +19,40 @@ RSpec.describe 'Admin' do
     expect(page).to have_current_path admin_users_path
   end
 
-  it 'is able to ban other users' do
+  it 'is able to ban other users from their page' do
     user_to_ban = create(:user)
 
-    visit admin_users_path
+    visit admin_user_path(user_to_ban)
 
-    find("a[href=\"#{ban_admin_user_path(user_to_ban.id)}\"]").click
+    click_on t('helpers.links.user.ban')
 
     expect(page).to have_content t('flash.admin.users.success.ban')
-    expect(page).to have_css "a[href=\"#{unban_admin_user_path(user_to_ban.id)}\"]"
+    expect(user_to_ban.reload).to be_banned
   end
 
-  it 'is not able to ban himself' do
-    visit admin_users_path
+  it 'does not offer to ban himself' do
+    visit admin_user_path(admin)
 
-    find("a[href=\"#{ban_admin_user_path(admin.id)}\"]").click
-
-    expect(page).to have_content t('flash.admin.users.error.ban')
+    expect(page).to have_no_button t('helpers.links.user.ban')
   end
 
-  it 'is not able to unban banned users' do
+  it 'is able to unban banned users' do
     banned_user = create(:user, banned: true)
 
-    visit admin_users_path
+    visit admin_user_path(banned_user)
 
-    find("a[href=\"#{unban_admin_user_path(banned_user.id)}\"]").click
+    click_on t('helpers.links.user.unban')
 
     expect(page).to have_content t('flash.admin.users.success.unban')
-    expect(page).to have_css "a[href=\"#{ban_admin_user_path(banned_user.id)}\"]"
+    expect(banned_user.reload).not_to be_banned
+  end
+
+  it 'finds users by name from the list' do
+    create(:user, name: 'Findable Person')
+
+    visit admin_users_path(q: 'findable')
+
+    expect(page).to have_content 'Findable Person'
   end
 
   it 'could login as another user' do

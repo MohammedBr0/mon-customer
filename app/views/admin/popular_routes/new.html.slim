@@ -1,0 +1,5 @@
+- title t('admin_extra.add_route')
+.container
+  == render 'admin/nav'
+  h1.page-title = yield :title
+  == render 'form', route: @route

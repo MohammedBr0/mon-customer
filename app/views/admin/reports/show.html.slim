@@ -1,0 +1,47 @@
+- title t('admin_extra.report')
+- item = @report.reportable
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  .surface.mb-3
+    .d-flex.flex-wrap.gap-2.mb-2
+      span.chip.chip--warn = t("reports.reasons.#{@report.reason}")
+      span.chip.chip--muted = t("reports.types.#{@report.reportable_type}")
+      span.chip class=('chip--warn' if @report.open?) = t("admin_extra.report_status.#{@report.status}")
+    p.mb-1 = t('admin_extra.reported_by', name: @report.reporter.to_s, date: l(@report.created_at.to_date, format: :long))
+    - if @report.details.present?
+      blockquote.pre-line.border-start.border-3.ps-3.my-3 = @report.details
+    p.mb-0
+      strong = "#{t("reports.types.#{@report.reportable_type}")}: "
+      - case item
+      - when Itinerary
+        = link_to item.title, itinerary_path(item)
+        - if item.cancelled?
+          span.chip.chip--muted.ms-2 = t('bookings.statuses.cancelled')
+      - when User
+        = link_to item, admin_user_path(item)
+      - when Review
+        = @report.reportable_label
+        - if item.comment.present?
+          small.d-block.text-body-secondary.pre-line = item.comment
+  - if @report.open?
+    = form_with url: resolve_admin_report_path(@report), method: :patch, class: 'surface stack' do |f|
+      div
+        = f.label :action_taken, t('admin_extra.take_action'), class: 'form-label'
+        - actions = [[t('admin_extra.actions_none'), '']]
+        - actions << [t('admin_extra.action_cancel_trip'), 'cancel_trip'] if item.is_a?(Itinerary) && !item.cancelled?
+        - actions << [t('admin_extra.action_ban_user'), 'ban_user'] unless item.is_a?(Review) && item.reviewer == current_user
+        - actions << [t('admin_extra.action_hide_review'), 'hide_review'] if item.is_a?(Review)
+        = f.select :action_taken, actions, {}, class: 'form-select'
+      div
+        = f.label :note, t('admin_extra.resolution_note'), class: 'form-label'
+        = f.text_area :note, rows: 3, class: 'form-control'
+      .d-flex.gap-2
+        = f.button t('admin_extra.resolve'), name: 'outcome', value: 'resolve', class: 'btn btn-primary flex-grow-1'
+        = f.button t('admin_extra.dismiss'), name: 'outcome', value: 'dismiss', class: 'btn btn-outline-secondary flex-grow-1'
+  - else
+    .surface
+      p.mb-1 = t('admin_extra.resolved_by', name: @report.resolved_by.to_s, date: l(@report.resolved_at.to_date, format: :long))
+      - if @report.resolution_note.present?
+        p.mb-0.pre-line = @report.resolution_note

@@ -19,13 +19,10 @@ header.app-bar.main-navbar
               = link_to current_user, user_path(current_user), class: 'dropdown-item fw-bold'
               = link_to t('.account_settings'), :settings, class: 'dropdown-item'
               = link_to t('bookings.title'), bookings_path, class: 'dropdown-item'
-              - if current_user.admin?
+              = link_to t('alerts.title'), ride_alerts_path, class: 'dropdown-item'
+              - if current_user.staff?
                 .dropdown-divider
                 = link_to t('admin_extra.dashboard'), admin_root_path, class: 'dropdown-item'
-                = link_to t('.admin_users'), admin_users_path, class: 'dropdown-item'
-                = link_to t('admin_extra.itineraries'), admin_itineraries_path, class: 'dropdown-item'
-                = link_to t('admin_extra.platform_settings'), admin_settings_path, class: 'dropdown-item'
-                = link_to t('admin_extra.vehicle_fields'), admin_vehicle_fields_path, class: 'dropdown-item'
               .dropdown-divider
               - (I18n.available_locales - [I18n.locale]).each do |locale|
                 = link_to t('lang_native_name', locale: locale), url_for(locale: locale), class: 'dropdown-item'

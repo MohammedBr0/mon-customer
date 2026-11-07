@@ -1,0 +1,69 @@
+- title @user.to_s
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  .d-flex.align-items-center.gap-3.mb-3
+    = user_profile_picture @user, size: 56
+    div
+      h1.page-title.mb-0 = @user
+      small.text-body-secondary = [@user.email, @user.phone].compact_blank.join(' · ')
+  .d-flex.flex-wrap.gap-2.mb-3
+    span.chip = t("admin_extra.roles.#{@user.role_name}")
+    - if @user.verified?
+      span.chip
+        span.fas.fa-circle-check<> aria-hidden='true'
+        = t('verification.verified_on', date: l(@user.verified_at.to_date, format: :long))
+    - if @user.banned?
+      span.chip.chip--danger = t('admin_extra.banned')
+    - if @user.reviews_count.positive?
+      span.chip.chip--warn = t('reviews.summary', rating: @user.average_rating, count: @user.reviews_count)
+  .surface.mb-3
+    h2.section-title.mt-0 = t('admin_extra.actions')
+    .d-flex.flex-wrap.gap-2
+      - if @user.verified?
+        = button_to t('verification.unverify'), unverify_admin_user_path(@user), class: 'btn btn-outline-secondary btn-sm'
+      - else
+        = button_to t('verification.verify'), verify_admin_user_path(@user), class: 'btn btn-primary btn-sm', data: { confirm: t('verification.verify_confirm') }
+      - unless @user == current_user
+        - if @user.banned?
+          = button_to t('helpers.links.user.unban'), unban_admin_user_path(@user), class: 'btn btn-outline-primary btn-sm'
+        - else
+          = button_to t('helpers.links.user.ban'), ban_admin_user_path(@user), class: 'btn btn-outline-danger btn-sm', data: { confirm: t('helpers.links.confirm') }
+      - if current_user.super_admin?
+        = link_to t('admin_extra.login_as'), login_as_admin_user_path(@user), class: 'btn btn-outline-secondary btn-sm'
+    - if current_user.super_admin? && @user != current_user
+      = form_with url: set_role_admin_user_path(@user), method: :patch, class: 'd-flex gap-2 mt-3 align-items-center flex-wrap' do |f|
+        = f.label :role, t('admin_extra.role'), class: 'mb-0'
+        = f.select :role, %w[user moderator admin].map { |role| [t("admin_extra.roles.#{role}"), role] }, { selected: @user.role_name }, class: 'form-select', style: 'max-width: 220px'
+        = f.button t('save'), class: 'btn btn-primary btn-sm'
+      p.form-text.mt-2.mb-0 = t('admin_extra.role_hint')
+  .surface.mb-3
+    h2.section-title.mt-0 = t('trip.vehicle')
+    - details = @user.visible_vehicle_details(confirmed: true)
+    - if details.empty?
+      p.text-body-secondary.mb-0 = t('admin_extra.no_vehicle')
+    - else
+      .d-flex.flex-wrap.gap-2
+        - details.each do |field, value|
+          span.chip.chip--muted = "#{field.label_for}: #{value}"
+  - if @reports_against.any?
+    h2.section-title = t('admin_extra.reports')
+    .stack.mb-3
+      - @reports_against.each do |report|
+        = link_to admin_report_path(report), class: 'surface text-decoration-none text-reset' do
+          strong = t("reports.reasons.#{report.reason}")
+          small.d-block.text-body-secondary = "#{report.reporter} · #{l(report.created_at.to_date, format: :long)} · #{t("admin_extra.report_status.#{report.status}")}"
+  h2.section-title = t('users.itineraries.title')
+  == render 'itineraries/cards', itineraries: @itineraries
+  h2.section-title = t('bookings.title')
+  - if @bookings.empty?
+    .surface.empty = t('bookings.no_bookings')
+  - else
+    .stack
+      - @bookings.each do |booking|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
+              small.text-body-secondary = "#{t('bookings.seats_count', count: booking.seats)} · #{money(booking.passenger_total)}"
+            == render 'bookings/status', booking: booking

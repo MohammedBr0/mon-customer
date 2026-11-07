@@ -32,6 +32,7 @@ class ItinerariesController < ApplicationController
   def create
     @itinerary = current_user.itineraries.new(itinerary_params)
     if @itinerary.save
+      RideAlertMatchJob.perform_later(@itinerary)
       redirect_to itinerary_path(@itinerary), flash: { success: t('flash.itineraries.success.create') }
     else
       render :new
@@ -80,8 +81,9 @@ class ItinerariesController < ApplicationController
   def itinerary_attributes
     allowlist = %i[start_address end_address description num_people smoking_allowed pets_allowed price_per_seat
                    avoid_highways avoid_tolls
-                   round_trip leave_date return_date daily
+                   round_trip leave_date return_date commute_until pickup_point dropoff_point
                    route]
+    allowlist << { commute_days: [] }
     allowlist << :pink if current_user&.female?
     allowlist
   end

@@ -14,8 +14,13 @@
     p.hero__lead = t('.lead')
     == render 'login_button'
     .routes
-      - %w[addis_adama addis_hawassa addis_bahirdar addis_diredawa].each do |route|
-        span.chip = t(".routes.#{route}")
+      - routes = PopularRoute.active.limit(6)
+      - if routes.any?
+        - routes.each do |route|
+          span.chip = route.to_s
+      - else
+        - %w[addis_adama addis_hawassa addis_bahirdar addis_diredawa].each do |route|
+          span.chip = t(".routes.#{route}")
 .container
   .benefits
     .benefit

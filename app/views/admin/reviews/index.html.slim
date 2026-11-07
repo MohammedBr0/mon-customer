@@ -1,0 +1,30 @@
+- title t('admin_extra.reviews')
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  .filter-bar
+    - { '' => 'all', 'low' => 'low', 'hidden' => 'hidden' }.each do |value, key|
+      = link_to t("admin_extra.review_filters.#{key}"), admin_reviews_path(filter: value.presence), class: ['btn btn-sm', (params[:filter].to_s == value ? 'btn-primary' : 'btn-outline-primary')]
+  - if @reviews.empty?
+    .surface.empty = t('admin_extra.no_reviews')
+  - else
+    .stack
+      - @reviews.each do |review|
+        .surface class=('opacity-50' if review.hidden?)
+          .row-card
+            .row-card__main
+              span.row-card__title
+                - review.rating.times do
+                  span.fas.fa-star.text-warning
+                - (5 - review.rating).times do
+                  span.fas.fa-star.text-warning.opacity-25
+              small.text-body-secondary = "#{review.reviewer} → #{review.reviewee} · #{l(review.created_at.to_date, format: :long)}"
+              - if review.comment.present?
+                p.pre-line.mb-0.mt-1 = review.comment
+            .row-card__actions
+              - if review.hidden?
+                = button_to t('admin_extra.unhide'), unhide_admin_review_path(review), method: :patch, class: 'btn btn-outline-primary btn-sm'
+              - else
+                = button_to t('admin_extra.hide'), hide_admin_review_path(review), method: :patch, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('admin_extra.hide_review_confirm') }
+  == paginate @reviews

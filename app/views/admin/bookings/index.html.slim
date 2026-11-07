@@ -1,0 +1,41 @@
+- title t('admin_extra.bookings')
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title
+    = yield :title
+    small.text-body-secondary< = @bookings.total_count
+  = form_with url: admin_bookings_path, method: :get, class: 'filter-bar' do |f|
+    = f.search_field :q, value: params[:q], placeholder: t('admin_extra.search_bookings'), class: 'form-control', style: 'max-width: 260px'
+    = f.select :status, [[t('admin_extra.filters.all'), '']] + Booking::STATUSES.map { |status| [t("bookings.statuses.#{status}"), status] }, { selected: params[:status] }, class: 'form-select', style: 'max-width: 170px'
+    = f.date_field :from, value: params[:from], class: 'form-control', style: 'max-width: 160px', aria: { label: t('admin_extra.from') }
+    = f.date_field :to, value: params[:to], class: 'form-control', style: 'max-width: 160px', aria: { label: t('admin_extra.to') }
+    = f.button t('admin_extra.filter'), class: 'btn btn-primary'
+    - if current_user.super_admin?
+      = link_to admin_bookings_path(request.query_parameters.merge(format: :csv)), class: 'btn btn-outline-primary' do
+        span.fas.fa-file-csv<> aria-hidden='true'
+        = t('admin_extra.export_csv')
+  - if @bookings.empty?
+    .surface.empty = t('bookings.no_bookings')
+  - else
+    .stack
+      - @bookings.each do |booking|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
+              small.text-body-secondary
+                = booking.passenger
+                | &rarr;
+                = booking.driver
+                | &middot;
+                = t('bookings.seats_count', count: booking.seats)
+                | &middot;
+                = money(booking.passenger_total)
+            == render 'bookings/status', booking: booking
+          == render 'bookings/dates', booking: booking, allow_skip: false
+          - if booking.active?
+            .row-card__actions
+              = button_to cancel_admin_booking_path(booking), method: :patch, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('admin_extra.cancel_booking_confirm') } do
+                = t('bookings.cancel')
+  == paginate @bookings
