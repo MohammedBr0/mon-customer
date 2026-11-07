@@ -34,7 +34,7 @@ gem 'secure_headers', '~> 7.1'
 gem 'shakapacker', '8.4.0'
 gem 'simpleconfig', '~> 2.0'
 gem 'simple_form', '~> 5.3'
-gem 'slim-rails', '~> 3.7'
+gem 'slim-rails', '~> 4.0'
 gem 'sucker_punch', '~> 3.2'
 gem 'turbolinks', '~> 5.2'
 gem 'tzinfo-data', platforms: %i[mingw mswin x64_mingw jruby]
