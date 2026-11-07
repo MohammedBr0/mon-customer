@@ -1,0 +1,7 @@
+<%= t('mailers.booking.cancelled.greeting', name: @recipient.first_name || @recipient.to_s) %>
+
+<%= t('mailers.booking.cancelled.body', passenger: @booking.passenger.to_s, driver: @booking.driver.to_s, trip: @booking.itinerary.title, seats: @booking.seats, by: (@cancelled_by || @booking.driver).to_s) %>
+<% if @booking.note.present? && 'cancelled' == 'requested' %>
+"<%= @booking.note %>"
+<% end %>
+<%= t('mailers.view_trip') %>: <%= itinerary_url(@booking.itinerary) %>

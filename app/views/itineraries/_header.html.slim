@@ -34,6 +34,27 @@
       span.tag #{Itinerary.human_attribute_name(:fuel_cost)}: #{@itinerary.fuel_cost}#{APP_CONFIG.currency}
       span.tag #{Itinerary.human_attribute_name(:tolls)}: #{@itinerary.tolls}#{APP_CONFIG.currency}
     .tag-list
+      span.tag.tag-icare = t('trip.seats')
+      - if @itinerary.seats_available.nil?
+        span.tag = t('trip.seats_unlimited')
+      - elsif @itinerary.full?
+        span.tag.text-danger = t('trip.fully_booked')
+      - else
+        span.tag = t('trip.seats_left', available: @itinerary.seats_available, total: @itinerary.num_people)
+    .tag-list
+      span.tag.tag-icare = t('trip.price_per_seat')
+      span.tag #{number_with_precision(@itinerary.cost_per_seat, precision: 2)} #{APP_CONFIG.fuel_currency}
+    - if @itinerary.user.vehicle_description
+      .tag-list
+        span.tag.tag-icare = t('trip.vehicle')
+        span.tag = @itinerary.user.vehicle_description
+    - if @itinerary.user.reviews_count.positive?
+      .tag-list
+        span.tag.tag-icare = t('trip.driver_rating')
+        span.tag
+          span.fas.fa-star.text-warning<>
+          = t('reviews.summary', rating: @itinerary.user.average_rating, count: @itinerary.user.reviews_count)
+    .tag-list
       - if @itinerary.pink?
         span.tag.tag-pink data-bs-toggle='tooltip' title=t('itineraries.form.pink_hint')
           span.fas.fa-lock<>

@@ -7,6 +7,30 @@
       h1 = @user
       p.text-body-secondary
         small = t('.member_since', date: l(@user.created_at.to_date, format: :month_year))
+      - if @user.reviews_count.positive?
+        p.mb-1
+          span.fas.fa-star.text-warning<>
+          strong = t('reviews.summary', rating: @user.average_rating, count: @user.reviews_count)
+      - if @user.vehicle_description
+        p.mb-1
+          span.fas.fa-car<>
+          = @user.vehicle_description
       - if @user.bio?
         blockquote.user-blockquote
           p = @user.bio
+
+  - if @reviews.present?
+    .row
+      .col-sm-9.offset-sm-3
+        h2.h5.mt-4 = t('reviews.title')
+        - @reviews.each do |review|
+          .review.mb-3.pb-3.border-bottom
+            p.mb-1
+              - review.rating.times do
+                span.fas.fa-star.text-warning
+              - (5 - review.rating).times do
+                span.far.fa-star.text-warning
+              span.ms-2 = review.reviewer
+              small.text-body-secondary< = l(review.created_at.to_date, format: :long)
+            - if review.comment.present?
+              p.mb-0.pre-line = review.comment

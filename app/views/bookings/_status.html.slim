@@ -1,0 +1,2 @@
+- badge = { 'pending' => 'text-bg-warning', 'confirmed' => 'text-bg-success', 'declined' => 'text-bg-secondary', 'cancelled' => 'text-bg-secondary' }[booking.status]
+span.badge class=badge = t("bookings.statuses.#{booking.status}")

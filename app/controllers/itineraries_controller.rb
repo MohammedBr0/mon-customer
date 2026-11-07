@@ -13,7 +13,11 @@ class ItinerariesController < ApplicationController
   end
 
   def show
-    @conversation = @itinerary.conversations.find_or_initialize_by(sender: current_user, receiver: @itinerary.user) if current_user
+    if current_user
+      @conversation = @itinerary.conversations.find_or_initialize_by(sender: current_user, receiver: @itinerary.user)
+      @my_booking = @itinerary.bookings.where(passenger: current_user).order(created_at: :desc).first
+      @driver_bookings = @itinerary.bookings.includes(:passenger).order(:created_at) if current_user == @itinerary.user
+    end
     session[:redirect_to] = itinerary_path(@itinerary) unless user_signed_in?
   end
 
@@ -47,6 +51,14 @@ class ItinerariesController < ApplicationController
     @itinerary = current_user.itineraries.friendly.find params[:id]
     @itinerary.destroy
     redirect_to itineraries_user_path(current_user), flash: { success: t('flash.itineraries.success.destroy') }
+  end
+
+  def cancel
+    @itinerary = current_user.itineraries.friendly.find params[:id]
+    bookings = @itinerary.bookings.active.includes(:passenger).to_a
+    @itinerary.cancel!
+    bookings.each { |booking| ItineraryMailer.with(booking:).cancelled.deliver_later }
+    redirect_to itinerary_path(@itinerary), flash: { success: t('flash.itineraries.success.cancel') }
   end
 
   def search

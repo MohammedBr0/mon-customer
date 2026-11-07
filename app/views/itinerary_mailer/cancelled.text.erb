@@ -1,0 +1,5 @@
+<%= t('mailers.itinerary.cancelled.greeting', name: @recipient.first_name || @recipient.to_s) %>
+
+<%= t('mailers.itinerary.cancelled.body', driver: @booking.driver.to_s, trip: @booking.itinerary.title) %>
+
+<%= t('mailers.find_another') %>: <%= itineraries_url %>

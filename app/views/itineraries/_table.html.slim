@@ -10,6 +10,8 @@
               span.fas.fa-info-circle
               span.visually-hidden = t('itineraries.common.features')
           span.d-none.d-sm-block = t('itineraries.common.features')
+        th = t('trip.seats')
+        th = t('trip.price_per_seat')
         - if edit
           th = t('helpers.actions')
         - else
@@ -42,6 +44,16 @@
                 span data-bs-toggle='tooltip' title=Itinerary.human_attribute_name(:smoking_allowed)
                   span.fas.fa-smoking.feature-icon.fa-fw
                   span.visually-hidden = Itinerary.human_attribute_name(:smoking_allowed)
+          td
+            - if itinerary.cancelled?
+              span.badge.text-bg-secondary = t('bookings.statuses.cancelled')
+            - elsif itinerary.seats_available.nil?
+              = t('trip.seats_unlimited')
+            - elsif itinerary.full?
+              span.text-danger = t('trip.fully_booked')
+            - else
+              = "#{itinerary.seats_available}/#{itinerary.num_people}"
+          td #{number_with_precision(itinerary.cost_per_seat, precision: 2)} #{APP_CONFIG.fuel_currency}
           - if edit
             td
               = link_to edit_itinerary_path(itinerary), class: 'btn btn-sm btn-secondary me-2' do

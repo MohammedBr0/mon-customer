@@ -23,17 +23,17 @@ SimpleConfig.for :application do
   end
 
   group :mailer do
-    set :from, '"Icare" <no-reply@i.care>'
-    set :host, 'heroku.com'
+    set :from, ENV.fetch('MAILER_FROM', '"Icare" <no-reply@i.care>')
+    set :host, ENV.fetch('APP_BASE_URL', 'localhost').sub(%r{\Ahttps?://}, '').chomp('/')
 
     group :smtp_settings do
-      set :address, 'smtp.sendgrid.net'
-      set :port, 587
+      set :address, ENV['SMTP_ADDRESS']
+      set :port, ENV.fetch('SMTP_PORT', 587).to_i
       set :authentication, :plain
-      set :domain, 'heroku.com'
+      set :domain, ENV.fetch('SMTP_DOMAIN') { ENV.fetch('APP_BASE_URL', 'localhost').sub(%r{\Ahttps?://}, '').chomp('/') }
 
-      set :user_name, ENV['SENDGRID_USERNAME']
-      set :password, ENV['SENDGRID_PASSWORD']
+      set :user_name, ENV['SMTP_USERNAME']
+      set :password, ENV['SMTP_PASSWORD']
     end
   end
 

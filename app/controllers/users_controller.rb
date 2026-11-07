@@ -5,6 +5,7 @@ class UsersController < ApplicationController
 
   def show
     @user = User.find(params[:id])
+    @reviews = @user.reviews_received.includes(:reviewer).recent.limit(10)
   end
 
   def update
@@ -26,7 +27,7 @@ class UsersController < ApplicationController
   end
 
   def dashboard
-    @latest_itineraries = Itinerary.includes(:user).order(created_at: :desc).limit 10
+    @latest_itineraries = Itinerary.not_cancelled.includes(:user).order(created_at: :desc).limit 10
 
     # Gender filter
     @latest_itineraries = @latest_itineraries.where(pink: false) unless current_user.female?
@@ -45,6 +46,7 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit :time_zone, :locale, :vehicle_avg_consumption
+    params.require(:user).permit :time_zone, :locale, :vehicle_avg_consumption, :send_email_messages,
+                                 :car_make, :car_model, :car_color, :car_plate
   end
 end

@@ -1,0 +1,7 @@
+<%= t('mailers.message.new_message.greeting', name: @recipient.first_name || @recipient.to_s) %>
+
+<%= t('mailers.message.new_message.body', sender: @message.sender.to_s) %>
+
+"<%= @message.body %>"
+
+<%= t('mailers.message.new_message.reply') %>: <%= conversation_url(@conversation) %>

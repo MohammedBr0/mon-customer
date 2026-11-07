@@ -20,7 +20,18 @@ Rails.application.routes.draw do
 
   resources :itineraries, only: %i[show new create edit update destroy index search] do
     post :search, on: :collection
+    patch :cancel, on: :member
     resources :build
+    resources :bookings, only: :create
+  end
+
+  resources :bookings, only: :index do
+    member do
+      patch :confirm
+      patch :decline
+      patch :cancel
+    end
+    resources :reviews, only: %i[new create]
   end
 
   resources :users, only: %i[show update destroy] do
@@ -29,6 +40,10 @@ Rails.application.routes.draw do
 
   # Admin Area
   namespace :admin do
+    root to: 'dashboard#show'
+    resources :itineraries, only: :index do
+      patch :cancel, on: :member
+    end
     resources :users, only: [:index] do
       get :login_as, on: :member
       post :ban, on: :member

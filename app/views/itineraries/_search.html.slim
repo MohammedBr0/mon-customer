@@ -10,6 +10,8 @@
     = f.input :filter_round_trip, as: :boolean, label: Itinerary.human_attribute_name(:round_trip), wrapper_class: 'mb-2'
     - %i[smoking_allowed pets_allowed].each do |boolean_field|
       = f.input :"filter_#{boolean_field}", collection: boolean_options_for_select, include_blank: true, label: Itinerary.human_attribute_name(boolean_field), input_html: { class: 'form-select-sm' }, wrapper_class: 'mb-2'
+    = f.input :seats, collection: (1..Booking::MAX_SEATS).to_a, include_blank: false, label: t('itineraries.search.seats'), input_html: { class: 'form-select-sm' }, wrapper_class: 'mb-2'
+    = f.input :sort, collection: [[t('itineraries.search.sort_date'), 'date'], [t('itineraries.search.sort_price'), 'price']], include_blank: false, label: t('itineraries.search.sort'), input_html: { class: 'form-select-sm' }, wrapper_class: 'mb-2'
     = f.input :filter_driver_gender, collection: options_for_array_collection(User, :gender), include_blank: true, label: Itinerary.human_attribute_name(:driver_gender), input_html: { class: 'form-select-sm' }
   .form-group
     = f.hidden_field :start_location_lat

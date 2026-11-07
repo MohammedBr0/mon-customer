@@ -17,6 +17,12 @@
           span.input-group-text = "#{APP_CONFIG.fuel_currency}/km"
       p.form-text
         = t('.vehicle_avg_consumption_help')
+      .row
+        .col-sm-6 = f.input :car_make, label: t('trip.car_make'), input_html: { maxlength: 40 }
+        .col-sm-6 = f.input :car_model, label: t('trip.car_model'), input_html: { maxlength: 40 }
+      .row
+        .col-sm-6 = f.input :car_color, label: t('trip.car_color'), input_html: { maxlength: 40 }
+        .col-sm-6 = f.input :car_plate, label: t('trip.car_plate'), input_html: { maxlength: 12 }, hint: t('trip.car_plate_hint')
 
     fieldset
       legend = t('.application_settings')

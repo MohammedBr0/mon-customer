@@ -83,8 +83,9 @@ Rails.application.configure do
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 
-  config.action_mailer.default_url_options = { host: APP_CONFIG.mailer.host }
-  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.default_url_options = { host: APP_CONFIG.mailer.host, protocol: 'https' }
+  # Email is delivered over SMTP when SMTP_ADDRESS is set (see render.yaml); otherwise it is only logged.
+  config.action_mailer.delivery_method = APP_CONFIG.mailer.smtp_settings.address.present? ? :smtp : :test
   config.action_mailer.perform_deliveries = true
   config.action_mailer.raise_delivery_errors = false
   config.action_mailer.default charset: 'utf-8'

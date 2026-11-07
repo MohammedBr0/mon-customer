@@ -1,0 +1,22 @@
+- reviewee = @booking.counterpart_of(current_user)
+- title t('reviews.new_title', name: reviewee.to_s)
+.container
+  == render 'shared/flash_messages'
+  .page-header
+    h1 = yield :title
+  p.lead = t('reviews.new_lead', trip: @booking.itinerary.title)
+  = form_with model: @review, url: booking_reviews_path(@booking), class: 'col-md-8 col-lg-6' do |f|
+    - if @review.errors.any?
+      .alert.alert-danger
+        ul.mb-0
+          - @review.errors.full_messages.each do |message|
+            li = message
+    .mb-3
+      = f.label :rating, t('reviews.rating'), class: 'form-label'
+      = f.select :rating, [[t('reviews.stars.5'), 5], [t('reviews.stars.4'), 4], [t('reviews.stars.3'), 3], [t('reviews.stars.2'), 2], [t('reviews.stars.1'), 1]], { selected: @review.rating || 5 }, class: 'form-select', required: true
+    .mb-3
+      = f.label :comment, t('reviews.comment'), class: 'form-label'
+      = f.text_area :comment, rows: 4, maxlength: Review::MAX_COMMENT_LENGTH, class: 'form-control', placeholder: t('reviews.comment_placeholder')
+    = f.button class: 'btn btn-primary', data: { disable_with: t('helpers.disable_with') } do
+      = t('reviews.submit')
+    = link_to t('reviews.cancel'), bookings_path, class: 'btn btn-link'

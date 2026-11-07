@@ -1,0 +1,21 @@
+- title t('admin_extra.dashboard')
+.container
+  == render 'shared/flash_messages'
+  .page-header
+    h1 = yield :title
+  .row.g-3.mb-4
+    - { users: @stats[:users], banned_users: @stats[:banned_users], itineraries: @stats[:itineraries], upcoming_itineraries: @stats[:upcoming_itineraries], cancelled_itineraries: @stats[:cancelled_itineraries], conversations: @stats[:conversations], reviews: @stats[:reviews], average_rating: (@stats[:average_rating] || '-') }.each do |key, value|
+      .col-6.col-md-3
+        .border.rounded.p-3.h-100
+          .fs-3.fw-bold = value
+          .text-body-secondary = t("admin_extra.stats.#{key}")
+  h2.h5 = t('admin_extra.stats.bookings')
+  ul.list-inline
+    - Booking::STATUSES.each do |status|
+      li.list-inline-item.me-4
+        strong = @stats[:bookings].fetch(status, 0)
+        '
+        = t("bookings.statuses.#{status}")
+  p.mt-4
+    = link_to t('admin_extra.manage_users'), admin_users_path, class: 'btn btn-outline-primary me-2'
+    = link_to t('admin_extra.itineraries'), admin_itineraries_path, class: 'btn btn-outline-primary'

@@ -2,6 +2,7 @@
 
 class ItinerarySearch
   SEARCH_RADIUS_METERS = 5000
+  SEATS_CONDITION = 'itineraries.num_people IS NULL OR itineraries.num_people - COALESCE((SELECT SUM(bookings.seats) FROM bookings WHERE bookings.itinerary_id = itineraries.id AND bookings.status = \'confirmed\'), 0) >= :seats'
   GEO_WHERE_CONDITION = 'ST_DWithin(start_location, Geography(ST_MakePoint(:start_lon, :start_lat)), :search_meters) AND ST_DWithin(end_location, Geography(ST_MakePoint(:end_lon, :end_lat)), :search_meters)'
 
   def self.call(params, user)
@@ -20,7 +21,8 @@ class ItinerarySearch
 
     # Apply non-geographical filters
     filters = extract_filters_from_params
-    itineraries = Itinerary.includes(:user).where(filters)
+    itineraries = Itinerary.not_cancelled.includes(:user).where(filters)
+    itineraries = itineraries.where(SEATS_CONDITION, seats: seats_needed) if seats_needed > 1
 
     # Get itineraries from A to B
     from_a_to_b_itineraries = itineraries.where(*geographic_conditions(start_location, end_location)).where(leave_date: now..)
@@ -29,12 +31,25 @@ class ItinerarySearch
     # NOTE: Think about it - driver may need a travelmate for the whole trip
     from_b_to_a_itineraries = filters[:round_trip] ? itineraries.none : itineraries.where(*geographic_conditions(end_location, start_location)).where(return_date: now..)
 
-    from_a_to_b_itineraries.or(from_b_to_a_itineraries)
+    ordered(from_a_to_b_itineraries.or(from_b_to_a_itineraries))
   end
 
   private
 
   attr_reader :params, :user, :now
+
+  def seats_needed
+    params[:seats].to_i.clamp(1, Booking::MAX_SEATS)
+  end
+
+  # Earliest departure first by default; "price" lists the cheapest share per seat first.
+  def ordered(itineraries)
+    if params[:sort] == 'price'
+      itineraries.order(Arel.sql('(itineraries.fuel_cost + itineraries.tolls)::float / (COALESCE(itineraries.num_people, 0) + 1)'), :leave_date)
+    else
+      itineraries.order(:leave_date)
+    end
+  end
 
   def geographic_conditions(start_location, end_location, search_radius_meters = SEARCH_RADIUS_METERS)
     [GEO_WHERE_CONDITION, { start_lon: start_location[0], start_lat: start_location[1], end_lon: end_location[0], end_lat: end_location[1], search_meters: search_radius_meters }]

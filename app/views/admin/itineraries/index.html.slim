@@ -1,0 +1,32 @@
+- title t('admin_extra.itineraries')
+.container
+  == render 'shared/flash_messages'
+  .page-header
+    h1
+      = yield :title
+      small< = @itineraries.total_count
+  .table-responsive
+    table.table.align-middle
+      thead
+        tr
+          th = t('bookings.trip')
+          th = t('bookings.driver')
+          th = t('bookings.seats')
+          th = t('bookings.status')
+          th
+      tbody
+        - @itineraries.each do |itinerary|
+          tr
+            td = link_to itinerary.title, itinerary_path(itinerary)
+            td = link_to itinerary.user, user_path(itinerary.user)
+            td = itinerary.seats_available.nil? ? '-' : "#{itinerary.seats_taken}/#{itinerary.num_people}"
+            td
+              - if itinerary.cancelled?
+                span.badge.text-bg-secondary = t('bookings.statuses.cancelled')
+              - else
+                span.badge.text-bg-success = t('admin_extra.active')
+            td.text-end
+              - unless itinerary.cancelled?
+                = button_to cancel_admin_itinerary_path(itinerary), method: :patch, form_class: 'd-inline-block', class: 'btn btn-sm btn-outline-danger', data: { confirm: t('helpers.links.confirm') } do
+                  = t('trip.cancel_trip')
+  == paginate @itineraries

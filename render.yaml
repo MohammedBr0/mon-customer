@@ -35,6 +35,9 @@ services:
       # Public hostname without scheme, e.g. icare.onrender.com
       - key: APP_BASE_URL
         sync: false
+      # Optional, set on the service to send email (booking, message and trip notifications):
+      #   SMTP_ADDRESS, SMTP_PORT (587), SMTP_USERNAME, SMTP_PASSWORD, MAILER_FROM
+      # Without SMTP_ADDRESS emails are generated but not delivered.
       # Neon Auth (OpenID Connect): base Auth URL, OAuth client id and secret
       - key: NEON_AUTH_URL
         sync: false
