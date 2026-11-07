@@ -17,9 +17,13 @@
       = link_to new_itinerary_path, class: 'btn btn-outline-primary w-100' do
         span.fas.fa-plus aria-hidden='true'
         = t('nav.offer_ride')
-    .col-12.col-md-4
+    .col-6.col-md-4
       = link_to itineraries_user_path(current_user), class: 'btn btn-outline-secondary w-100' do
         span.fas.fa-route aria-hidden='true'
         = t('.your_itineraries')
+    .col-6.col-md-4
+      = link_to ride_alerts_path, class: 'btn btn-outline-secondary w-100' do
+        span.fas.fa-bell aria-hidden='true'
+        = t('alerts.title')
   h2.section-title = t('.latest_itineraries')
   == render 'itineraries/cards', itineraries: @latest_itineraries

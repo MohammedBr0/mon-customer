@@ -16,7 +16,26 @@
       span = itinerary.end_address
 
 dl.facts.mb-3
-  - unless itinerary.daily?
+  - if itinerary.commute?
+    .fact.fact--wide
+      dt = t('commute.schedule')
+      dd
+        = itinerary.schedule_summary
+        - if itinerary.commute_until
+          small.text-body-secondary< = t('commute.until_date', date: l(itinerary.commute_until, format: :long))
+  - if itinerary.pickup_point.present? || itinerary.dropoff_point.present?
+    .fact.fact--wide
+      dt = t('commute.meeting_points')
+      dd
+        - if itinerary.pickup_point.present?
+          span.d-block
+            span.fas.fa-location-dot<> aria-hidden='true'
+            = "#{t('commute.pickup_point')}: #{itinerary.pickup_point}"
+        - if itinerary.dropoff_point.present?
+          span.d-block
+            span.fas.fa-flag-checkered<> aria-hidden='true'
+            = "#{t('commute.dropoff_point')}: #{itinerary.dropoff_point}"
+  - unless itinerary.commute?
     .fact
       dt = Itinerary.human_attribute_name :leave_date
       dd = l(itinerary.leave_date.in_time_zone, format: :short)
@@ -49,6 +68,10 @@ dl.facts.mb-3
           = link_to driver, user_path(driver)
         - else
           = t('.app_user', appname: APP_CONFIG.app_name)
+        - if driver.verified?
+          span.chip.ms-1 title=t('verification.badge_hint')
+            span.fas.fa-circle-check aria-hidden='true'
+            = t('verification.badge')
       - if driver.reviews_count.positive?
         span.rating
           span.fas.fa-star<> aria-hidden='true'
@@ -67,6 +90,11 @@ dl.facts.mb-3
       = link_to driver.phone, "tel:#{driver.phone}"
   - if itinerary.description.present?
     p.pre-line.mt-3.mb-0 = itinerary.description
+  - if user_signed_in? && current_user != driver
+    p.mt-3.mb-0
+      = link_to new_report_path(type: 'Itinerary', id: itinerary.id), class: 'text-body-secondary small' do
+        span.fas.fa-flag<> aria-hidden='true'
+        = t('reports.report_trip')
 
 .d-flex.flex-wrap.gap-2.mb-3
   - if itinerary.pink?

@@ -26,6 +26,7 @@
                   span.fas.fa-phone<> aria-hidden='true'
                   = link_to booking.passenger.phone, "tel:#{booking.passenger.phone}"
             == render 'bookings/status', booking: booking
+          == render 'bookings/dates', booking: booking, allow_skip: booking.active?
           == render 'bookings/breakdown', breakdown: booking.price_breakdown, role: :driver
           .row-card__actions
             - if booking.pending?
@@ -62,6 +63,7 @@
                   span.fas.fa-phone<> aria-hidden='true'
                   = link_to booking.driver.phone, "tel:#{booking.driver.phone}"
             == render 'bookings/status', booking: booking
+          == render 'bookings/dates', booking: booking, allow_skip: booking.active?
           == render 'bookings/breakdown', breakdown: booking.price_breakdown, role: :passenger
           .row-card__actions
             - if booking.active?

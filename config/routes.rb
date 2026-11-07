@@ -30,9 +30,13 @@ Rails.application.routes.draw do
       patch :confirm
       patch :decline
       patch :cancel
+      patch :skip_date
     end
     resources :reviews, only: %i[new create]
   end
+
+  resources :ride_alerts, only: %i[index create destroy]
+  resources :reports, only: %i[new create]
 
   resources :users, only: %i[show update destroy] do
     get :itineraries, on: :member
@@ -45,14 +49,31 @@ Rails.application.routes.draw do
     resources :vehicle_fields, except: :show do
       patch :move, on: :member
     end
-    resources :itineraries, only: :index do
-      patch :cancel, on: :member
+    resources :popular_routes, except: :show do
+      patch :move, on: :member
     end
-    resources :users, only: [:index] do
+    resources :users, only: %i[index show] do
       get :login_as, on: :member
       post :ban, on: :member
       post :unban, on: :member
+      post :verify, on: :member
+      post :unverify, on: :member
+      patch :set_role, on: :member
     end
+    resources :itineraries, only: :index do
+      patch :cancel, on: :member
+    end
+    resources :bookings, only: :index do
+      patch :cancel, on: :member
+    end
+    resources :reports, only: %i[index show] do
+      patch :resolve, on: :member
+    end
+    resources :reviews, only: :index do
+      patch :hide, on: :member
+      patch :unhide, on: :member
+    end
+    resources :audit_logs, only: :index
   end
 
   # Root route aliases

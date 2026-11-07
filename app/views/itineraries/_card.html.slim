@@ -16,7 +16,7 @@
     .trip-card__meta
       span
         span.fas.fa-clock<> aria-hidden='true'
-        = l(itinerary.leave_date.in_time_zone, format: :short)
+        = itinerary.commute? ? itinerary.schedule_summary : l(itinerary.leave_date.in_time_zone, format: :short)
       - if itinerary.cancelled?
         span.chip.chip--muted = t('bookings.statuses.cancelled')
       - elsif itinerary.seats_available.nil?
@@ -29,12 +29,18 @@
         span.chip.chip--pink
           span.fas.fa-lock<> aria-hidden='true'
           = Itinerary.human_attribute_name(:pink)
+      - if itinerary.commute?
+        span.chip
+          span.fas.fa-rotate<> aria-hidden='true'
+          = t('commute.commute')
       - if itinerary.round_trip?
         span.chip.chip--muted = Itinerary.human_attribute_name(:round_trip)
     - unless edit
       .trip-card__driver
         = user_profile_picture itinerary.user, size: 28, options: { class: '' }
         span = itinerary.user.first_name || itinerary.user
+        - if itinerary.user.verified?
+          span.fas.fa-circle-check.text-success title=t('verification.badge') aria-label=t('verification.badge')
         - if itinerary.user.reviews_count.positive?
           span.rating
             span.fas.fa-star<> aria-hidden='true'

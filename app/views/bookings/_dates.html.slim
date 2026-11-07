@@ -1,0 +1,10 @@
+/ The days a booking covers; commute days can be skipped one at a time.
+- allow_skip = local_assigns.fetch(:allow_skip, false)
+- if booking.multi_day? || booking.itinerary.commute?
+  .d-flex.flex-wrap.gap-2.mb-2
+    - booking.ride_dates.each do |date|
+      span.chip.chip--muted class=('chip--danger' if date < Itinerary.today)
+        = l(date, format: :short_day)
+        - if allow_skip && date >= Itinerary.today
+          = button_to skip_date_booking_path(booking, date: date.iso8601), method: :patch, form_class: 'd-inline-block', class: 'btn btn-link p-0 ms-1 text-decoration-none', title: t('commute.skip_day'), data: { confirm: t('commute.skip_confirm') } do
+            span.fas.fa-xmark aria-label=t('commute.skip_day')

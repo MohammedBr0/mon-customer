@@ -3,7 +3,7 @@
 table.breakdown
   tbody
     tr
-      td = t('bookings.fare', seats: breakdown.seats, price: money(breakdown.price_per_seat))
+      td = breakdown.ride_count > 1 ? t('bookings.fare_days', seats: breakdown.seats, days: breakdown.ride_count, price: money(breakdown.price_per_seat)) : t('bookings.fare', seats: breakdown.seats, price: money(breakdown.price_per_seat))
       td data-fare=true = money(breakdown.fare_total)
     - if role == :passenger && breakdown.charged_to == 'passenger' && breakdown.fee_percent.positive?
       tr

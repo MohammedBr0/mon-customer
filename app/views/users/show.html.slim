@@ -4,7 +4,12 @@
     .col-sm-3.text-sm-center
       = user_profile_picture @user, size: nil, type: :large, options: { class: 'img--user-profile' }
     .col-sm-9
-      h1 = @user
+      h1
+        = @user
+        - if @user.verified?
+          span.chip.ms-2 title=t('verification.badge_hint')
+            span.fas.fa-circle-check<> aria-hidden='true'
+            = t('verification.badge')
       p.text-body-secondary
         small = t('.member_since', date: l(@user.created_at.to_date, format: :month_year))
       - if @user.reviews_count.positive?
@@ -34,3 +39,10 @@
               small.text-body-secondary< = l(review.created_at.to_date, format: :long)
             - if review.comment.present?
               p.mb-0.pre-line = review.comment
+  - if user_signed_in? && current_user != @user
+    .row
+      .col-sm-9.offset-sm-3
+        p.mt-4
+          = link_to new_report_path(type: 'User', id: @user.id), class: 'text-body-secondary small' do
+            span.fas.fa-flag<> aria-hidden='true'
+            = t('reports.report_user')

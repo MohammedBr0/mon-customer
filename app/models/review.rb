@@ -15,6 +15,11 @@ class Review < ApplicationRecord
   validate :reviewer_and_reviewee_are_the_two_participants
 
   scope :recent, -> { order(created_at: :desc) }
+  scope :visible, -> { where(hidden_at: nil) }
+
+  def hidden?
+    hidden_at.present?
+  end
 
   private
 

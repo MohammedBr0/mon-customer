@@ -27,4 +27,12 @@ class BookingMailer < ApplicationMailer
     @cancelled_by = @booking.cancelled_by || @booking.driver
     mail_to @recipient, 'mailers.booking.cancelled.subject', trip: @booking.itinerary.title
   end
+
+  # To whoever did not skip the day.
+  def date_skipped
+    @date = params[:date]
+    @recipient = params[:by] == @booking.passenger ? @booking.driver : @booking.passenger
+    @cancelled_by = params[:by]
+    mail_to @recipient, 'mailers.booking.date_skipped.subject', trip: @booking.itinerary.title, date: I18n.l(@date, format: :long)
+  end
 end

@@ -11,6 +11,8 @@ class PlatformSetting < ApplicationRecord
   validates :currency_symbol, presence: true, length: { maximum: 6 }
   validates :max_price_per_seat, numericality: { greater_than: 0, less_than_or_equal_to: 1_000_000 }
   validates :payment_instructions, length: { maximum: 500 }
+  validates :announcement, length: { maximum: 300 }
+  validates :commute_horizon_days, numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: 60 }
 
   def self.current
     first || create!(payment_instructions: 'Pay the driver directly when you meet, in cash or with Telebirr or CBE Birr.')

@@ -10,10 +10,24 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_07_200100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.bigint "actor_id", null: false
+    t.string "action", null: false
+    t.string "subject_type"
+    t.bigint "subject_id"
+    t.string "subject_label"
+    t.jsonb "details", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_audit_logs_on_action"
+    t.index ["actor_id"], name: "index_audit_logs_on_actor_id"
+    t.index ["subject_type", "subject_id"], name: "index_audit_logs_on_subject_type_and_subject_id"
+  end
 
   create_table "bookings", force: :cascade do |t|
     t.bigint "itinerary_id", null: false
@@ -33,6 +47,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.decimal "fee_amount", precision: 10, scale: 2, default: "0.0", null: false
     t.decimal "passenger_total", precision: 10, scale: 2, default: "0.0", null: false
     t.decimal "driver_payout", precision: 10, scale: 2, default: "0.0", null: false
+    t.date "ride_dates", default: [], null: false, array: true
     t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
     t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
     t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
@@ -93,6 +108,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.datetime "updated_at", precision: nil, null: false
     t.datetime "cancelled_at"
     t.decimal "price_per_seat", precision: 10, scale: 2, default: "0.0", null: false
+    t.integer "commute_days", default: [], null: false, array: true
+    t.date "commute_until"
+    t.string "pickup_point"
+    t.string "dropoff_point"
     t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
     t.index ["user_id"], name: "index_itineraries_on_user_id"
@@ -118,6 +137,37 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.text "payment_instructions"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "announcement"
+    t.boolean "announcement_active", default: false, null: false
+    t.boolean "commutes_enabled", default: true, null: false
+    t.integer "commute_horizon_days", default: 14, null: false
+  end
+
+  create_table "popular_routes", force: :cascade do |t|
+    t.string "from_label", null: false
+    t.string "to_label", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "reports", force: :cascade do |t|
+    t.bigint "reporter_id", null: false
+    t.string "reportable_type", null: false
+    t.bigint "reportable_id", null: false
+    t.string "reason", null: false
+    t.text "details"
+    t.string "status", default: "open", null: false
+    t.bigint "resolved_by_id"
+    t.datetime "resolved_at"
+    t.text "resolution_note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reportable_type", "reportable_id"], name: "index_reports_on_reportable_type_and_reportable_id"
+    t.index ["reporter_id"], name: "index_reports_on_reporter_id"
+    t.index ["resolved_by_id"], name: "index_reports_on_resolved_by_id"
+    t.index ["status"], name: "index_reports_on_status"
   end
 
   create_table "reviews", force: :cascade do |t|
@@ -128,10 +178,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.text "comment"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "hidden_at"
     t.index ["booking_id", "reviewer_id"], name: "index_reviews_on_booking_id_and_reviewer_id", unique: true
     t.index ["booking_id"], name: "index_reviews_on_booking_id"
     t.index ["reviewee_id"], name: "index_reviews_on_reviewee_id"
     t.index ["reviewer_id"], name: "index_reviews_on_reviewer_id"
+  end
+
+  create_table "ride_alerts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "start_label", null: false
+    t.string "end_label", null: false
+    t.geography "start_location", limit: {:srid=>4326, :type=>"st_point", :geographic=>true}, null: false
+    t.geography "end_location", limit: {:srid=>4326, :type=>"st_point", :geographic=>true}, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "last_notified_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_ride_alerts_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -161,8 +225,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.string "car_plate"
     t.jsonb "vehicle_data", default: {}, null: false
     t.string "phone"
+    t.boolean "moderator", default: false, null: false
+    t.datetime "verified_at"
+    t.bigint "verified_by_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
+    t.index ["verified_by_id"], name: "index_users_on_verified_by_id"
   end
 
   create_table "vehicle_fields", force: :cascade do |t|
@@ -183,12 +251,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
     t.index ["key"], name: "index_vehicle_fields_on_key", unique: true
   end
 
+  add_foreign_key "audit_logs", "users", column: "actor_id"
   add_foreign_key "bookings", "itineraries"
   add_foreign_key "bookings", "users", column: "cancelled_by_id"
   add_foreign_key "bookings", "users", column: "passenger_id"
   add_foreign_key "feedbacks", "users"
   add_foreign_key "itineraries", "users"
+  add_foreign_key "reports", "users", column: "reporter_id"
+  add_foreign_key "reports", "users", column: "resolved_by_id"
   add_foreign_key "reviews", "bookings"
   add_foreign_key "reviews", "users", column: "reviewee_id"
   add_foreign_key "reviews", "users", column: "reviewer_id"
+  add_foreign_key "ride_alerts", "users"
+  add_foreign_key "users", "users", column: "verified_by_id"
 end

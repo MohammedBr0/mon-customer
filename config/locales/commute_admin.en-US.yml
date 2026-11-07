@@ -1,0 +1,200 @@
+en-US:
+  date:
+    formats:
+      short_day: "%a %-d %b"
+  commute:
+    commute: Commute
+    repeat_title: Repeat every week
+    repeat_hint: Pick the days you drive this route and passengers can book the days they need. Leave empty for a one-off trip.
+    until: Repeats until
+    until_hint: Optional. Leave empty to keep the commute open until you cancel it.
+    pickup_point: Pickup point
+    pickup_hint: "A fixed meeting place, e.g. Mexico Square"
+    dropoff_point: Drop-off point
+    schedule: Schedule
+    until_date: "until %{date}"
+    meeting_points: Meeting points
+    choose_days: Days you want to ride
+    choose_days_hint: You can skip a single day later without cancelling the whole booking.
+    skip_day: Skip this day
+    skip_confirm: Skip this day? You will not pay for it.
+  verification:
+    badge: Verified
+    badge_hint: Identity and driving licence checked by the icare team
+    verified_on: "Verified on %{date}"
+    verify: Mark as verified
+    unverify: Remove verification
+    verify_confirm: Confirm you checked this person's identity and driving licence?
+  alerts:
+    title: Ride alerts
+    intro: Save a route and we will tell you when someone offers a ride on it.
+    empty: You have no ride alerts yet.
+    search_first: Search for a route
+    create: Alert me
+    matches:
+      zero: No matching trips yet
+      one: 1 matching trip
+      other: "%{count} matching trips"
+  reports:
+    title: Report a problem
+    about: "You are reporting: %{item}"
+    reason: What is wrong?
+    details: Tell us more
+    details_placeholder: What happened? Include dates and places if you can.
+    submit: Send report
+    report_trip: Report this trip
+    report_user: Report this person
+    review_label: "%{rating}-star review by %{reviewer}"
+    reasons:
+      unsafe_driving: Unsafe driving
+      fake_or_scam: Fake listing or scam
+      harassment: Harassment or abuse
+      wrong_information: Wrong information
+      no_show: Did not show up
+      inappropriate: Inappropriate content
+      other: Something else
+    types:
+      Itinerary: Trip
+      User: Person
+      Review: Review
+  bookings:
+    fare_days: "%{seats} × %{days} days × %{price}"
+  admin_extra:
+    users: Users
+    reports: Reports
+    bookings: Bookings
+    reviews: Reviews
+    popular_routes: Popular routes
+    audit_log: Audit log
+    commute_title: Commutes
+    commutes_enabled: Drivers can post weekly commutes
+    commute_horizon: How far ahead commuters can book
+    days: days
+    commute_horizon_hint: Between 1 and 60 days.
+    announcement_title: Announcement banner
+    announcement_active: Show the announcement to everyone
+    announcement_hint: A short message at the top of every page, for example planned maintenance. Up to 300 characters.
+    open_reports:
+      one: 1 report needs a decision
+      other: "%{count} reports need a decision"
+    stats:
+      verified_drivers: Verified people
+      commutes: Weekly commutes
+      ride_alerts: Active ride alerts
+    search_users: Search name, email or phone
+    search_bookings: Search person or place
+    filters:
+      all: Everyone
+      banned: Banned
+      verified: Verified
+      unverified: Not verified
+      staff: Staff
+    filter: Filter
+    from: From
+    to: To
+    roles:
+      user: Member
+      moderator: Moderator
+      admin: Super admin
+      super_admin: Super admin
+    banned: Banned
+    view: View
+    actions: Actions
+    login_as: Log in as
+    role: Role
+    role_hint: Moderators can ban people, handle reports and hide reviews. Only super admins change settings, fees, roles and see money.
+    no_vehicle: No vehicle details yet.
+    report_status:
+      open: Open
+      resolved: Resolved
+      dismissed: Dismissed
+    export_csv: Export CSV
+    cancel_booking_confirm: Cancel this booking? Both people are notified.
+    report: Report
+    no_reports: No reports here.
+    reported_by: "Reported by %{name} on %{date}"
+    take_action: Action on the reported item
+    actions_none: No action
+    action_cancel_trip: Cancel the trip
+    action_ban_user: Ban the person
+    action_hide_review: Hide the review
+    resolution_note: Note (kept in the audit log)
+    resolve: Resolve
+    dismiss: Dismiss
+    resolved_by: "Handled by %{name} on %{date}"
+    review_filters:
+      all: All
+      low: 1-2 stars
+      hidden: Hidden
+    no_reviews: No reviews here.
+    hide: Hide
+    unhide: Show again
+    hide_review_confirm: Hide this review? It stops counting towards the rating.
+    audit_intro: Every change staff make to settings, people, trips, bookings, reports and reviews.
+    no_logs: Nothing recorded yet.
+    add_route: Add route
+    edit_route: Edit route
+    route_from: From
+    route_to: To
+    no_routes: No popular routes yet. The landing page shows a default set.
+    popular_routes_intro: These appear as shortcuts on the landing page.
+  flash:
+    bookings:
+      date_skipped: Day removed from the booking.
+    alerts:
+      created: Alert saved. We will email you when a matching trip is posted.
+      destroyed: Alert deleted.
+    reports:
+      created: Thank you. Our team will look into it.
+    admin:
+      users:
+        verified: Marked as verified.
+        unverified: Verification removed.
+        own_role: You cannot change your own role.
+        role_changed: Role updated.
+      reports:
+        resolved: Report handled.
+      reviews:
+        hidden: Review hidden.
+        unhidden: Review visible again.
+      popular_routes:
+        saved: Route saved.
+        deleted: Route deleted.
+  activerecord:
+    errors:
+      models:
+        itinerary:
+          attributes:
+            base:
+              commutes_disabled: Weekly commutes are switched off at the moment
+            commute_days:
+              invalid: must be weekdays
+            commute_until:
+              on_or_after_start: must be on or after the first ride
+            round_trip:
+              not_for_commutes: is not available for weekly commutes
+        booking:
+          attributes:
+            ride_dates:
+              blank: Pick at least one day
+              not_available: One of the days is not available any more
+        ride_alert:
+          attributes:
+            base:
+              too_many_alerts: You can keep up to %{count} ride alerts
+        report:
+          attributes:
+            base:
+              own_content: You cannot report your own content
+              already_reported: You already reported this and it is still being reviewed
+  mailers:
+    booking:
+      date_skipped:
+        subject: "A day was removed from your booking on %{trip}"
+        greeting: "Hi %{name},"
+        body: "%{by} removed %{date} from the booking on %{trip}."
+    alert:
+      match:
+        subject: "New ride on your route: %{trip}"
+        greeting: "Hi %{name},"
+        body: "%{driver} is offering a ride on your saved route %{route} for %{price} %{symbol} per seat."

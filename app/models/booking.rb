@@ -18,6 +18,7 @@ class Booking < ApplicationRecord
   scope :pending, -> { where(status: 'pending') }
   scope :confirmed, -> { where(status: 'confirmed') }
 
+  before_validation :default_ride_dates, on: :create
   before_validation :snapshot_pricing, on: :create
 
   validates :status, inclusion: { in: STATUSES }
@@ -26,6 +27,7 @@ class Booking < ApplicationRecord
   validate :passenger_is_not_the_driver, on: :create
   validate :itinerary_accepts_bookings, on: :create
   validate :no_other_active_booking, on: :create
+  validate :ride_dates_are_bookable, on: :create
   validate :seats_are_available, on: :create
 
   STATUSES.each do |status|
@@ -53,7 +55,7 @@ class Booking < ApplicationRecord
   def confirm!
     itinerary.with_lock do
       raise_unless pending?, :not_pending
-      raise_unless itinerary.seats_available.nil? || seats <= itinerary.seats_available, :not_enough_seats
+      raise_unless seats_fit?, :not_enough_seats
 
       update!(status: 'confirmed', decided_at: Time.current)
     end
@@ -81,8 +83,31 @@ class Booking < ApplicationRecord
     self
   end
 
+  # A confirmed booking is complete once its trip has run: for a commute, once its first day has gone.
   def completed?
-    confirmed? && itinerary.past?
+    return false unless confirmed?
+
+    itinerary.commute? ? ride_dates.min.present? && ride_dates.min < Itinerary.today : itinerary.past?
+  end
+
+  def multi_day?
+    ride_dates.size > 1
+  end
+
+  # Drops one day from a commute booking and reprices it. Cancels the booking when no days remain.
+  def skip_date!(date, by:)
+    raise_unless active? && ride_dates.include?(date) && date >= Itinerary.today, :not_active
+    remaining = ride_dates - [date]
+    return cancel!(by:) if remaining.empty?
+
+    self.ride_dates = remaining
+    snapshot_pricing(keep_fee_terms: true)
+    save!
+    self
+  end
+
+  def upcoming_ride_dates
+    ride_dates.select { |date| date >= Itinerary.today }
   end
 
   def reviewed_by?(user)
@@ -94,23 +119,53 @@ class Booking < ApplicationRecord
   # What the passenger pays and what the driver gets, frozen when the booking is made so that
   # later price or fee changes never alter an existing booking.
   def price_breakdown
-    PriceBreakdown.new(price_per_seat, seats, fee_percent, fee_charged_to)
+    PriceBreakdown.new(price_per_seat, seats, fee_percent, fee_charged_to, ride_dates.size)
   end
 
   private
 
-  def snapshot_pricing
+  def default_ride_dates
+    return unless itinerary
+
+    dates = Array(ride_dates).compact_blank
+    dates = [itinerary.first_ride_date] if dates.empty? && !itinerary.commute?
+    self.ride_dates = dates.map { |date| date.respond_to?(:to_date) ? date.to_date : Date.parse(date.to_s) }.uniq.sort
+  rescue ArgumentError
+    self.ride_dates = []
+  end
+
+  # Fee terms are frozen when the booking is made; skipping a day reprices with those same terms.
+  def snapshot_pricing(keep_fee_terms: false)
     return unless itinerary
 
     setting = PlatformSetting.current
-    breakdown = PriceBreakdown.for(price_per_seat: itinerary.price_per_seat, seats: seats.to_i.clamp(1, MAX_SEATS), setting:)
-    self.price_per_seat = itinerary.price_per_seat
-    self.fee_percent = setting.fee_percent
-    self.fee_charged_to = setting.fee_charged_to
+    unless keep_fee_terms
+      self.fee_percent = setting.fee_percent
+      self.fee_charged_to = setting.fee_charged_to
+    end
+    self.price_per_seat = itinerary.price_per_seat unless keep_fee_terms
+    breakdown = PriceBreakdown.new(price_per_seat, seats.to_i.clamp(1, MAX_SEATS), fee_percent, fee_charged_to, [ride_dates.size, 1].max)
     self.fare_total = breakdown.fare_total
     self.fee_amount = breakdown.fee_amount
     self.passenger_total = breakdown.passenger_total
     self.driver_payout = breakdown.driver_payout
+  end
+
+  def seats_fit?
+    ride_dates.all? do |date|
+      available = itinerary.seats_available(date)
+      available.nil? || seats <= available
+    end
+  end
+
+  def ride_dates_are_bookable
+    return unless itinerary
+
+    if ride_dates.empty?
+      errors.add(:ride_dates, :blank)
+    elsif (ride_dates - itinerary.occurrence_dates).any?
+      errors.add(:ride_dates, :not_available)
+    end
   end
 
   def raise_unless(condition, reason)
@@ -135,9 +190,9 @@ class Booking < ApplicationRecord
   end
 
   def seats_are_available
-    return unless itinerary && seats.to_i.positive?
+    return unless itinerary && seats.to_i.positive? && ride_dates.any?
 
-    available = itinerary.seats_available
+    available = ride_dates.filter_map { |date| itinerary.seats_available(date) }.min
     errors.add(:seats, :not_enough_seats, count: available) if available && seats > available
   end
 end

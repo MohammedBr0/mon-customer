@@ -1,0 +1,25 @@
+- title t('alerts.title')
+.container
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  p.text-body-secondary = t('alerts.intro')
+  - if @alerts.empty?
+    .surface.empty
+      span.fas.fa-bell aria-hidden='true'
+      = t('alerts.empty')
+      p.mt-2.mb-0 = link_to t('alerts.search_first'), itineraries_path, class: 'btn btn-primary'
+  - else
+    .stack
+      - @alerts.each do |alert|
+        - matches = alert.current_matches.includes(:user).limit(3)
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = "#{alert.start_label} → #{alert.end_label}"
+              small.text-body-secondary = t('alerts.matches', count: alert.current_matches.count)
+            = button_to ride_alert_path(alert), method: :delete, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('helpers.links.confirm') } do
+              = t('helpers.links.destroy')
+          - if matches.any?
+            .trip-list.mt-3
+              - matches.each do |itinerary|
+                == render 'itineraries/card', itinerary: itinerary

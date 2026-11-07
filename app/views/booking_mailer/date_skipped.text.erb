@@ -1,0 +1,5 @@
+<%= t('mailers.booking.date_skipped.greeting', name: @recipient.first_name || @recipient.to_s) %>
+
+<%= t('mailers.booking.date_skipped.body', by: @cancelled_by.to_s, date: l(@date, format: :long), trip: @booking.itinerary.title) %>
+
+<%= t('mailers.view_trip') %>: <%= itinerary_url(@booking.itinerary) %>

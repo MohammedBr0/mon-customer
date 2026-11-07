@@ -1,6 +1,16 @@
 fieldset#single
   .mb-3
     = f.input :leave_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time form-select d-inline-block w-auto' }
+  - if platform_setting.commutes_enabled? || @itinerary.commute?
+    .surface.mb-3
+      label.form-label = t('commute.repeat_title')
+      p.form-text = t('commute.repeat_hint')
+      = hidden_field_tag 'itinerary[commute_days][]', ''
+      .d-flex.flex-wrap.gap-2.mb-2
+        - [1, 2, 3, 4, 5, 6, 0].each do |wday|
+          = check_box_tag 'itinerary[commute_days][]', wday, @itinerary.commute_days.include?(wday), id: "commute_day_#{wday}", class: 'btn-check'
+          = label_tag "commute_day_#{wday}", t('date.abbr_day_names')[wday], class: 'btn btn-outline-primary btn-sm'
+      = f.input :commute_until, as: :date, html5: true, label: t('commute.until'), hint: t('commute.until_hint'), required: false
   = f.input :round_trip, as: :boolean
   .mb-3
     = f.input :return_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time form-select d-inline-block w-auto' }, disabled: !@itinerary.round_trip
@@ -19,6 +29,9 @@ fieldset#single
             = t('trip.fee_hint_driver', percent: number_with_precision(platform_setting.fee_percent, precision: 2, strip_insignificant_zeros: true))
         p.form-text.mb-0#fuel-help data-avg-consumption=current_user.vehicle_avg_consumption
           small#fuel-help-text
+  .row
+    .col-sm-6 = f.input :pickup_point, label: t('commute.pickup_point'), hint: t('commute.pickup_hint'), input_html: { maxlength: 120 }
+    .col-sm-6 = f.input :dropoff_point, label: t('commute.dropoff_point'), input_html: { maxlength: 120 }
   = f.input :description, as: :text, input_html: { rows: 4, maxlength: Itinerary::MAX_DESCRIPTION_LENGTH }, hint: t('.description_hint')
   .mb-3
     - if current_user.female?

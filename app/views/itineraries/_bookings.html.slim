@@ -19,6 +19,7 @@
                   span.fas.fa-phone<> aria-hidden='true'
                   = link_to booking.passenger.phone, "tel:#{booking.passenger.phone}"
             == render 'bookings/status', booking: booking
+          == render 'bookings/dates', booking: booking, allow_skip: booking.active?
           == render 'bookings/breakdown', breakdown: booking.price_breakdown, role: :driver
           .row-card__actions
             - if booking.pending?
@@ -40,6 +41,7 @@
         .row-card__main
           span.row-card__title = t('bookings.seats_count', count: @my_booking.seats)
         == render 'bookings/status', booking: @my_booking
+      == render 'bookings/dates', booking: @my_booking, allow_skip: true
       == render 'bookings/breakdown', breakdown: @my_booking.price_breakdown, role: :passenger
       - if @my_booking.confirmed?
         p.mb-2
@@ -54,11 +56,20 @@
     h2.section-title = t('bookings.request_title')
     .surface data-price-calc=true data-price=@itinerary.price_per_seat data-fee-percent=platform_setting.fee_percent data-charged-to=platform_setting.fee_charged_to data-symbol=platform_setting.currency_symbol
       = form_with url: itinerary_bookings_path(@itinerary), scope: :booking do |f|
-        - max_seats = [@itinerary.seats_available || Booking::MAX_SEATS, Booking::MAX_SEATS].min
+        - open_dates = @itinerary.occurrence_dates.reject { |date| @itinerary.full?(date) }
+        - max_seats = [open_dates.filter_map { |date| @itinerary.seats_available(date) }.min || Booking::MAX_SEATS, Booking::MAX_SEATS].min
+        - if @itinerary.commute?
+          .mb-3
+            label.form-label = t('commute.choose_days')
+            .d-flex.flex-wrap.gap-2
+              - open_dates.each_with_index do |date, index|
+                = check_box_tag 'booking[ride_dates][]', date.iso8601, index < 5, id: "ride_date_#{date.iso8601}", class: 'btn-check', data: { price_dates: true }
+                = label_tag "ride_date_#{date.iso8601}", l(date, format: :short_day), class: 'btn btn-outline-primary btn-sm'
+            p.form-text.mb-0 = t('commute.choose_days_hint')
         .mb-3
           = f.label :seats, t('bookings.seats'), class: 'form-label'
-          = f.select :seats, (1..max_seats).to_a, {}, class: 'form-select'
-        == render 'bookings/breakdown', breakdown: @itinerary.price_breakdown(1), role: :passenger
+          = f.select :seats, (1..[max_seats, 1].max).to_a, {}, class: 'form-select'
+        == render 'bookings/breakdown', breakdown: @itinerary.price_breakdown(1, @itinerary.commute? ? [open_dates.size, 5].min : 1), role: :passenger
         .mb-3
           = f.label :note, t('bookings.note'), class: 'form-label'
           = f.text_field :note, class: 'form-control', maxlength: Booking::MAX_NOTE_LENGTH, placeholder: t('bookings.note_placeholder')

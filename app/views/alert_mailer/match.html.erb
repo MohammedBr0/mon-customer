@@ -1,0 +1,4 @@
+<p><%= t('mailers.alert.match.greeting', name: @recipient.first_name || @recipient.to_s) %></p>
+<p><%= t('mailers.alert.match.body', route: "#{@alert.start_label} → #{@alert.end_label}", driver: @itinerary.user.to_s, price: number_with_precision(@itinerary.passenger_price_per_seat, precision: 0), symbol: PlatformSetting.current.currency_symbol) %></p>
+<% if @itinerary.schedule_summary %><p><strong><%= @itinerary.schedule_summary %></strong></p><% end %>
+<p><a href="<%= itinerary_url(@itinerary) %>" style="display:inline-block;padding:10px 18px;background:#0b7a4b;color:#fff;border-radius:6px;text-decoration:none;"><%= t('mailers.view_trip') %></a></p>

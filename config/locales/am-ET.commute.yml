@@ -1,0 +1,74 @@
+# Amharic: commutes, alerts, reports, verification and calendar names.
+am-ET:
+  date:
+    day_names: [እሑድ, ሰኞ, ማክሰኞ, ረቡዕ, ሐሙስ, ዓርብ, ቅዳሜ]
+    abbr_day_names: [እሑድ, ሰኞ, ማክሰ, ረቡዕ, ሐሙስ, ዓርብ, ቅዳሜ]
+    month_names: [~, ጃንዋሪ, ፌብሩዋሪ, ማርች, ኤፕሪል, ሜይ, ጁን, ጁላይ, ኦገስት, ሴፕቴምበር, ኦክቶበር, ኖቬምበር, ዲሴምበር]
+    abbr_month_names: [~, ጃን, ፌብ, ማርች, ኤፕሪ, ሜይ, ጁን, ጁላ, ኦገ, ሴፕ, ኦክቶ, ኖቬ, ዲሴ]
+    formats:
+      short_day: "%a %-d %b"
+  commute:
+    commute: የዕለት ጉዞ
+    repeat_title: በየሳምንቱ ይድገም
+    repeat_hint: ይህን መንገድ የሚያሽከረክሩባቸውን ቀናት ይምረጡ፣ ተሳፋሪዎች የሚፈልጓቸውን ቀናት ይይዛሉ። ለአንድ ጊዜ ጉዞ ባዶ ይተዉት።
+    until: እስከ ድረስ ይድገም
+    until_hint: አማራጭ። እስኪሰርዙት ድረስ ክፍት ለማድረግ ባዶ ይተዉት።
+    pickup_point: የመነሻ ቦታ
+    pickup_hint: "የተወሰነ መገናኛ ቦታ፣ ለምሳሌ መክሲኮ አደባባይ"
+    dropoff_point: የመድረሻ ቦታ
+    schedule: የጊዜ ሰሌዳ
+    until_date: "እስከ %{date}"
+    meeting_points: የመገናኛ ቦታዎች
+    choose_days: ለመጓዝ የሚፈልጓቸው ቀናት
+    choose_days_hint: ሙሉውን ቦታ ማስያዣ ሳይሰርዙ አንድ ቀን በኋላ መዝለል ይችላሉ።
+    skip_day: ይህን ቀን ዝለል
+    skip_confirm: ይህ ቀን ይዘለል? ለእሱ አይከፍሉም።
+  verification:
+    badge: የተረጋገጠ
+    badge_hint: ማንነትና የመንጃ ፈቃድ በicare ቡድን ተረጋግጧል
+  alerts:
+    title: የጉዞ ማንቂያዎች
+    intro: መንገድ ያስቀምጡ፣ በዚያ መንገድ ላይ ጉዞ ሲቀርብ እናሳውቅዎታለን።
+    empty: ገና ምንም የጉዞ ማንቂያ የለዎትም።
+    search_first: መንገድ ይፈልጉ
+    create: አሳውቀኝ
+    matches:
+      zero: ገና የሚስማማ ጉዞ የለም
+      one: 1 የሚስማማ ጉዞ
+      other: "%{count} የሚስማሙ ጉዞዎች"
+  reports:
+    title: ችግር ሪፖርት ያድርጉ
+    reason: ምን ችግር አለ?
+    details: ተጨማሪ ይንገሩን
+    submit: ሪፖርት ላክ
+    report_trip: ይህን ጉዞ ሪፖርት አድርግ
+    report_user: ይህን ሰው ሪፖርት አድርግ
+    reasons:
+      unsafe_driving: አደገኛ አነዳድ
+      fake_or_scam: የውሸት ማስታወቂያ ወይም ማጭበርበር
+      harassment: ትንኮሳ ወይም ጥቃት
+      wrong_information: የተሳሳተ መረጃ
+      no_show: አልመጣም
+      inappropriate: ተገቢ ያልሆነ ይዘት
+      other: ሌላ
+  bookings:
+    fare_days: "%{seats} × %{days} ቀናት × %{price}"
+  flash:
+    bookings:
+      date_skipped: ቀኑ ከቦታ ማስያዣው ተወግዷል።
+    alerts:
+      created: ማንቂያው ተቀምጧል። የሚስማማ ጉዞ ሲቀርብ በኢሜይል እናሳውቅዎታለን።
+      destroyed: ማንቂያው ተሰርዟል።
+    reports:
+      created: እናመሰግናለን። ቡድናችን ይመለከተዋል።
+  mailers:
+    booking:
+      date_skipped:
+        subject: "በ%{trip} ቦታ ማስያዣዎ ላይ አንድ ቀን ተወግዷል"
+        greeting: "ሰላም %{name}፣"
+        body: "%{by} %{date}ን ከ%{trip} ቦታ ማስያዣ አስወግዷል።"
+    alert:
+      match:
+        subject: "በመንገድዎ ላይ አዲስ ጉዞ፦ %{trip}"
+        greeting: "ሰላም %{name}፣"
+        body: "%{driver} በተቀመጠው መንገድዎ %{route} ላይ በመቀመጫ %{price} %{symbol} ጉዞ አቅርቧል።"

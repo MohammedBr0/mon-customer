@@ -15,7 +15,10 @@ FactoryBot.define do
     # A confirmed booking on a trip that has already left.
     trait :completed do
       confirmed
-      after(:create) { |booking| booking.itinerary.update_columns(leave_date: 2.days.ago) }
+      after(:create) do |booking|
+        booking.itinerary.update_columns(leave_date: 2.days.ago)
+        booking.update_columns(ride_dates: [Itinerary.today - 2])
+      end
     end
   end
 end

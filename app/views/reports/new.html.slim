@@ -1,0 +1,21 @@
+- title t('reports.title')
+.container
+  h1.page-title = yield :title
+  p.text-body-secondary = t('reports.about', item: @report.reportable_label)
+  = form_with model: @report, url: reports_path, class: 'surface stack' do |f|
+    - if @report.errors.any?
+      .alert.alert-danger
+        ul.mb-0
+          - @report.errors.full_messages.each do |message|
+            li = message
+    = hidden_field_tag 'report[reportable_type]', @report.reportable_type
+    = hidden_field_tag 'report[reportable_id]', @report.reportable_id
+    div
+      = f.label :reason, t('reports.reason'), class: 'form-label'
+      = f.select :reason, Report::REASONS.map { |reason| [t("reports.reasons.#{reason}"), reason] }, {}, class: 'form-select'
+    div
+      = f.label :details, t('reports.details'), class: 'form-label'
+      = f.text_area :details, rows: 4, maxlength: 1000, class: 'form-control', placeholder: t('reports.details_placeholder')
+    = f.button class: 'btn btn-danger btn-lg w-100', data: { disable_with: t('helpers.disable_with') } do
+      span.fas.fa-flag aria-hidden='true'
+      = t('reports.submit')
