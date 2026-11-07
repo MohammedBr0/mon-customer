@@ -1,0 +1,58 @@
+# Render Blueprint for icare. Create via Dashboard > New > Blueprint.
+services:
+  - type: web
+    name: icare
+    runtime: docker
+    dockerfilePath: ./docker/icare/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_LOG_TO_STDOUT
+        value: "1"
+      - key: RAILS_SERVE_STATIC_FILES
+        value: "true"
+      - key: RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR
+        value: "1.3"
+      - key: NEW_RELIC_APP_NAME
+        value: icare
+      - key: DATABASE_URL
+        fromDatabase:
+          name: icare-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: icare-redis
+          property: connectionString
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: DEVISE_SECRET_KEY
+        generateValue: true
+      - key: DEVISE_PEPPER
+        generateValue: true
+      # Public hostname without scheme, e.g. icare.onrender.com
+      - key: APP_BASE_URL
+        sync: false
+      - key: AUTH0_DOMAIN
+        sync: false
+      - key: AUTH0_CLIENT_ID
+        sync: false
+      - key: AUTH0_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+
+  - type: keyvalue
+    name: icare-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  - name: icare-db
+    plan: free
+    databaseName: icare_production
+    ipAllowList: []
