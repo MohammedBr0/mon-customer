@@ -1,4 +1,4 @@
-# Render Blueprint for icare. Create via Dashboard > New > Blueprint.
+# Render Blueprint for icare (database lives on Neon). Create via Dashboard > New > Blueprint.
 services:
   - type: web
     name: icare
@@ -18,10 +18,9 @@ services:
         value: "1.3"
       - key: NEW_RELIC_APP_NAME
         value: icare
+      # Neon Postgres (PostGIS enabled), direct (non-pooler) connection string
       - key: DATABASE_URL
-        fromDatabase:
-          name: icare-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           type: keyvalue
@@ -50,9 +49,3 @@ services:
     plan: free
     ipAllowList: []
     maxmemoryPolicy: allkeys-lru
-
-databases:
-  - name: icare-db
-    plan: free
-    databaseName: icare_production
-    ipAllowList: []
