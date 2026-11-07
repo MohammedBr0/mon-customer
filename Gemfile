@@ -15,7 +15,7 @@ gem 'bootsnap', '~> 1.18', require: false
 gem 'client_side_validations', '~> 22.3'
 gem 'client_side_validations-simple_form', '~> 16.0'
 gem 'devise', '~> 4.9'
-gem 'friendly_id', '~> 5.5'
+gem 'friendly_id', '~> 5.7'
 gem 'http_accept_language', '~> 2.1'
 gem 'i18n-js', '~> 4.2'
 gem 'inline_svg', '~> 1.10'
