@@ -32,6 +32,5 @@ html lang=I18n.locale.to_s data-default-locale=I18n.default_locale data-currency
     main.app-main
       = yield
 
-    == render 'shared/footer' unless action_name == 'home' && !user_signed_in?
     = yield :sticky_cta
     == render 'shared/tabbar' if user_signed_in?

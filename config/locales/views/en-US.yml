@@ -52,7 +52,7 @@ en-US:
       show_on_map: Show on map
     loading: Loading
 
-  meta_title: "Open Source Carpooling Platform"
+  meta_title: "Share the ride across Ethiopia"
   meta_description: "Share your itineraries, save money and earn friends."
 
   loading: Loading...
@@ -145,22 +145,16 @@ en-US:
       not_allowed: You don't have permissions to access this page.
 
   shared:
-    advertising:
-      enterprises: Looking for an Enterprise Carpooling solution?
-      contact_us_html: "Take a look at <strong><a href=\"https://www.companycarpool.com\" target=\"_blank\" rel=\"noopener\">Company Carpool</a></strong>"
     navbar:
       account_settings: Account Settings
       admin_users: Manage Users
       language: Language
       settings: Settings
       toggle_navigation: Toggle navigation
-    footer:
-      github_repository: 'GitHub repository'
 
   pages:
     home:
       tagline: "Street to share, money to save."
-      os_carpooling_platform: "Open Source Carpooling Platform"
       learn_more: "Learn more"
       what_is_appname: "What is %{appname}?"
       main_features: "Main Features"
@@ -174,9 +168,6 @@ en-US:
       thats_easy_content: "The simplicity of Google Maps and the wizard process allow anyone to share a path in a few minutes."
       help_environment_title: "Eco-friendly"
       help_environment_content: "Less cars, less traffic, less stress and new companions of adventures! Make your travel more enjoyable and help the environment at the same time."
-      open_source_title: "Open Source"
-      open_source_content_html: "The %{source_code_link} of %{appname} is available to everyone on GitHub, the world's largest open source community."
-      source_code: "source code"
       signin_terms_html: "By clicking \"Sign In\", you agree to %{terms_link} of %{appname} and that you have read and understand our %{privacy_link}."
       join_us_today: "Join us today!"
     privacy:

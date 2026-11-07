@@ -33,9 +33,6 @@ am-ET:
     profile: መገለጫ
     find_ride: ጉዞ ፈልግ
     offer_ride: ጉዞ አቅርብ
-  footer:
-    open_source: ክፍት ምንጭ የጉዞ መጋራት
-    source: የምንጭ ኮድ
   templates:
     itineraries:
       per_seat: መቀመጫ
@@ -78,6 +75,8 @@ am-ET:
       vehicle_information: የተሽከርካሪ መረጃ
       vehicle_intro: ተሳፋሪዎች ከመያዛቸው በፊት እነዚህን ዝርዝሮች ያያሉ።
       fuel_cost_per_km: የነዳጅ ወጪ በኪሎ ሜትር
+      delete_account_hint: መለያዎን ሲሰርዙ መገለጫዎ፣ ጉዞዎችዎና ቦታ ማስያዣዎችዎ ለዘላለም ይወገዳሉ።
+      delete_account_confirm: መለያዎ ለዘላለም ይሰረዝ? ይህ ሊመለስ አይችልም።
       application_settings: የመተግበሪያ ቅንብሮች
       send_email_at_address: ኢሜይሎች የሚላኩት ወደዚህ አድራሻ ነው፦
   itineraries:

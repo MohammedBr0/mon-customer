@@ -20,6 +20,12 @@ header.app-bar.main-navbar
               = link_to t('.account_settings'), :settings, class: 'dropdown-item'
               = link_to t('bookings.title'), bookings_path, class: 'dropdown-item'
               = link_to t('alerts.title'), ride_alerts_path, class: 'dropdown-item'
+              .dropdown-divider
+              = link_to t('about'), :about, class: 'dropdown-item'
+              = link_to t('how_it_works'), :how_it_works, class: 'dropdown-item'
+              = link_to Feedback.model_name.human(count: :lot), feedbacks_path, class: 'dropdown-item'
+              = link_to t('terms'), :terms, class: 'dropdown-item'
+              = link_to t('privacy'), :privacy, class: 'dropdown-item'
               - if current_user.staff?
                 .dropdown-divider
                 = link_to t('admin_extra.dashboard'), admin_root_path, class: 'dropdown-item'
@@ -37,5 +43,10 @@ header.app-bar.main-navbar
             .dropdown-menu.dropdown-menu-end aria-labelledby='main-navbar-lang-dropdown'
               - (I18n.available_locales - [I18n.locale]).each do |locale|
                 = link_to t('lang_native_name', locale: locale), url_for(locale: locale), class: 'dropdown-item'
+              .dropdown-divider
+              = link_to t('about'), :about, class: 'dropdown-item'
+              = link_to t('how_it_works'), :how_it_works, class: 'dropdown-item'
+              = link_to t('terms'), :terms, class: 'dropdown-item'
+              = link_to t('privacy'), :privacy, class: 'dropdown-item'
           = button_to user_neon_omniauth_authorize_path, form_class: 'd-inline-block', class: 'btn btn-primary btn-sm' do
             = t('login')

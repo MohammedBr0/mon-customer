@@ -7,9 +7,6 @@ en-US:
     profile: Profile
     find_ride: Find a ride
     offer_ride: Offer a ride
-  footer:
-    open_source: Open-source carpooling
-    source: Source code
   templates:
     itineraries:
       per_seat: seat
@@ -63,6 +60,8 @@ en-US:
       phone_hint: "Shared only with confirmed riders or drivers, for example 0911 22 33 44."
       vehicle_intro: Passengers see these details before they book.
       fuel_cost_per_km: Fuel cost per km
+      delete_account_hint: Deleting your account removes your profile, trips and bookings for good.
+      delete_account_confirm: Delete your account for good? This cannot be undone.
   admin_extra:
     platform_settings: Fee & payments
     vehicle_fields: Vehicle fields

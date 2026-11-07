@@ -18,6 +18,7 @@ RSpec.describe 'Users' do
 
     login_via_neon
 
+    visit settings_path
     click_on t('delete_account')
 
     expect(page).to have_current_path root_path

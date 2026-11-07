@@ -52,8 +52,8 @@ it-IT:
       show_on_map: Mostra sulla mappa
     loading: Caricamento...
 
-  meta_title: "Piattaforma Open Source di Carpooling"
-  meta_description: "%{appname} è una piattaforma open source per il carpooling. Condividi i tuoi itinerari, risparmia soldi e guadagna amici."
+  meta_title: "Condividi il viaggio in Etiopia"
+  meta_description: "%{appname}: condividi i tuoi itinerari, risparmia soldi e conosci nuovi compagni di viaggio."
 
   loading: Caricamento...
   login: Accedi
@@ -145,22 +145,16 @@ it-IT:
       not_allowed: Non hai i permessi per accedere a questa pagina
 
   shared:
-    advertising:
-      enterprises: Stai cercando un sistema di Carpooling per la tua azienda?
-      contact_us_html: "Dai uno sguardo a <strong><a href=\"https://www.companycarpool.com/it\" target=\"_blank\" rel=\"noopener\">Company Carpool</a></strong>"
     navbar:
       account_settings: Impostazioni account
       admin_users: Gestione utenti
       language: Lingua
       settings: Impostazioni
       toggle_navigation: Menu di navigazione
-    footer:
-      github_repository: 'Repository GitHub'
 
   pages:
     home:
       tagline: "Condividi l'asfalto e risparmia."
-      os_carpooling_platform: "Piattaforma Open Source di Carpooling"
       learn_more: "Continua a leggere"
       what_is_appname: "Cos'è %{appname}?"
       main_features: "Caratteristiche Principali"
@@ -174,9 +168,6 @@ it-IT:
       thats_easy_content: "La familiarità di Google Maps e il processo di creazione guidata permettono a chiunque di condividere un percorso in pochi minuti."
       help_environment_title: "Ecosostenibile"
       help_environment_content: "Meno auto, meno traffico, meno stress e nuovi compagni di avventure! Rendi più piacevoli i tuoi spostamenti e nel contempo aiuti l'ambiente."
-      open_source_title: "Open Source"
-      open_source_content_html: "Il %{source_code_link} di %{appname} è a disposizione di tutti su GitHub, la più vasta comunità open source al mondo."
-      source_code: "codice sorgente"
       signin_terms_html: "Cliccando su \"Accedi\", accetti le %{terms_link} di %{appname} e confermi di aver letto e compreso la nostra %{privacy_link}."
       join_us_today: "Registrati adesso!"
     privacy:
