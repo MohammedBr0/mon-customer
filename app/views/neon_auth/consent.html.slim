@@ -1,45 +1,40 @@
-doctype html
-html lang=I18n.locale.to_s
-  head
-    meta charset='utf-8'
-    meta name='viewport' content='width=device-width, initial-scale=1'
-    title = "#{APP_CONFIG.app_name} - Authorize"
-    = stylesheet_pack_tag 'application', media: 'all'
-  body.bg-light
-    .container
-      .row.justify-content-center.pt-5
-        .col-12.col-md-6.col-lg-4
-          h1.h3.mb-4.text-center = APP_CONFIG.app_name
-          #neon-auth-consent.card.card-body data-issuer=APP_CONFIG.neon_auth.issuer
-            p Allow this application to access your name, email address and profile picture?
-            .alert.alert-danger.d-none role='alert' data-role='error'
-            button.btn.btn-primary.w-100 type='button' data-accept='true' Allow
-            button.btn.btn-link.w-100.mt-2 type='button' data-accept='false' Deny
-    javascript:
-      (function () {
-        var root = document.getElementById('neon-auth-consent');
-        var issuer = root.dataset.issuer;
-        var errorBox = root.querySelector('[data-role=error]');
+- content_for :title, 'Authorize'
 
-        function respond(accept) {
-          fetch(issuer + '/oauth2/consent', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accept: accept, oauth_query: window.location.search.slice(1) })
-          })
-            .then(function (res) {
-              if (!res.ok) { throw new Error('Authorization failed (' + res.status + ')'); }
-              return res.json();
-            })
-            .then(function (data) { window.location.assign(data.url); })
-            .catch(function (error) {
-              errorBox.textContent = error.message;
-              errorBox.classList.remove('d-none');
-            });
-        }
+#neon-auth-consent.na-card data-issuer=APP_CONFIG.neon_auth.issuer
+  h1 Allow access?
+  p.na-sub = "#{APP_CONFIG.app_name} would like to use your name, email address and profile picture."
+  .alert.alert-danger.d-none.py-2 role='alert' aria-live='polite' data-role='error'
+  button.na-btn type='button' data-accept='true' Allow
+  button.na-btn.na-btn-secondary type='button' data-accept='false' Deny
 
-        Array.prototype.forEach.call(root.querySelectorAll('[data-accept]'), function (button) {
-          button.addEventListener('click', function () { respond(button.dataset.accept === 'true'); });
+javascript:
+  (function () {
+    var root = document.getElementById('neon-auth-consent');
+    var issuer = root.dataset.issuer;
+    var errorBox = root.querySelector('[data-role=error]');
+    var buttons = root.querySelectorAll('[data-accept]');
+
+    function respond(accept) {
+      Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
+      fetch(issuer + '/oauth2/consent', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accept: accept, oauth_query: window.location.search.slice(1) })
+      })
+        .then(function (res) {
+          if (!res.ok) { throw new Error('Authorization failed (' + res.status + ').'); }
+          return res.json();
+        })
+        .then(function (data) { window.location.assign(data.url); })
+        .catch(function (error) {
+          errorBox.textContent = error.message;
+          errorBox.classList.remove('d-none');
+          Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
         });
-      })();
+    }
+
+    Array.prototype.forEach.call(buttons, function (button) {
+      button.addEventListener('click', function () { respond(button.dataset.accept === 'true'); });
+    });
+  })();

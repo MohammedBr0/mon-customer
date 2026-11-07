@@ -1,126 +1,125 @@
-doctype html
-html lang=I18n.locale.to_s
-  head
-    meta charset='utf-8'
-    meta name='viewport' content='width=device-width, initial-scale=1'
-    title = "#{APP_CONFIG.app_name} - #{t('login')}"
-    = stylesheet_pack_tag 'application', media: 'all'
-  body.bg-light
-    .container
-      .row.justify-content-center.pt-5
-        .col-12.col-md-6.col-lg-4
-          h1.h3.mb-4.text-center = APP_CONFIG.app_name
-          #neon-auth-login data-issuer=APP_CONFIG.neon_auth.issuer data-start-path=user_neon_omniauth_authorize_path
-            .alert.alert-danger.d-none role='alert' data-role='error'
-            form.card.card-body data-role='form' novalidate=true
-              .mb-3.d-none data-role='name-group'
-                label.form-label for='neon-name' Name
-                input#neon-name.form-control type='text' name='name' autocomplete='name'
-              .mb-3
-                label.form-label for='neon-email' Email
-                input#neon-email.form-control type='email' name='email' required=true autocomplete='email'
-              .mb-3
-                label.form-label for='neon-password' Password
-                input#neon-password.form-control type='password' name='password' required=true minlength=8 autocomplete='current-password'
-              button.btn.btn-primary.w-100 type='submit' data-role='submit' Sign in
-              button.btn.btn-link.w-100.mt-2 type='button' data-role='toggle' Create an account
-    javascript:
-      (function () {
-        var root = document.getElementById('neon-auth-login');
-        var issuer = root.dataset.issuer;
-        var oauthQuery = window.location.search.slice(1);
-        var form = root.querySelector('[data-role=form]');
-        var errorBox = root.querySelector('[data-role=error]');
-        var nameGroup = root.querySelector('[data-role=name-group]');
-        var submit = root.querySelector('[data-role=submit]');
-        var toggle = root.querySelector('[data-role=toggle]');
-        var signUp = false;
+- content_for :title, t('login')
 
-        // Opened directly rather than redirected by Neon Auth: start the flow from the app.
-        if (!oauthQuery) {
-          var start = document.createElement('form');
-          start.method = 'post';
-          start.action = root.dataset.startPath;
-          var token = document.querySelector('meta[name=csrf-token]');
-          if (token) {
-            var input = document.createElement('input');
-            input.type = 'hidden'; input.name = 'authenticity_token'; input.value = token.content;
-            start.appendChild(input);
-          }
-          document.body.appendChild(start);
-          start.submit();
-          return;
-        }
+#neon-auth-login.na-card data-issuer=APP_CONFIG.neon_auth.issuer data-start-path=user_neon_omniauth_authorize_path
+  h1 data-role='heading' Welcome back
+  p.na-sub data-role='subheading' Sign in to share and find rides.
+  .alert.alert-danger.d-none.py-2 role='alert' aria-live='polite' data-role='error'
+  form data-role='form' novalidate=true
+    .mb-3.d-none data-role='name-group'
+      label for='neon-name' Name
+      input#neon-name.form-control type='text' name='name' autocomplete='name' placeholder='Your name'
+    .mb-3
+      label for='neon-email' Email
+      input#neon-email.form-control type='email' name='email' required=true autocomplete='email' placeholder='you@example.com' autofocus=true
+    .mb-4
+      label for='neon-password' Password
+      input#neon-password.form-control type='password' name='password' required=true minlength=8 autocomplete='current-password' placeholder='At least 8 characters'
+    button.na-btn type='submit' data-role='submit' Sign in
+  .na-switch
+    span data-role='switch-text' New to #{APP_CONFIG.app_name}?
+    '
+    button type='button' data-role='toggle' Create an account
 
-        function showError(message) {
-          errorBox.textContent = message;
-          errorBox.classList.remove('d-none');
-        }
+javascript:
+  (function () {
+    var root = document.getElementById('neon-auth-login');
+    var issuer = root.dataset.issuer;
+    var oauthQuery = window.location.search.slice(1);
+    var q = function (role) { return root.querySelector('[data-role=' + role + ']'); };
+    var form = q('form'), errorBox = q('error'), nameGroup = q('name-group');
+    var submit = q('submit'), toggle = q('toggle');
+    var signUp = false;
 
-        function post(path, body) {
-          return fetch(issuer + path, {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+    // Opened directly rather than redirected by Neon Auth: start the flow from the app.
+    if (!oauthQuery) {
+      var start = document.createElement('form');
+      start.method = 'post';
+      start.action = root.dataset.startPath;
+      var token = document.querySelector('meta[name=csrf-token]');
+      if (token) {
+        var input = document.createElement('input');
+        input.type = 'hidden'; input.name = 'authenticity_token'; input.value = token.content;
+        start.appendChild(input);
+      }
+      document.body.appendChild(start);
+      start.submit();
+      return;
+    }
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.classList.remove('d-none');
+    }
+
+    function post(path, body) {
+      return fetch(issuer + path, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    }
+
+    function parse(res) { return res.json().catch(function () { return {}; }); }
+
+    // Resumes the authorization request; navigates to the client's redirect URI or the consent page.
+    function resume() {
+      return post('/oauth2/continue', { selected: true, oauth_query: oauthQuery })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (data) {
+          if (data && data.url) { window.location.assign(data.url); return true; }
+          return false;
+        });
+    }
+
+    function signIn(email, password) {
+      return post('/sign-in/email', { email: email, password: password, oauth_query: oauthQuery })
+        .then(function (res) {
+          return parse(res).then(function (data) {
+            if (!res.ok) { throw new Error(data.message || 'Invalid email or password.'); }
+            if (data && data.url) { window.location.assign(data.url); return; }
+            return resume().then(function (done) {
+              if (!done) { throw new Error('Signed in, but could not continue. Please try again.'); }
+            });
           });
-        }
-
-        // Resumes the authorization request; navigates to the client's redirect URI or the consent page.
-        function resume() {
-          return post('/oauth2/continue', { selected: true, oauth_query: oauthQuery })
-            .then(function (res) { return res.ok ? res.json() : null; })
-            .then(function (data) {
-              if (data && data.url) { window.location.assign(data.url); return true; }
-              return false;
-            });
-        }
-
-        function signIn(email, password) {
-          return post('/sign-in/email', { email: email, password: password, oauth_query: oauthQuery })
-            .then(function (res) {
-              return res.json().catch(function () { return {}; }).then(function (data) {
-                if (!res.ok) { throw new Error(data.message || 'Invalid email or password'); }
-                if (data && data.url) { window.location.assign(data.url); return; }
-                return resume().then(function (done) {
-                  if (!done) { throw new Error('Signed in, but could not continue. Please try again.'); }
-                });
-              });
-            });
-        }
-
-        function signUpThenIn(name, email, password) {
-          return post('/sign-up/email', { name: name, email: email, password: password })
-            .then(function (res) {
-              return res.json().catch(function () { return {}; }).then(function (data) {
-                if (!res.ok) { throw new Error(data.message || 'Could not create the account'); }
-                return signIn(email, password);
-              });
-            });
-        }
-
-        toggle.addEventListener('click', function () {
-          signUp = !signUp;
-          nameGroup.classList.toggle('d-none', !signUp);
-          root.querySelector('#neon-name').required = signUp;
-          root.querySelector('#neon-password').autocomplete = signUp ? 'new-password' : 'current-password';
-          submit.textContent = signUp ? 'Create account' : 'Sign in';
-          toggle.textContent = signUp ? 'I already have an account' : 'Create an account';
-          errorBox.classList.add('d-none');
         });
+    }
 
-        form.addEventListener('submit', function (event) {
-          event.preventDefault();
-          errorBox.classList.add('d-none');
-          var data = new FormData(form);
-          submit.disabled = true;
-          var work = signUp
-            ? signUpThenIn(data.get('name'), data.get('email'), data.get('password'))
-            : signIn(data.get('email'), data.get('password'));
-          work.catch(function (error) { showError(error.message); })
-              .then(function () { submit.disabled = false; });
+    function signUpThenIn(name, email, password) {
+      return post('/sign-up/email', { name: name, email: email, password: password })
+        .then(function (res) {
+          return parse(res).then(function (data) {
+            if (!res.ok) { throw new Error(data.message || 'Could not create the account.'); }
+            return signIn(email, password);
+          });
         });
+    }
 
-        // Already signed in to Neon Auth: skip the form.
-        resume();
-      })();
+    toggle.addEventListener('click', function () {
+      signUp = !signUp;
+      nameGroup.classList.toggle('d-none', !signUp);
+      root.querySelector('#neon-name').required = signUp;
+      root.querySelector('#neon-password').autocomplete = signUp ? 'new-password' : 'current-password';
+      q('heading').textContent = signUp ? 'Create your account' : 'Welcome back';
+      q('subheading').textContent = signUp ? 'It only takes a minute.' : 'Sign in to share and find rides.';
+      submit.textContent = signUp ? 'Create account' : 'Sign in';
+      q('switch-text').textContent = signUp ? 'Already have an account?' : 'New to #{APP_CONFIG.app_name}?';
+      toggle.textContent = signUp ? 'Sign in' : 'Create an account';
+      errorBox.classList.add('d-none');
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      errorBox.classList.add('d-none');
+      var data = new FormData(form);
+      submit.disabled = true;
+      var work = signUp
+        ? signUpThenIn(data.get('name'), data.get('email'), data.get('password'))
+        : signIn(data.get('email'), data.get('password'));
+      work.catch(function (error) { showError(error.message); })
+          .then(function () { submit.disabled = false; });
+    });
+
+    // Already signed in to Neon Auth: skip the form.
+    resume();
+  })();

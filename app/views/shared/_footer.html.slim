@@ -7,8 +7,7 @@ footer.main-footer
       - if user_signed_in?
         li = link_to t('about'), :about
         li = link_to t('how_it_works'), :how_it_works
-        - unless APP_CONFIG.demo_mode
-          li = link_to t('terms'), :terms
+        li = link_to t('terms'), :terms
       li
         span.fab.fa-github<> aria-hidden='true'
         span.visually-hidden = t('.github_repository')
@@ -17,12 +16,7 @@ footer.main-footer
         li
           span.fa.fa-bullhorn<> aria-hidden='true'
           = link_to Feedback.model_name.human(count: :lot), feedbacks_url
-        - if APP_CONFIG.demo_mode
-          li
-            = link_to user_path(current_user), method: :delete, class: 'text-danger', data: { confirm: t('helpers.links.confirm') } do
-              span.fa.fa-times<> aria-hidden='true'
-              = t('delete_account')
-    - if APP_CONFIG.demo_mode
-      p.demo-app
-        span.fa.fa-exclamation-triangle<> aria-hidden='true'
-        = t('demo_mode')
+        li
+          = link_to user_path(current_user), method: :delete, class: 'text-danger', data: { confirm: t('helpers.links.confirm') } do
+            span.fa.fa-times<> aria-hidden='true'
+            = t('delete_account')

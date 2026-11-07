@@ -64,7 +64,6 @@ en-US:
   how_it_works: How it works
   privacy: Privacy Policy
   terms: Terms
-  demo_terms: Demo Terms
 
   former_user: A former user
 
@@ -74,7 +73,6 @@ en-US:
   close: Close
 
   delete_account: Delete account
-  demo_mode: This is a demo application
 
   user_mailer:
     activation_needed_email:
@@ -180,14 +178,11 @@ en-US:
       open_source_content_html: "The %{source_code_link} of %{appname} is available to everyone on GitHub, the world's largest open source community."
       source_code: "source code"
       signin_terms_html: "By clicking \"Sign In\", you agree to %{terms_link} of %{appname} and that you have read and understand our %{privacy_link}."
-      demo_mode_html: "This is a demo application. By clicking on \"Sign In\" you agree to our %{demo_terms_link}."
       join_us_today: "Join us today!"
     privacy:
       title: Privacy Policy
     terms:
       title: Terms of Service
-    demo_terms:
-      title: Terms of Service (Demo)
 
   admin:
     users:

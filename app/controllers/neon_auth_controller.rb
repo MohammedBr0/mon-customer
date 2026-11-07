@@ -6,7 +6,7 @@
 class NeonAuthController < ApplicationController
   skip_before_action :authenticate_user!
 
-  layout false
+  layout 'neon_auth'
 
   def login; end
 

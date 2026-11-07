@@ -11,7 +11,6 @@ SimpleConfig.for :application do
   set :repository_url, 'https://github.com/diowa/icare'
 
   set :advertising, true
-  set :demo_mode, true
   set :base_url, 'localhost:3000'
   set :single_process_mode, true
 

@@ -64,7 +64,6 @@ it-IT:
   how_it_works: Come funziona
   privacy: "Normativa sull'utilizzo dei dati"
   terms: "Condizioni d'uso"
-  demo_terms: "Condizioni d'uso della versione dimostrativa"
 
   former_user: Un ex utente
 
@@ -74,7 +73,6 @@ it-IT:
   close: Chiudi
 
   delete_account: Elimina profilo
-  demo_mode: Questa è un'applicazione dimostrativa
 
   user_mailer:
     activation_needed_email:
@@ -180,14 +178,11 @@ it-IT:
       open_source_content_html: "Il %{source_code_link} di %{appname} è a disposizione di tutti su GitHub, la più vasta comunità open source al mondo."
       source_code: "codice sorgente"
       signin_terms_html: "Cliccando su \"Accedi\", accetti le %{terms_link} di %{appname} e confermi di aver letto e compreso la nostra %{privacy_link}."
-      demo_mode_html: "Questa è un'applicazione dimostrativa. Cliccando su \"Accedi\", accetti le nostre %{demo_terms_link}."
       join_us_today: "Registrati adesso!"
     privacy:
       title: Normativa sull'utilizzo dei dati
     terms:
       title: Condizioni d'uso
-    demo_terms:
-      title: Condizioni d'uso della versione dimostrativa
 
   admin:
     users:

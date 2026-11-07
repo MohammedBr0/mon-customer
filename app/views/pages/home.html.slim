@@ -5,11 +5,7 @@
 == render 'shared/flash_messages'
 .splashscreen
   .splashscreen__container
-    h2.mb-2
-      = APP_CONFIG.app_name
-      - if APP_CONFIG.demo_mode
-        '
-        small demo
+    h2.mb-2 = APP_CONFIG.app_name
     h1.mb-4 = t('.os_carpooling_platform')
 
     == render 'login_button'

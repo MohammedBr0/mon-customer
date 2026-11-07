@@ -45,6 +45,5 @@ Rails.application.routes.draw do
   get :how_it_works, to: 'pages#how_it_works'
   get :privacy, to: 'pages#privacy'
   get :terms, to: 'pages#terms'
-  get :demo_terms, to: 'pages#demo_terms'
   post :report_uri, to: 'pages#report_uri'
 end
