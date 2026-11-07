@@ -1,0 +1,18 @@
+- title t('.title')
+.container
+  == render 'shared/flash_messages'
+  ul.nav.nav-pills.nav-fill.mt-2.mb-2
+    li.nav-item
+      = link_to itineraries_path do
+        span.fas.fa-search<>
+        = t('.search_itineraries')
+    li.nav-item
+      = link_to new_itinerary_path do
+        span.fas.fa-plus<>
+        = t('.new_itinerary')
+    li.nav-item
+      = link_to itineraries_user_path(current_user) do
+        span.fas.fa-route<>
+        = t('.your_itineraries')
+  h3 = t('.latest_itineraries')
+  == render 'itineraries/table', itineraries: @latest_itineraries, edit: false

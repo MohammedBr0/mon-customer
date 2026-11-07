@@ -1,0 +1,33 @@
+// stylelint-disable selector-no-qualifying-type
+select.date-time {
+  display: inline-block;
+  width: auto;
+}
+
+input[type="text"] {
+  @include text-truncate();
+}
+// stylelint-enable selector-no-qualifying-type
+
+.collapse-link {
+  display: inline-block;
+  margin-bottom: $spacer;
+
+  .icon--collapse {
+    transition: all .25s ease-in-out;
+  }
+
+  &.collapsed {
+    .icon--collapse {
+      transform: rotateZ(-90deg);
+    }
+  }
+}
+
+.form-group {
+  @extend .mb-3;
+}
+
+.form-control--short {
+  width: 200px;
+}

@@ -1,0 +1,11 @@
+- title t('.title')
+.container
+  .row
+    .col-sm-4
+      h3 = yield :title
+      == render 'search'
+      #map-error-j.d-none-soft.alert.alert-danger
+    .col-sm-8
+      .ratio.ratio-16x9.google-maps
+        #index-itineraries-map *map_config_attributes
+      #itineraries-thumbs-j.row

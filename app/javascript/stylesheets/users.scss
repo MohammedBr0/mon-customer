@@ -1,0 +1,19 @@
+.user-blockquote {
+  position: relative;
+  padding: 0;
+  border: 0;
+}
+
+.img--user-profile {
+  @extend .img-fluid;
+  @extend .mb-2;
+
+  max-width: 50%;
+  border-radius: $border-radius;
+}
+
+@include media-breakpoint-up(sm) {
+  .img--user-profile {
+    max-width: 100%;
+  }
+}

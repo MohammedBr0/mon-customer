@@ -1,0 +1,6 @@
+- content_for :head do
+  meta property='og:url' content=itinerary_url(itinerary)
+  meta property='og:site_name' content=APP_CONFIG.app_name
+  meta property='og:title' content=itinerary.title
+  meta property='og:image' content=itinerary.static_map
+  meta property='og:description' content=itinerary.description

@@ -1,0 +1,51 @@
+@import "stylesheets/bootstrap";
+@import "stylesheets/buttons";
+@import "stylesheets/footer";
+@import "stylesheets/navbar";
+@import "stylesheets/turbolinks-progress-bar";
+@import "stylesheets/home";
+@import "stylesheets/conversations";
+@import "stylesheets/forms";
+@import "stylesheets/itineraries";
+@import "stylesheets/maps";
+@import "stylesheets/notifications";
+@import "stylesheets/tags";
+@import "stylesheets/users";
+
+body {
+  padding-top: 4.5rem;
+}
+
+.d-none-soft {
+  display: none;
+}
+
+.page-header {
+  @extend .pb-2;
+  @extend .mt-4;
+  @extend .mb-2;
+}
+
+.text-pink {
+  color: $pink;
+}
+
+.diowa-logo {
+  position: relative;
+  top: -1px;
+  display: inline-block;
+  width: 90px;
+  height: 28px;
+  line-height: 1px;
+  vertical-align: middle;
+}
+
+.pre-line {
+  word-break: break-all;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.mock {
+  opacity: .6;
+}

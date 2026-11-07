@@ -1,0 +1,41 @@
+- title Feedback.model_name.human(count: :lot)
+.container
+  == render 'shared/flash_messages'
+  .page-header
+    h1 = yield :title
+    = link_to t('helpers.links.new'), new_feedback_path, class: 'btn btn-primary me-2'
+    - if params[:hide_fixed]
+      = link_to t('.show_fixed'), feedbacks_path, class: 'btn btn-secondary'
+    - else
+      = link_to t('.hide_fixed'), feedbacks_path(hide_fixed: true), class: 'btn btn-secondary'
+  .table-responsive
+    table.table
+      thead
+        tr
+          th = Feedback.human_attribute_name(:category)
+          th = Feedback.human_attribute_name(:status)
+          th = User.model_name.human
+          th = Feedback.human_attribute_name(:message)
+          th = Feedback.human_attribute_name(:updated_at)
+          th = t '.actions', default: t('helpers.actions')
+      tbody
+        - @feedbacks.each do |feedback|
+          tr.align-middle class=('table-success' if feedback.fixed?)
+            td = feedback.category.upcase
+            td = feedback.status.upcase
+            td
+              - if feedback.user.present?
+                = link_to feedback.user_name, user_path(feedback.user)
+              - else
+                span.text-body-secondary = t('former_user')
+            td = link_to feedback.message.truncate(100), feedback_path(feedback)
+            td = l feedback.updated_at, format: :long
+            td
+              - if current_user == feedback.user || current_user.admin?
+                = link_to edit_feedback_path(feedback), class: 'btn btn-sm btn-secondary me-2' do
+                  span.fas.fa-pencil-alt<>
+                  = t('helpers.links.edit')
+                = link_to feedback_path(feedback), method: :delete, data: { confirm: t('helpers.links.confirm') }, class: 'btn btn-sm btn-danger' do
+                  span.fas.fa-times<>
+                  = t('helpers.links.destroy')
+  == paginate @feedbacks

@@ -1,0 +1,39 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: "tuesday"
+  - package-ecosystem: bundler
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: "tuesday"
+    open-pull-requests-limit: 10
+    groups:
+      rubocop:
+        patterns:
+          - "rubocop*"
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: "saturday"
+    open-pull-requests-limit: 10
+    groups:
+      babel:
+        patterns:
+          - "@babel/*"
+      fontawesome:
+        patterns:
+          - "@fortawesome/*"
+      rails:
+        patterns:
+          - "@rails/*"
+      webpack:
+        patterns:
+          - "webpack*"
+    ignore:
+      - dependency-name: eslint
+        versions: ">= 9" # FIXME: diowa/ruby3-rails7-bootstrap-heroku#843

@@ -1,0 +1,7 @@
+.btn {
+  transition: .25s all ease-in-out;
+}
+
+.btn-pink {
+  @include button-variant($pink, darken($pink, 5%));
+}
