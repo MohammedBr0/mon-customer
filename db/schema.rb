@@ -10,19 +10,36 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
-
+ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
+
+  create_table "bookings", force: :cascade do |t|
+    t.bigint "itinerary_id", null: false
+    t.bigint "passenger_id", null: false
+    t.integer "seats", default: 1, null: false
+    t.string "status", default: "pending", null: false
+    t.text "note"
+    t.datetime "decided_at"
+    t.datetime "cancelled_at"
+    t.bigint "cancelled_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
+    t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
+    t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
+    t.index ["passenger_id"], name: "index_bookings_on_passenger_id"
+    t.index ["status"], name: "index_bookings_on_status"
+  end
 
   create_table "conversations", force: :cascade do |t|
     t.string "conversable_type"
     t.bigint "conversable_id"
     t.bigint "sender_id"
     t.bigint "receiver_id"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["conversable_type", "conversable_id"], name: "index_conversations_on_conversable_type_and_conversable_id"
     t.index ["receiver_id"], name: "index_conversations_on_receiver_id"
     t.index ["sender_id", "receiver_id", "conversable_type", "conversable_id"], name: "unique_index_for_sender", unique: true
@@ -35,8 +52,8 @@ ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
     t.string "url"
     t.string "status", default: "normal"
     t.bigint "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
     t.index ["user_id"], name: "index_feedbacks_on_user_id"
   end
 
@@ -51,8 +68,8 @@ ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
     t.boolean "pets_allowed", default: false
     t.boolean "round_trip", default: false
     t.boolean "smoking_allowed", default: false
-    t.datetime "leave_date"
-    t.datetime "return_date"
+    t.datetime "leave_date", precision: nil
+    t.datetime "return_date", precision: nil
     t.string "driver_gender"
     t.boolean "verified", default: false
     t.string "start_address"
@@ -65,8 +82,10 @@ ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
     t.boolean "avoid_highways", default: false
     t.boolean "avoid_tolls", default: false
     t.bigint "user_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.datetime "cancelled_at"
+    t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
     t.index ["user_id"], name: "index_itineraries_on_user_id"
   end
@@ -75,11 +94,25 @@ ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
     t.bigint "conversation_id"
     t.bigint "sender_id"
     t.text "body"
-    t.datetime "read_at"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
+    t.datetime "read_at", precision: nil
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
+  end
+
+  create_table "reviews", force: :cascade do |t|
+    t.bigint "booking_id", null: false
+    t.bigint "reviewer_id", null: false
+    t.bigint "reviewee_id", null: false
+    t.integer "rating", null: false
+    t.text "comment"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["booking_id", "reviewer_id"], name: "index_reviews_on_booking_id_and_reviewer_id", unique: true
+    t.index ["booking_id"], name: "index_reviews_on_booking_id"
+    t.index ["reviewee_id"], name: "index_reviews_on_reviewee_id"
+    t.index ["reviewer_id"], name: "index_reviews_on_reviewer_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -100,13 +133,23 @@ ActiveRecord::Schema[6.1].define(version: 2021_02_06_214754) do
     t.boolean "admin", default: false
     t.boolean "banned", default: false
     t.string "access_token"
-    t.datetime "access_token_expires_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "access_token_expires_at", precision: nil
+    t.datetime "created_at", precision: nil, null: false
+    t.datetime "updated_at", precision: nil, null: false
+    t.string "car_make"
+    t.string "car_model"
+    t.string "car_color"
+    t.string "car_plate"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
   end
 
+  add_foreign_key "bookings", "itineraries"
+  add_foreign_key "bookings", "users", column: "cancelled_by_id"
+  add_foreign_key "bookings", "users", column: "passenger_id"
   add_foreign_key "feedbacks", "users"
   add_foreign_key "itineraries", "users"
+  add_foreign_key "reviews", "bookings"
+  add_foreign_key "reviews", "users", column: "reviewee_id"
+  add_foreign_key "reviews", "users", column: "reviewer_id"
 end

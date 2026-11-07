@@ -1,0 +1,158 @@
+it-IT:
+  trip:
+    seats: Posti
+    seats_unlimited: Illimitati
+    seats_left: "%{available} su %{total} disponibili"
+    fully_booked: Al completo
+    price_per_seat: Prezzo a posto
+    vehicle: Veicolo
+    driver_rating: Valutazione del conducente
+    cancelled_banner: Questo viaggio è stato annullato dal conducente.
+    cancel_trip: Annulla viaggio
+    cancel_confirm: Annullare questo viaggio? Tutti i passeggeri verranno avvisati.
+    car_make: Marca
+    car_model: Modello
+    car_color: Colore
+    car_plate: Targa
+    car_plate_hint: Visibile solo ai passeggeri confermati.
+  bookings:
+    title: Prenotazioni
+    requests_title: Richieste di posti
+    requests_received: Richieste per i tuoi viaggi
+    my_bookings: Le tue prenotazioni
+    no_requests: Nessuna richiesta di posti per ora.
+    no_bookings: Non hai ancora prenotato nessun posto.
+    trip: Viaggio
+    driver: Conducente
+    passenger: Passeggero
+    seats: Posti
+    status: Stato
+    confirm: Conferma
+    decline: Rifiuta
+    cancel: Annulla
+    cancel_confirm: Annullare questa prenotazione?
+    your_booking: La tua prenotazione
+    seats_count:
+      one: "%{count} posto"
+      other: "%{count} posti"
+    request_title: Richiedi posti
+    request: Richiedi posti
+    note: Messaggio al conducente (facoltativo)
+    note_placeholder: "es. Ti aspetto in piazza"
+    statuses:
+      pending: In attesa
+      confirmed: Confermata
+      declined: Rifiutata
+      cancelled: Annullata
+  reviews:
+    title: Recensioni
+    summary:
+      one: "%{rating} (%{count} recensione)"
+      other: "%{rating} (%{count} recensioni)"
+    rate_driver: Valuta il conducente
+    rate_passenger: Valuta il passeggero
+    thanks: Grazie per la tua recensione.
+    new_title: "Valuta %{name}"
+    new_lead: "Com'è andato il viaggio %{trip}?"
+    rating: Valutazione
+    stars:
+      '1': 1 - Scarso
+      '2': 2 - Sufficiente
+      '3': 3 - Buono
+      '4': 4 - Molto buono
+      '5': 5 - Ottimo
+    comment: Commento (facoltativo)
+    comment_placeholder: Il viaggio è stato puntuale e piacevole?
+    submit: Invia recensione
+    cancel: Annulla
+  itineraries:
+    search:
+      seats: Posti necessari
+      sort: Ordina per
+      sort_date: Partenza più vicina
+      sort_price: Più economico a posto
+  admin_extra:
+    dashboard: Pannello amministrazione
+    itineraries: Viaggi
+    manage_users: Gestisci utenti
+    active: Attivo
+    stats:
+      users: Utenti
+      banned_users: Utenti bannati
+      itineraries: Viaggi
+      upcoming_itineraries: Viaggi in programma
+      cancelled_itineraries: Viaggi annullati
+      conversations: Conversazioni
+      reviews: Recensioni
+      average_rating: Valutazione media
+      bookings: Prenotazioni per stato
+  flash:
+    bookings:
+      created: La tua richiesta di posti è stata inviata al conducente.
+      confirmed: Prenotazione confermata. Il passeggero è stato avvisato.
+      declined: Prenotazione rifiutata. Il passeggero è stato avvisato.
+      cancelled: Prenotazione annullata.
+      invalid: Questa prenotazione non può più essere modificata.
+      not_enough_seats: Non ci sono abbastanza posti liberi per confermare questa prenotazione.
+    reviews:
+      created: Grazie, la tua recensione è stata pubblicata.
+      not_completed: Puoi recensire un viaggio solo dopo che si è svolto.
+      already_reviewed: Hai già recensito questo viaggio.
+    itineraries:
+      success:
+        cancel: Viaggio annullato. I passeggeri sono stati avvisati.
+    admin:
+      itineraries:
+        cancelled: Viaggio annullato.
+  activerecord:
+    errors:
+      models:
+        booking:
+          attributes:
+            base:
+              own_itinerary: Non puoi prenotare il tuo viaggio
+              itinerary_cancelled: Questo viaggio è stato annullato
+              itinerary_in_the_past: Questo viaggio è già partito
+              already_booked: Hai già una prenotazione su questo viaggio
+            seats:
+              not_enough_seats:
+                zero: Non ci sono più posti liberi
+                one: Resta solo %{count} posto libero
+                other: Restano solo %{count} posti liberi
+        review:
+          attributes:
+            base:
+              trip_not_completed: Il viaggio non si è ancora svolto
+              not_a_participant: Solo il conducente e i passeggeri di una prenotazione confermata possono recensirsi
+  mailers:
+    footer: Ricevi questa email perché hai un account su icare.
+    view_trip: Vedi il viaggio
+    find_another: Cerca un altro viaggio
+    booking:
+      requested:
+        subject: "%{passenger} chiede posti su %{trip}"
+        greeting: "Ciao %{name},"
+        body: "%{passenger} ha richiesto %{seats} posto/i sul tuo viaggio %{trip}. Apri il viaggio per confermare o rifiutare."
+      confirmed:
+        subject: "La tua prenotazione su %{trip} è confermata"
+        greeting: "Ciao %{name},"
+        body: "%{driver} ha confermato i tuoi %{seats} posto/i su %{trip}."
+      declined:
+        subject: "La tua prenotazione su %{trip} è stata rifiutata"
+        greeting: "Ciao %{name},"
+        body: "%{driver} non ha potuto accettare la tua richiesta per %{trip}. Puoi cercare un altro viaggio."
+      cancelled:
+        subject: "Prenotazione annullata su %{trip}"
+        greeting: "Ciao %{name},"
+        body: "%{by} ha annullato la prenotazione di %{seats} posto/i su %{trip}."
+    itinerary:
+      cancelled:
+        subject: "Viaggio annullato: %{trip}"
+        greeting: "Ciao %{name},"
+        body: "%{driver} ha annullato il viaggio %{trip}. Anche la tua prenotazione è stata annullata."
+    message:
+      new_message:
+        subject: "Nuovo messaggio da %{sender}"
+        greeting: "Ciao %{name},"
+        body: "%{sender} ti ha inviato un messaggio:"
+        reply: Rispondi

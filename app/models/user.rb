@@ -16,10 +16,16 @@ class User < ApplicationRecord
   has_many :feedbacks, dependent: :nullify
 
   has_many :itineraries, dependent: :destroy
+  has_many :bookings, foreign_key: :passenger_id, inverse_of: :passenger, dependent: :destroy
+  has_many :cancelled_bookings, class_name: 'Booking', foreign_key: :cancelled_by_id, inverse_of: :cancelled_by, dependent: :nullify
+  has_many :reviews_received, class_name: 'Review', foreign_key: :reviewee_id, inverse_of: :reviewee, dependent: :destroy
+  has_many :reviews_written, class_name: 'Review', foreign_key: :reviewer_id, inverse_of: :reviewer, dependent: :destroy
 
   has_many :conversations, ->(user) { unscope(:where).where(sender: user).or(where(receiver: user)) }, inverse_of: :sender, dependent: :destroy
 
   validates :gender, inclusion: GENDER, allow_blank: true
+  validates :car_make, :car_model, :car_color, length: { maximum: 40 }
+  validates :car_plate, length: { maximum: 12 }
   validates :time_zone, inclusion: ActiveSupport::TimeZone.all.map(&:name)
   validates :vehicle_avg_consumption, numericality: { greater_than: 0, less_than: 10 }, presence: true
 
@@ -37,6 +43,18 @@ class User < ApplicationRecord
 
   def to_s
     name || id.to_s
+  end
+
+  def average_rating
+    reviews_received.average(:rating)&.to_f&.round(1)
+  end
+
+  def reviews_count
+    reviews_received.count
+  end
+
+  def vehicle_description
+    [car_color, car_make, car_model].compact_blank.join(' ').presence
   end
 
   def unread_conversations_count

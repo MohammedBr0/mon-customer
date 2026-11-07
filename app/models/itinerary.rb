@@ -14,6 +14,10 @@ class Itinerary < ApplicationRecord
   end
 
   has_many :conversations, as: :conversable, dependent: :destroy
+  has_many :bookings, dependent: :destroy
+
+  scope :not_cancelled, -> { where(cancelled_at: nil) }
+  scope :upcoming, -> { where(leave_date: Time.current..) }
 
   belongs_to :user
   delegate :name, to: :user, prefix: true
@@ -39,6 +43,50 @@ class Itinerary < ApplicationRecord
 
   def title
     [start_address, end_address].join ' - '
+  end
+
+  def cancelled?
+    cancelled_at.present?
+  end
+
+  # A trip is in the past once its (first) departure has gone. Daily trips have no single departure.
+  def past?
+    !daily? && leave_date.present? && leave_date < Time.current
+  end
+
+  # Seats already promised to confirmed passengers.
+  def seats_taken
+    bookings.confirmed.sum(:seats)
+  end
+
+  # nil means the driver did not set a capacity, so there is no limit.
+  def seats_available
+    return if num_people.blank?
+
+    [num_people - seats_taken, 0].max
+  end
+
+  def full?
+    seats_available == 0
+  end
+
+  # Fuel and tolls are shared between the driver and the passengers.
+  def cost_per_seat
+    shared_people = num_people.to_i + 1
+    ((fuel_cost.to_i + tolls.to_i).to_f / shared_people).round(2)
+  end
+
+  def bookable_by?(user)
+    user.present? && user != self.user && !cancelled? && !past? && !full? && (!pink? || user.female?)
+  end
+
+  # Cancelling an itinerary also cancels every live booking on it.
+  def cancel!
+    transaction do
+      update!(cancelled_at: Time.current)
+      bookings.active.find_each(&:cancel_with_itinerary!)
+    end
+    self
   end
 
   def to_s

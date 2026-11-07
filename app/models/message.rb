@@ -8,7 +8,18 @@ class Message < ApplicationRecord
 
   scope :unread, -> { where(read_at: nil) }
 
+  after_create_commit :notify_recipient
+
   def unread?
     read_at.nil?
+  end
+
+  private
+
+  # Honours the "email me when I receive a message" setting.
+  def notify_recipient
+    return unless conversation.with(sender).send_email_messages?
+
+    MessageMailer.with(message: self).new_message.deliver_later
   end
 end

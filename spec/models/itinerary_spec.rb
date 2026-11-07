@@ -155,3 +155,47 @@ RSpec.describe Itinerary do
     end
   end
 end
+
+RSpec.describe Itinerary, 'seats, cost and cancellation' do
+  let(:itinerary) { create(:itinerary, num_people: 3, fuel_cost: 30, tolls: 10) }
+
+  it 'splits fuel and tolls between driver and passengers' do
+    expect(itinerary.cost_per_seat).to eq 10.0
+  end
+
+  it 'reports seats left and fullness' do
+    expect(itinerary.seats_available).to eq 3
+    create(:booking, :confirmed, itinerary:, seats: 3)
+
+    expect(itinerary.seats_available).to eq 0
+    expect(itinerary).to be_full
+  end
+
+  it 'only lets other users book an open, future, non-full trip' do
+    passenger = create(:user)
+
+    expect(itinerary.bookable_by?(passenger)).to be true
+    expect(itinerary.bookable_by?(itinerary.user)).to be false
+    expect(itinerary.bookable_by?(nil)).to be false
+  end
+
+  it 'cancels every live booking when the driver cancels the trip' do
+    pending_booking = create(:booking, itinerary:)
+    confirmed_booking = create(:booking, :confirmed, itinerary:)
+    declined_booking = create(:booking, itinerary:).decline!
+
+    itinerary.cancel!
+
+    expect(itinerary).to be_cancelled
+    expect(pending_booking.reload).to be_cancelled
+    expect(confirmed_booking.reload).to be_cancelled
+    expect(declined_booking.reload).to be_declined
+    expect(itinerary.bookable_by?(create(:user))).to be false
+  end
+
+  it 'is removed from the not_cancelled scope' do
+    itinerary.cancel!
+
+    expect(described_class.not_cancelled).not_to include(itinerary)
+  end
+end

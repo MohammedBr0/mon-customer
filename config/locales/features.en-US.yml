@@ -1,0 +1,158 @@
+en-US:
+  trip:
+    seats: Seats
+    seats_unlimited: Not limited
+    seats_left: "%{available} of %{total} left"
+    fully_booked: Fully booked
+    price_per_seat: Price per seat
+    vehicle: Vehicle
+    driver_rating: Driver rating
+    cancelled_banner: This trip was cancelled by the driver.
+    cancel_trip: Cancel trip
+    cancel_confirm: Cancel this trip? Every passenger will be notified.
+    car_make: Car make
+    car_model: Car model
+    car_color: Car color
+    car_plate: Number plate
+    car_plate_hint: Shown only to confirmed passengers.
+  bookings:
+    title: Bookings
+    requests_title: Seat requests
+    requests_received: Requests for your trips
+    my_bookings: Your bookings
+    no_requests: No seat requests yet.
+    no_bookings: You have not booked any seats yet.
+    trip: Trip
+    driver: Driver
+    passenger: Passenger
+    seats: Seats
+    status: Status
+    confirm: Confirm
+    decline: Decline
+    cancel: Cancel
+    cancel_confirm: Cancel this booking?
+    your_booking: Your booking
+    seats_count:
+      one: "%{count} seat"
+      other: "%{count} seats"
+    request_title: Request seats
+    request: Request seats
+    note: Message to the driver (optional)
+    note_placeholder: "e.g. I will wait at the main square"
+    statuses:
+      pending: Pending
+      confirmed: Confirmed
+      declined: Declined
+      cancelled: Cancelled
+  reviews:
+    title: Reviews
+    summary:
+      one: "%{rating} (%{count} review)"
+      other: "%{rating} (%{count} reviews)"
+    rate_driver: Rate the driver
+    rate_passenger: Rate the passenger
+    thanks: Thanks for your review.
+    new_title: "Rate %{name}"
+    new_lead: "How was the trip %{trip}?"
+    rating: Rating
+    stars:
+      '1': 1 - Poor
+      '2': 2 - Fair
+      '3': 3 - Good
+      '4': 4 - Very good
+      '5': 5 - Excellent
+    comment: Comment (optional)
+    comment_placeholder: Was the ride on time and friendly?
+    submit: Send review
+    cancel: Cancel
+  itineraries:
+    search:
+      seats: Seats needed
+      sort: Sort by
+      sort_date: Earliest departure
+      sort_price: Cheapest per seat
+  admin_extra:
+    dashboard: Admin dashboard
+    itineraries: Itineraries
+    manage_users: Manage users
+    active: Active
+    stats:
+      users: Users
+      banned_users: Banned users
+      itineraries: Itineraries
+      upcoming_itineraries: Upcoming itineraries
+      cancelled_itineraries: Cancelled itineraries
+      conversations: Conversations
+      reviews: Reviews
+      average_rating: Average rating
+      bookings: Bookings by status
+  flash:
+    bookings:
+      created: Your seat request was sent to the driver.
+      confirmed: Booking confirmed. The passenger was notified.
+      declined: Booking declined. The passenger was notified.
+      cancelled: Booking cancelled.
+      invalid: This booking can no longer be changed.
+      not_enough_seats: There are not enough free seats left to confirm this booking.
+    reviews:
+      created: Thanks, your review was published.
+      not_completed: You can review a trip only after it has taken place.
+      already_reviewed: You already reviewed this trip.
+    itineraries:
+      success:
+        cancel: Trip cancelled. Passengers were notified.
+    admin:
+      itineraries:
+        cancelled: Trip cancelled.
+  activerecord:
+    errors:
+      models:
+        booking:
+          attributes:
+            base:
+              own_itinerary: You cannot book your own trip
+              itinerary_cancelled: This trip was cancelled
+              itinerary_in_the_past: This trip has already left
+              already_booked: You already have a booking on this trip
+            seats:
+              not_enough_seats:
+                zero: There are no free seats left
+                one: Only %{count} free seat left
+                other: Only %{count} free seats left
+        review:
+          attributes:
+            base:
+              trip_not_completed: The trip has not taken place yet
+              not_a_participant: Only the driver and the passengers of a confirmed booking can review each other
+  mailers:
+    footer: You receive this email because you have an account on icare.
+    view_trip: View the trip
+    find_another: Find another trip
+    booking:
+      requested:
+        subject: "%{passenger} wants seats on %{trip}"
+        greeting: "Hi %{name},"
+        body: "%{passenger} requested %{seats} seat(s) on your trip %{trip}. Open the trip to confirm or decline."
+      confirmed:
+        subject: "Your booking on %{trip} is confirmed"
+        greeting: "Hi %{name},"
+        body: "%{driver} confirmed your %{seats} seat(s) on %{trip}."
+      declined:
+        subject: "Your booking on %{trip} was declined"
+        greeting: "Hi %{name},"
+        body: "%{driver} could not accept your request for %{trip}. You can look for another trip."
+      cancelled:
+        subject: "Booking cancelled on %{trip}"
+        greeting: "Hi %{name},"
+        body: "%{by} cancelled the booking of %{seats} seat(s) on %{trip}."
+    itinerary:
+      cancelled:
+        subject: "Trip cancelled: %{trip}"
+        greeting: "Hi %{name},"
+        body: "%{driver} cancelled the trip %{trip}. Your booking was cancelled with it."
+    message:
+      new_message:
+        subject: "New message from %{sender}"
+        greeting: "Hi %{name},"
+        body: "%{sender} sent you a message:"
+        reply: Reply
