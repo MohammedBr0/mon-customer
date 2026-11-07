@@ -359,7 +359,7 @@ GEM
       actionpack (>= 5.2)
       railties (>= 5.2)
     rexml (3.4.4)
-    rgeo (3.0.1)
+    rgeo (3.1.0)
     rgeo-activerecord (7.0.1)
       activerecord (>= 5.0)
       rgeo (>= 1.0.0)
@@ -537,7 +537,7 @@ DEPENDENCIES
   pry-rails
   puma (~> 7.0)
   rails (= 7.1.5.2)
-  rgeo (~> 3.0)
+  rgeo (~> 3.1)
   rspec-rails
   rubocop-capybara
   rubocop-factory_bot
