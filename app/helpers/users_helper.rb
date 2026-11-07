@@ -3,9 +3,9 @@
 module UsersHelper
   DEFAULT_USER_PROFILE_SIZE = 40
 
-  def auth0_profile_picture(user, type = :square)
+  def user_profile_picture_url(user, _type = :square)
     if user_signed_in? && user.image?
-      "#{user.image}?type=#{type}"
+      user.image
     else
       asset_pack_path('static/images/user.jpg')
     end
@@ -14,7 +14,7 @@ module UsersHelper
   def user_profile_picture(user, size: DEFAULT_USER_PROFILE_SIZE, type: :square, options: {})
     tag.img(width:  size,
             height: size,
-            src:    auth0_profile_picture(user, type),
+            src:    user_profile_picture_url(user, type),
             alt:    '',
             class:  'img-fluid', **options)
   end

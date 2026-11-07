@@ -1,0 +1,45 @@
+doctype html
+html lang=I18n.locale.to_s
+  head
+    meta charset='utf-8'
+    meta name='viewport' content='width=device-width, initial-scale=1'
+    title = "#{APP_CONFIG.app_name} - Authorize"
+    = stylesheet_pack_tag 'application', media: 'all'
+  body.bg-light
+    .container
+      .row.justify-content-center.pt-5
+        .col-12.col-md-6.col-lg-4
+          h1.h3.mb-4.text-center = APP_CONFIG.app_name
+          #neon-auth-consent.card.card-body data-issuer=APP_CONFIG.neon_auth.issuer
+            p Allow this application to access your name, email address and profile picture?
+            .alert.alert-danger.d-none role='alert' data-role='error'
+            button.btn.btn-primary.w-100 type='button' data-accept='true' Allow
+            button.btn.btn-link.w-100.mt-2 type='button' data-accept='false' Deny
+    javascript:
+      (function () {
+        var root = document.getElementById('neon-auth-consent');
+        var issuer = root.dataset.issuer;
+        var errorBox = root.querySelector('[data-role=error]');
+
+        function respond(accept) {
+          fetch(issuer + '/oauth2/consent', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accept: accept, oauth_query: window.location.search.slice(1) })
+          })
+            .then(function (res) {
+              if (!res.ok) { throw new Error('Authorization failed (' + res.status + ')'); }
+              return res.json();
+            })
+            .then(function (data) { window.location.assign(data.url); })
+            .catch(function (error) {
+              errorBox.textContent = error.message;
+              errorBox.classList.remove('d-none');
+            });
+        }
+
+        Array.prototype.forEach.call(root.querySelectorAll('[data-accept]'), function (button) {
+          button.addEventListener('click', function () { respond(button.dataset.accept === 'true'); });
+        });
+      })();

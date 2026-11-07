@@ -26,19 +26,19 @@ RSpec.describe 'Itineraries' do
   context 'with registered Users' do
     def login_as_male
       male
-      login_via_auth0
+      login_via_neon
       # NOTE: without the below line, the first test will fail, like it didn't visit the authentication link
       expect(page).to have_current_path dashboard_path
     end
 
     def login_as_female
       female
-      OmniAuth.config.mock_auth[:auth0] = OMNIAUTH_MOCKED_AUTHHASH.merge info: { name: 'Johanna Doe' }, extra: { raw_info: { gender: 'female' } }
-      login_via_auth0
+      OmniAuth.config.mock_auth[:neon] = OMNIAUTH_MOCKED_AUTHHASH.merge info: { name: 'Johanna Doe' }, extra: { raw_info: { gender: 'female' } }
+      login_via_neon
       # NOTE: without the below line, the first test will fail, like it didn't visit the authentication link
       expect(page).to have_current_path dashboard_path
     ensure
-      OmniAuth.config.mock_auth[:auth0] = OMNIAUTH_MOCKED_AUTHHASH
+      OmniAuth.config.mock_auth[:neon] = OMNIAUTH_MOCKED_AUTHHASH
     end
 
     it 'are allowed to create itineraries', :js, skip: ENV['CI'] do

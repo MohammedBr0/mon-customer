@@ -6,6 +6,10 @@ Rails.application.routes.draw do
     delete 'sign_out', to: 'devise/sessions#destroy', as: :destroy_user_session
   end
 
+  # Pages Neon Auth redirects to during the OpenID Connect authorization flow
+  get 'neon_auth/login', to: 'neon_auth#login', as: :neon_auth_login
+  get 'neon_auth/consent', to: 'neon_auth#consent', as: :neon_auth_consent
+
   root to: 'pages#home'
 
   resources :conversations, only: %i[show new create update index] do

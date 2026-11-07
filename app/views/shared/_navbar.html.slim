@@ -37,5 +37,5 @@ nav.navbar.main-navbar
               - (I18n.available_locales - [I18n.locale]).each do |locale|
                 = link_to t('lang_native_name', locale: locale), url_for(locale: locale), class: 'dropdown-item'
           li.nav-item
-            = button_to user_auth0_omniauth_authorize_path, form_class: 'inline-form', class: 'btn btn-primary' do
-                = t('login_with_auth0')
+            = button_to user_neon_omniauth_authorize_path, form_class: 'inline-form', class: 'btn btn-primary' do
+                = t('login')

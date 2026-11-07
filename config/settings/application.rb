@@ -24,12 +24,12 @@ SimpleConfig.for :application do
   set :google_analytics_id, nil
   set :google_maps_api_key, nil
 
-  group :auth0 do
-    set :domain, 'AUTH0_DOMAIN'
-    set :client_id, 'AUTH0_CLIENT_ID'
-    set :client_secret, 'AUTH0_CLIENT_SECRET'
-    set :scope, 'openid profile email'
-    set :cache_expiry_time, 7.days
+  # Neon Auth (managed Better Auth) acting as an OpenID Connect provider
+  group :neon_auth do
+    set :issuer, 'NEON_AUTH_URL'
+    set :client_id, 'NEON_AUTH_CLIENT_ID'
+    set :client_secret, 'NEON_AUTH_CLIENT_SECRET'
+    set :scope, %i[openid profile email]
   end
 
   group :airbrake do

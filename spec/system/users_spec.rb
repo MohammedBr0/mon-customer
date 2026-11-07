@@ -16,7 +16,7 @@ RSpec.describe 'Users' do
   it 'allows to delete account' do
     create(:user, uid: '123456')
 
-    login_via_auth0
+    login_via_neon
 
     click_on t('delete_account')
 
@@ -28,7 +28,7 @@ RSpec.describe 'Users' do
   describe 'Settings' do
     it 'allows to edit profile' do
       user = create(:user, uid: '123456')
-      login_via_auth0
+      login_via_neon
       visit settings_path
       fill_in 'user_vehicle_avg_consumption', with: '0.29'
       click_on t('helpers.submit.update', model: User)
@@ -38,7 +38,7 @@ RSpec.describe 'Users' do
 
     it 'recovers from errors' do
       create(:user, uid: '123456')
-      login_via_auth0
+      login_via_neon
       visit settings_path
       fill_in 'user_vehicle_avg_consumption', with: nil
       click_on t('helpers.submit.update', model: User)
@@ -53,7 +53,7 @@ RSpec.describe 'Users' do
       create_list(:itinerary, 5)
       create(:user, uid: '123456')
 
-      login_via_auth0
+      login_via_neon
 
       expect(page).to have_css('.table-itinerary tbody tr', count: 5)
     end
@@ -69,7 +69,7 @@ RSpec.describe 'Users' do
         it 'shows them' do
           create(:user, uid: '123456', gender: 'female')
 
-          login_via_auth0
+          login_via_neon
 
           expect(page).to have_css('.table-itinerary tbody tr', count: 6)
         end
@@ -79,7 +79,7 @@ RSpec.describe 'Users' do
         it 'hides them' do
           create(:user, uid: '123456', gender: 'male')
 
-          login_via_auth0
+          login_via_neon
 
           expect(page).to have_css('.table-itinerary tbody tr', count: 5)
         end
@@ -93,7 +93,7 @@ RSpec.describe 'Users' do
     end
 
     before do
-      login_via_auth0
+      login_via_neon
       visit user_path(user)
     end
 

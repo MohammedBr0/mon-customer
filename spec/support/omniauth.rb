@@ -2,12 +2,12 @@
 
 # rubocop:disable Layout/FirstHashElementIndentation, Rails/RelativeDateConstant
 OMNIAUTH_MOCKED_AUTHHASH = OmniAuth::AuthHash.new({
-  'provider'    => 'auth0',
+  'provider'    => 'neon',
   'uid'         => '123456',
   'info'        => {
     'email' => 'test@example.com',
     'name'  => 'John Doe',
-    'image' => 'https://s.gravatar.com/avatar/123456?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fta.png'
+    'image' => 'https://s.gravatar.com/avatar/123456?s=480&r=pg&d=https%3A%2F%2Fexample.com%2Favatar.png'
   },
   'credentials' => {
     'token'      => 'token',
@@ -25,12 +25,12 @@ OMNIAUTH_MOCKED_AUTHHASH = OmniAuth::AuthHash.new({
 # rubocop:enable Layout/FirstHashElementIndentation, Rails/RelativeDateConstant
 
 OmniAuth.config.test_mode = true
-OmniAuth.config.mock_auth[:auth0] = OMNIAUTH_MOCKED_AUTHHASH
+OmniAuth.config.mock_auth[:neon] = OMNIAUTH_MOCKED_AUTHHASH
 
 module OmniauthMacros
-  def login_via_auth0
+  def login_via_neon
     visit root_path
-    first("form[action=\"#{user_auth0_omniauth_authorize_path}\"] button").click
+    first("form[action=\"#{user_neon_omniauth_authorize_path}\"] button").click
   end
 end
 

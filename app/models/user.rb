@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class User < ApplicationRecord
-  include Auth0Omniauthable
+  include NeonAuthOmniauthable
 
   # Include default devise modules. Others available are:
-  devise :omniauthable, omniauth_providers: [:auth0]
+  devise :omniauthable, omniauth_providers: [:neon]
   # :confirmable, :lockable, :timeoutable and :omniauthable
   # :database_authenticatable, :registerable,
   # :recoverable, :rememberable, :trackable, :validatable

@@ -57,9 +57,8 @@ en-US:
 
   loading: Loading...
   login: Log in
-  login_with_auth0: Login with Auth0
+  login: Sign in
   logout: Log Out
-  why_auth0: "Why Auth0?"
 
   about: About us
   how_it_works: How it works
@@ -239,7 +238,7 @@ en-US:
       account_settings: Account Settings
       general_information: General info
       vehicle_information: Vehicle info
-      user_profile_details: Profile details are updated from Auth0 after each login.
+      user_profile_details: Profile details are updated from your account after each login.
       vehicle_avg_consumption_help: Use a point to separate decimals. This value is used in the fuel cost estimate when creating a new itinerary.
       fuel: Fuel
       proportional_costs: "PROPORTIONAL COSTS %{fuel_currency}/km"

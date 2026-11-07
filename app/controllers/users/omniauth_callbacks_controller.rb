@@ -2,7 +2,7 @@
 
 module Users
   class OmniauthCallbacksController < ::Devise::OmniauthCallbacksController
-    def auth0
+    def neon
       @user = User.from_omniauth(auth_hash)
 
       if @user.persisted?

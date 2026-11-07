@@ -271,13 +271,16 @@ Devise.setup do |config|
   # ==> OmniAuth
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
-  config.omniauth :auth0,
-                  APP_CONFIG.auth0.client_id,
-                  APP_CONFIG.auth0.client_secret,
-                  APP_CONFIG.auth0.domain,
-                  authorize_params: {
-                    scope:   APP_CONFIG.auth0.scope,
-                    max_age: 3600
+  config.omniauth :openid_connect,
+                  name:           :neon,
+                  issuer:         APP_CONFIG.neon_auth.issuer,
+                  scope:          APP_CONFIG.neon_auth.scope,
+                  response_type:  :code,
+                  discovery:      true,
+                  pkce:           true,
+                  client_options: {
+                    identifier: APP_CONFIG.neon_auth.client_id,
+                    secret:     APP_CONFIG.neon_auth.client_secret
                   }
 
   # ==> Warden configuration
