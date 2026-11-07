@@ -14,7 +14,9 @@ module VehicleDetails
     before_validation :sanitize_vehicle_data
     before_validation :normalize_phone
     validate :vehicle_data_matches_fields
-    validates :phone, format: { with: ETHIOPIAN_PHONE, message: :invalid_ethiopian_phone }, allow_blank: true
+    # The condition keeps this server-side only: the browser would test the raw text ("0911 22 33 44")
+    # before normalize_phone turns it into +251911223344, and wrongly block valid numbers.
+    validates :phone, format: { with: ETHIOPIAN_PHONE, message: :invalid_ethiopian_phone }, if: -> { phone.present? }
   end
 
   def vehicle_value(key)

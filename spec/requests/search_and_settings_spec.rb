@@ -71,6 +71,12 @@ RSpec.describe 'Search and settings' do
     expect(user.vehicle_description).to eq 'Red Toyota'
   end
 
+  it 'does not ship the strict phone pattern to the browser, which would block numbers typed as 0911 22 33 44' do
+    get settings_path
+
+    expect(response.body).not_to include('must be an Ethiopian number')
+  end
+
   it 'renders the settings page with the configured vehicle fields and phone' do
     create(:vehicle_field, key: 'plate', label: 'Plate number')
 

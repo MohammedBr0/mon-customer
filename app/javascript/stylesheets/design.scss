@@ -270,7 +270,7 @@ body.has-sticky-cta { padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) 
 // ---- Settings sections ---------------------------------------------------------------------
 
 .settings-section { margin-bottom: 14px; }
-.settings-section legend { font-size: 1rem; font-weight: 800; float: none; margin-bottom: 10px; }
+.settings-section legend { font-size: 1rem; font-weight: 800; margin-bottom: 10px; padding: 0; }
 
 // ---- Leaflet-free maps keep their aspect on small screens -----------------------------------
 
