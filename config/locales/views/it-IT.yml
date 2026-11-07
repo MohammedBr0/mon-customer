@@ -168,7 +168,8 @@ it-IT:
       thats_easy_content: "La familiarità di Google Maps e il processo di creazione guidata permettono a chiunque di condividere un percorso in pochi minuti."
       help_environment_title: "Ecosostenibile"
       help_environment_content: "Meno auto, meno traffico, meno stress e nuovi compagni di avventure! Rendi più piacevoli i tuoi spostamenti e nel contempo aiuti l'ambiente."
-      signin_terms_html: "Cliccando su \"Accedi\", accetti le %{terms_link} di %{appname} e confermi di aver letto e compreso la nostra %{privacy_link}."
+      signin_terms_html: "Cliccando su \"Inizia\", accetti le %{terms_link} di %{appname} e confermi di aver letto e compreso la nostra %{privacy_link}."
+      cta: Inizia
       join_us_today: "Registrati adesso!"
     privacy:
       title: Normativa sull'utilizzo dei dati

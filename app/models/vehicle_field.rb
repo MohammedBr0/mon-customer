@@ -14,8 +14,7 @@ class VehicleField < ApplicationRecord
     { key: 'model', label: 'Model', labels: { 'am' => 'ሞዴል' }, field_type: 'text', required: false, visibility: 'public', help_text: 'e.g. Corolla, Dzire, Hiace' },
     { key: 'color', label: 'Color', labels: { 'am' => 'ቀለም' }, field_type: 'select', required: true, visibility: 'public',
       options: %w[White Silver Black Grey Blue Red Green Yellow Brown Other] },
-    { key: 'plate', label: 'Plate number', labels: { 'am' => 'የሰሌዳ ቁጥር' }, field_type: 'text', required: true, visibility: 'confirmed',
-      help_text: 'Shown only to confirmed passengers.' },
+    { key: 'plate', label: 'Plate number', labels: { 'am' => 'የሰሌዳ ቁጥር' }, field_type: 'text', required: true, visibility: 'confirmed' },
     { key: 'seats', label: 'Passenger seats', labels: { 'am' => 'የተሳፋሪ መቀመጫዎች' }, field_type: 'number', required: false, visibility: 'public', min_value: 1, max_value: 20 },
     { key: 'air_conditioning', label: 'Air conditioning', labels: { 'am' => 'አየር ማቀዝቀዣ' }, field_type: 'boolean', required: false, visibility: 'public' }
   ].freeze
