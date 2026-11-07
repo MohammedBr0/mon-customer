@@ -1,25 +1,25 @@
 - title t('.title')
 .container
   == render 'shared/flash_messages'
-  ul.nav.nav-pills.nav-fill.mt-2.mb-2
-    li.nav-item
-      = link_to itineraries_path do
-        span.fas.fa-search<>
-        = t('.search_itineraries')
-    li.nav-item
-      = link_to new_itinerary_path do
-        span.fas.fa-plus<>
-        = t('.new_itinerary')
-    li.nav-item
-      = link_to itineraries_user_path(current_user) do
-        span.fas.fa-route<>
+  - pending = Booking.pending.joins(:itinerary).where(itineraries: { user_id: current_user.id }).count
+  - if pending.positive?
+    = link_to bookings_path, class: 'alert alert-warning d-flex justify-content-between align-items-center text-decoration-none' do
+      span
+        span.fas.fa-ticket<> aria-hidden='true'
+        = t('bookings.pending_banner', count: pending)
+      span.fas.fa-chevron-right aria-hidden='true'
+  .row.g-2.mb-3
+    .col-6.col-md-4
+      = link_to itineraries_path, class: 'btn btn-primary w-100' do
+        span.fas.fa-magnifying-glass aria-hidden='true'
+        = t('nav.find_ride')
+    .col-6.col-md-4
+      = link_to new_itinerary_path, class: 'btn btn-outline-primary w-100' do
+        span.fas.fa-plus aria-hidden='true'
+        = t('nav.offer_ride')
+    .col-12.col-md-4
+      = link_to itineraries_user_path(current_user), class: 'btn btn-outline-secondary w-100' do
+        span.fas.fa-route aria-hidden='true'
         = t('.your_itineraries')
-    li.nav-item
-      = link_to bookings_path do
-        span.fas.fa-chair<>
-        = t('bookings.title')
-        - pending = Booking.pending.joins(:itinerary).where(itineraries: { user_id: current_user.id }).count
-        - if pending.positive?
-          span.badge.text-bg-warning.ms-1 = pending
-  h3 = t('.latest_itineraries')
-  == render 'itineraries/table', itineraries: @latest_itineraries, edit: false
+  h2.section-title = t('.latest_itineraries')
+  == render 'itineraries/cards', itineraries: @latest_itineraries

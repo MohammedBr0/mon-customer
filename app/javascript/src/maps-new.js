@@ -35,7 +35,10 @@ const setItinerary = function (route) {
   const routeGasoline = routeKm * (Number)($('#fuel-help').data('avg-consumption'))
   $('#fuel-help-text').text(i18n.t('javascript.fuel_help_text', { km: routeKm.toFixed(2), est: Math.ceil(routeGasoline), avg_consumption: $('#fuel-help').data('avg-consumption'), fuel_currency: $('html').data('fuelCurrency'), currency: $('html').data('currency') }))
   $('#fuel-help').show()
-  $('#itinerary_fuel_cost').val(Math.ceil(routeGasoline))
+  // Suggest a price per seat that shares the fuel cost; the driver can change it.
+  const seats = Number($('#itinerary_num_people').val()) || 3
+  const $price = $('#itinerary_price_per_seat')
+  if (!Number($price.val())) { $price.val(Math.max(5, Math.ceil(routeGasoline / (seats + 1) / 5) * 5)) }
 
   const rleg = route.legs[0]
 

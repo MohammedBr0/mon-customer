@@ -165,13 +165,16 @@ RSpec.describe 'Bookings' do
     end
 
     it 'shows price per seat, seats left and vehicle details' do
-      driver.update!(car_make: 'Fiat', car_model: 'Panda', car_color: 'red')
-      itinerary.update!(fuel_cost: 30, tolls: 10)
+      PlatformSetting.current.update!(fee_percent: 10, fee_charged_to: 'passenger')
+      create(:vehicle_field, key: 'make', label: 'Make')
+      create(:vehicle_field, key: 'color', label: 'Color')
+      driver.update!(vehicle_data: { 'make' => 'Toyota', 'color' => 'White' })
+      itinerary.update!(price_per_seat: 200)
 
       sign_in passenger
       get itinerary_path(itinerary)
 
-      expect(response.body).to include('3 of 3 left', '10.00 €', 'red Fiat Panda')
+      expect(response.body).to include('3 of 3 left', '220 Br', 'Make: Toyota', 'Color: White')
     end
   end
 

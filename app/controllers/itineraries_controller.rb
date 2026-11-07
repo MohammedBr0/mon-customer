@@ -78,7 +78,7 @@ class ItinerariesController < ApplicationController
   end
 
   def itinerary_attributes
-    allowlist = %i[start_address end_address description num_people smoking_allowed pets_allowed fuel_cost tolls
+    allowlist = %i[start_address end_address description num_people smoking_allowed pets_allowed price_per_seat
                    avoid_highways avoid_tolls
                    round_trip leave_date return_date daily
                    route]

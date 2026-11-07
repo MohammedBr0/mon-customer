@@ -8,15 +8,15 @@ RSpec.describe 'Itineraries' do
 
   let(:xss_alert) { "<script>alert('toasty!);</script>" }
 
-  shared_examples 'feature icons' do |options|
+  shared_examples 'feature chips' do |options|
     options.each do |feature, icon|
-      it "shows #{feature} icon" do
+      it "shows #{feature} on the trip card" do
         login_as_female
         create(:itinerary, user: female, "#{feature}": true)
 
         visit itineraries_user_path(female)
 
-        within '.table-itinerary' do
+        within '.trip-card' do
           expect(page).to have_css icon
         end
       end
@@ -72,8 +72,8 @@ RSpec.describe 'Itineraries' do
       select '09 AM', from: 'itinerary_return_date_4i'
       select return_date.min.to_s, from: 'itinerary_return_date_5i'
 
-      fill_in 'itinerary_fuel_cost', with: '5'
-      fill_in 'itinerary_tolls', with: '3'
+      select '2', from: 'itinerary_num_people'
+      fill_in 'itinerary_price_per_seat', with: '150'
 
       fill_in 'itinerary_description', with: 'MUSIC VERY LOUD!!!'
       find('label[for="itinerary_pink"]').click
@@ -85,8 +85,7 @@ RSpec.describe 'Itineraries' do
       expect(page).to have_content 'Turin'
       expect(page).to have_content I18n.l(leave_date, format: :long)
       expect(page).to have_content I18n.l(return_date, format: :long)
-      expect(page).to have_content '5.00'
-      expect(page).to have_content '3.00'
+      expect(page).to have_content '165 Br' # 150 Br fare plus the default 10% service fee
       expect(page).to have_content Itinerary.human_attribute_name(:pink)
       expect(page).to have_content t('itineraries.header.pets.allowed')
       expect(page).to have_content t('itineraries.header.smoking.forbidden')
@@ -130,14 +129,11 @@ RSpec.describe 'Itineraries' do
 
       visit itineraries_user_path(female)
 
-      expect(page).to have_css('tbody > tr', count: 2)
+      expect(page).to have_css('.trip-card', count: 2)
     end
 
-    it_behaves_like 'feature icons', daily:           '.fa-redo',
-                                     pets_allowed:    '.fa-paw',
-                                     pink:            '.fa-lock',
-                                     round_trip:      '.fa-exchange-alt',
-                                     smoking_allowed: '.fa-smoking'
+    it_behaves_like 'feature chips', pink:       '.chip--pink',
+                                     round_trip: '.chip--muted'
 
     it 'allows users to delete their own ones' do
       login_as_male

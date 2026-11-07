@@ -1,0 +1,52 @@
+= form_with model: field, url: (field.persisted? ? admin_vehicle_field_path(field) : admin_vehicle_fields_path), scope: :vehicle_field do |f|
+  - if field.errors.any?
+    .alert.alert-danger
+      ul.mb-0
+        - field.errors.full_messages.each do |message|
+          li = message
+  .surface.stack
+    .row.g-3
+      .col-sm-6
+        = f.label :label, t('admin_extra.field_label'), class: 'form-label'
+        = f.text_field :label, class: 'form-control', maxlength: 60, required: true
+      .col-sm-6
+        = f.label :key, t('admin_extra.field_key'), class: 'form-label'
+        = f.text_field :key, class: 'form-control', maxlength: 30, required: true, disabled: field.persisted?, placeholder: 'fuel_type'
+        p.form-text.mb-0 = t('admin_extra.field_key_hint')
+      .col-sm-6
+        = f.label :am, t('admin_extra.label_am'), class: 'form-label'
+        = f.text_field :am, class: 'form-control', maxlength: 60
+      .col-sm-6
+        = f.label :it, t('admin_extra.label_it'), class: 'form-label'
+        = f.text_field :it, class: 'form-control', maxlength: 60
+    .row.g-3
+      .col-sm-6
+        = f.label :field_type, t('admin_extra.field_type'), class: 'form-label'
+        = f.select :field_type, VehicleField::TYPES.map { |type| [t("admin_extra.field_types.#{type}"), type] }, {}, class: 'form-select'
+      .col-sm-6
+        = f.label :visibility, t('admin_extra.visibility'), class: 'form-label'
+        = f.select :visibility, VehicleField::VISIBILITIES.map { |v| [t("vehicle.visibility.#{v}"), v] }, {}, class: 'form-select'
+    div
+      = f.label :options_text, t('admin_extra.options'), class: 'form-label'
+      = f.text_area :options_text, rows: 5, class: 'form-control', placeholder: "Sedan\nSUV\nMinibus"
+      p.form-text.mb-0 = t('admin_extra.options_hint')
+    .row.g-3
+      .col-6
+        = f.label :min_value, t('admin_extra.min_value'), class: 'form-label'
+        = f.number_field :min_value, class: 'form-control'
+      .col-6
+        = f.label :max_value, t('admin_extra.max_value'), class: 'form-label'
+        = f.number_field :max_value, class: 'form-control'
+    div
+      = f.label :help_text, t('admin_extra.help_text'), class: 'form-label'
+      = f.text_field :help_text, class: 'form-control', maxlength: 120
+    .form-check
+      = f.check_box :required, class: 'form-check-input'
+      = f.label :required, t('admin_extra.required_before_trip'), class: 'form-check-label'
+    .form-check
+      = f.check_box :active, class: 'form-check-input'
+      = f.label :active, t('admin_extra.active_field'), class: 'form-check-label'
+  .d-flex.gap-2.mt-3
+    = f.button class: 'btn btn-primary btn-lg flex-grow-1', data: { disable_with: t('helpers.disable_with') } do
+      = t('save')
+    = link_to t('helpers.links.back'), admin_vehicle_fields_path, class: 'btn btn-outline-secondary btn-lg'

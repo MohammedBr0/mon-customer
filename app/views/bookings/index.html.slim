@@ -1,70 +1,71 @@
 - title t('bookings.title')
 .container
   == render 'shared/flash_messages'
-  .page-header
-    h1 = yield :title
+  h1.page-title = yield :title
 
-  h2.h4.mt-4 = t('bookings.requests_received')
+  h2.section-title = t('bookings.requests_received')
   - if @requests.empty?
-    p.text-body-secondary = t('bookings.no_requests')
+    .surface.empty
+      span.fas.fa-ticket aria-hidden='true'
+      = t('bookings.no_requests')
   - else
-    .table-responsive
-      table.table.align-middle
-        thead
-          tr
-            th = t('bookings.trip')
-            th = t('bookings.passenger')
-            th = t('bookings.seats')
-            th = t('bookings.status')
-            th
-        tbody
-          - @requests.each do |booking|
-            tr
-              td
-                = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
-                br
-                small.text-body-secondary = l(booking.itinerary.leave_date.in_time_zone, format: :short)
-              td = link_to booking.passenger, user_path(booking.passenger)
-              td = booking.seats
-              td == render 'bookings/status', booking: booking
-              td.text-end
-                - if booking.pending?
-                  = button_to confirm_booking_path(booking), method: :patch, form_class: 'd-inline-block', class: 'btn btn-sm btn-success me-1' do
-                    = t('bookings.confirm')
-                  = button_to decline_booking_path(booking), method: :patch, form_class: 'd-inline-block', class: 'btn btn-sm btn-outline-secondary' do
-                    = t('bookings.decline')
-                - elsif booking.confirmed?
-                  = button_to cancel_booking_path(booking), method: :patch, form_class: 'd-inline-block', class: 'btn btn-sm btn-outline-danger', data: { confirm: t('bookings.cancel_confirm') } do
-                    = t('bookings.cancel')
-                  - if booking.completed? && !booking.reviewed_by?(current_user)
-                    = link_to t('reviews.rate_passenger'), new_booking_review_path(booking), class: 'btn btn-sm btn-outline-primary ms-1'
+    .stack
+      - @requests.each do |booking|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
+              small.text-body-secondary
+                = l(booking.itinerary.leave_date.in_time_zone, format: :short)
+                | &middot;
+                = link_to booking.passenger, user_path(booking.passenger)
+                | &middot;
+                = t('bookings.seats_count', count: booking.seats)
+              - if booking.confirmed? && booking.passenger.phone.present?
+                small.d-block
+                  span.fas.fa-phone<> aria-hidden='true'
+                  = link_to booking.passenger.phone, "tel:#{booking.passenger.phone}"
+            == render 'bookings/status', booking: booking
+          == render 'bookings/breakdown', breakdown: booking.price_breakdown, role: :driver
+          .row-card__actions
+            - if booking.pending?
+              = button_to confirm_booking_path(booking), method: :patch, class: 'btn btn-primary btn-sm' do
+                = t('bookings.confirm')
+              = button_to decline_booking_path(booking), method: :patch, class: 'btn btn-outline-secondary btn-sm' do
+                = t('bookings.decline')
+            - elsif booking.confirmed?
+              = button_to cancel_booking_path(booking), method: :patch, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('bookings.cancel_confirm') } do
+                = t('bookings.cancel')
+              - if booking.completed? && !booking.reviewed_by?(current_user)
+                = link_to t('reviews.rate_passenger'), new_booking_review_path(booking), class: 'btn btn-outline-primary btn-sm'
 
-  h2.h4.mt-5 = t('bookings.my_bookings')
+  h2.section-title = t('bookings.my_bookings')
   - if @bookings.empty?
-    p.text-body-secondary = t('bookings.no_bookings')
+    .surface.empty
+      span.fas.fa-route aria-hidden='true'
+      = t('bookings.no_bookings')
   - else
-    .table-responsive
-      table.table.align-middle
-        thead
-          tr
-            th = t('bookings.trip')
-            th = t('bookings.driver')
-            th = t('bookings.seats')
-            th = t('bookings.status')
-            th
-        tbody
-          - @bookings.each do |booking|
-            tr
-              td
-                = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
-                br
-                small.text-body-secondary = l(booking.itinerary.leave_date.in_time_zone, format: :short)
-              td = link_to booking.driver, user_path(booking.driver)
-              td = booking.seats
-              td == render 'bookings/status', booking: booking
-              td.text-end
-                - if booking.active?
-                  = button_to cancel_booking_path(booking), method: :patch, form_class: 'd-inline-block', class: 'btn btn-sm btn-outline-danger', data: { confirm: t('bookings.cancel_confirm') } do
-                    = t('bookings.cancel')
-                - if booking.completed? && !booking.reviewed_by?(current_user)
-                  = link_to t('reviews.rate_driver'), new_booking_review_path(booking), class: 'btn btn-sm btn-outline-primary ms-1'
+    .stack
+      - @bookings.each do |booking|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title = link_to booking.itinerary.title, itinerary_path(booking.itinerary)
+              small.text-body-secondary
+                = l(booking.itinerary.leave_date.in_time_zone, format: :short)
+                | &middot;
+                = link_to booking.driver, user_path(booking.driver)
+                | &middot;
+                = t('bookings.seats_count', count: booking.seats)
+              - if booking.confirmed? && booking.driver.phone.present?
+                small.d-block
+                  span.fas.fa-phone<> aria-hidden='true'
+                  = link_to booking.driver.phone, "tel:#{booking.driver.phone}"
+            == render 'bookings/status', booking: booking
+          == render 'bookings/breakdown', breakdown: booking.price_breakdown, role: :passenger
+          .row-card__actions
+            - if booking.active?
+              = button_to cancel_booking_path(booking), method: :patch, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('bookings.cancel_confirm') } do
+                = t('bookings.cancel')
+            - if booking.completed? && !booking.reviewed_by?(current_user)
+              = link_to t('reviews.rate_driver'), new_booking_review_path(booking), class: 'btn btn-outline-primary btn-sm'

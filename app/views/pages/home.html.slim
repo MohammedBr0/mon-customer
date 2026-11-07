@@ -2,62 +2,34 @@
 - content_for :head do
   meta name='description' content=t('meta_description', appname: APP_CONFIG.app_name)
 
-== render 'shared/flash_messages'
-.splashscreen
-  .splashscreen__container
-    h2.mb-2 = APP_CONFIG.app_name
-    h1.mb-4 = t('.os_carpooling_platform')
-
+.hero
+  .container
+    .hero__top
+      span.hero__brand = APP_CONFIG.app_name
+      .hero__lang
+        - (I18n.available_locales - [I18n.locale]).each do |locale|
+          = link_to t('lang_native_name', locale: locale), url_for(locale: locale), class: 'ms-3'
+    == render 'shared/flash_messages'
+    h1 = t('.headline')
+    p.hero__lead = t('.lead')
     == render 'login_button'
-
-    .learn-more-container
-      = link_to '#', class: 'btn btn-learn-more' do
-        = t('.learn_more')
-        span.fas.fa-long-arrow-alt-down.icon--learn-more>
-#learn-more.featurette-list
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fas.fa-route.fa-fw
-      .featurette__content
-        h3 = t('.share_itinerary_title')
-        p = t('.share_itinerary_content')
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fas.fa-users.fa-fw
-      .featurette__content
-        h3 = t('.make_new_connections_title')
-        p = t('.make_new_connections_content')
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fas.fa-piggy-bank.fa-fw
-      .featurette__content
-        h3 = t('.save_money_title')
-        p = t('.save_money_content')
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fas.fa-wand-magic-sparkles.fa-fw
-      .featurette__content
-        h3 = t('.thats_easy_title')
-        p = t('.thats_easy_content')
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fas.fa-leaf.fa-fw
-      .featurette__content
-        h3 = t('.help_environment_title')
-        p = t('.help_environment_content')
-  .featurette
-    .featurette__container
-      .featurette__icon
-        span.fab.fa-github.fa-fw
-      .featurette__content
-        h3 = t('.open_source_title')
-        p = t('.open_source_content_html', appname: APP_CONFIG.app_name, source_code_link: link_to(t('.source_code'), APP_CONFIG.repository_url))
-.container.text-center
-  .h2.join-us = t('.join_us_today')
-  == render 'login_button'
-  == render 'login_button'
+    .routes
+      - %w[addis_adama addis_hawassa addis_bahirdar addis_diredawa].each do |route|
+        span.chip = t(".routes.#{route}")
+.container
+  .benefits
+    .benefit
+      .benefit__icon: span.fas.fa-coins
+      div
+        h3 = t('.benefit_save_title')
+        p = t('.benefit_save_text')
+    .benefit
+      .benefit__icon: span.fas.fa-shield-halved
+      div
+        h3 = t('.benefit_trust_title')
+        p = t('.benefit_trust_text')
+    .benefit
+      .benefit__icon: span.fas.fa-ticket
+      div
+        h3 = t('.benefit_easy_title')
+        p = t('.benefit_easy_text')

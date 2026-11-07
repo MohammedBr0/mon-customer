@@ -1,9 +1,7 @@
 - title t('.title')
 .container
-  == render 'header'
-  = simple_form_for @itinerary, validate: true, html: { class: 'form-horizontal' } do |f|
+  h1.page-title = yield :title
+  = simple_form_for @itinerary, validate: true do |f|
     == render 'shared/error_messages', object: f.object
     == render 'form', f: f
-    .row
-      .col-sm-9.offset-sm-3
-        = f.button :button, class: 'btn-primary', data: { disable_with: t('helpers.disable_with') }
+    = f.button :button, class: 'btn-primary btn-lg w-100', data: { disable_with: t('helpers.disable_with') }

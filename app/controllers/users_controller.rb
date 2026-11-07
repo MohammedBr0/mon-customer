@@ -46,7 +46,6 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit :time_zone, :locale, :vehicle_avg_consumption, :send_email_messages,
-                                 :car_make, :car_model, :car_color, :car_plate
+    params.require(:user).permit(:time_zone, :locale, :vehicle_avg_consumption, :send_email_messages, :phone, vehicle_data: {})
   end
 end

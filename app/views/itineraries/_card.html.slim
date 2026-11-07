@@ -1,0 +1,49 @@
+- edit = local_assigns.fetch(:edit, false)
+.trip-card-wrap
+  = link_to itinerary_path(itinerary), class: ['trip-card', ('trip-card--cancelled' if itinerary.cancelled?)] do
+    .trip-card__top
+      .trip-card__route
+        .trip-card__stop
+          span.trip-card__dot
+          span.text = itinerary.start_address
+        .trip-card__line
+        .trip-card__stop
+          span.trip-card__dot.trip-card__dot--end
+          span.text = itinerary.end_address
+      .trip-card__price
+        strong = money(itinerary.passenger_price_per_seat)
+        small = t('trip.per_seat')
+    .trip-card__meta
+      span
+        span.fas.fa-clock<> aria-hidden='true'
+        = l(itinerary.leave_date.in_time_zone, format: :short)
+      - if itinerary.cancelled?
+        span.chip.chip--muted = t('bookings.statuses.cancelled')
+      - elsif itinerary.seats_available.nil?
+        span.chip = t('trip.seats_unlimited')
+      - elsif itinerary.full?
+        span.chip.chip--danger = t('trip.fully_booked')
+      - else
+        span.chip = t('trip.seats_left', available: itinerary.seats_available, total: itinerary.num_people)
+      - if itinerary.pink?
+        span.chip.chip--pink
+          span.fas.fa-lock<> aria-hidden='true'
+          = Itinerary.human_attribute_name(:pink)
+      - if itinerary.round_trip?
+        span.chip.chip--muted = Itinerary.human_attribute_name(:round_trip)
+    - unless edit
+      .trip-card__driver
+        = user_profile_picture itinerary.user, size: 28, options: { class: '' }
+        span = itinerary.user.first_name || itinerary.user
+        - if itinerary.user.reviews_count.positive?
+          span.rating
+            span.fas.fa-star<> aria-hidden='true'
+            = itinerary.user.average_rating
+  - if edit
+    .trip-card__actions
+      = link_to edit_itinerary_path(itinerary), class: 'btn btn-outline-primary btn-sm' do
+        span.fas.fa-pencil-alt aria-hidden='true'
+        = t('helpers.links.edit')
+      = link_to itinerary_path(itinerary), method: :delete, data: { confirm: t('helpers.links.confirm') }, class: 'btn btn-outline-danger btn-sm' do
+        span.fas.fa-times aria-hidden='true'
+        = t('helpers.links.destroy')

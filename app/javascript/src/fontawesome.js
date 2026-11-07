@@ -1,6 +1,21 @@
 import { config, library, dom } from '@fortawesome/fontawesome-svg-core'
 
 import {
+  faCar,
+  faChair,
+  faCircleCheck,
+  faCoins,
+  faHouse,
+  faMagnifyingGlass,
+  faPhone,
+  faShieldHalved,
+  faStar,
+  faTicket,
+  faUser,
+  faWallet,
+  faXmark,
+  faSnowflake,
+  faGear,
   faArrowDown,
   faArrowUp,
   faBan,
@@ -50,6 +65,21 @@ import {
 config.mutateApproach = 'sync'
 
 library.add(
+  faCar,
+  faChair,
+  faCircleCheck,
+  faCoins,
+  faHouse,
+  faMagnifyingGlass,
+  faPhone,
+  faShieldHalved,
+  faStar,
+  faTicket,
+  faUser,
+  faWallet,
+  faXmark,
+  faSnowflake,
+  faGear,
   faArrowDown,
   faArrowUp,
   faBan,

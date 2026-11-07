@@ -1,2 +1,2 @@
-- badge = { 'pending' => 'text-bg-warning', 'confirmed' => 'text-bg-success', 'declined' => 'text-bg-secondary', 'cancelled' => 'text-bg-secondary' }[booking.status]
-span.badge class=badge = t("bookings.statuses.#{booking.status}")
+- chip = { 'pending' => 'chip--warn', 'confirmed' => '', 'declined' => 'chip--muted', 'cancelled' => 'chip--muted' }[booking.status]
+span.chip class=chip = t("bookings.statuses.#{booking.status}")

@@ -1,4 +1,13 @@
 it-IT:
+  vehicle:
+    'yes': 'Sì'
+    errors:
+      blank: è obbligatorio
+      inclusion: non è tra i valori ammessi
+      not_a_number: deve essere un numero
+      too_long: è troppo lungo
+      greater_than_or_equal_to: è troppo piccolo
+      less_than_or_equal_to: è troppo grande
   trip:
     seats: Posti
     seats_unlimited: Illimitati
@@ -119,6 +128,16 @@ it-IT:
                 zero: Non ci sono più posti liberi
                 one: Resta solo %{count} posto libero
                 other: Restano solo %{count} posti liberi
+        user:
+          attributes:
+            phone:
+              invalid_ethiopian_phone: deve essere un numero etiope come 0911 22 33 44
+            base:
+              vehicle_field_invalid: "%{field} %{reason}"
+        itinerary:
+          attributes:
+            base:
+              vehicle_incomplete: "Completa prima i dati del veicolo (%{fields}) nelle impostazioni"
         review:
           attributes:
             base:

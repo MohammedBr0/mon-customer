@@ -1,0 +1,18 @@
+- pending_requests = Booking.pending.joins(:itinerary).where(itineraries: { user_id: current_user.id }).count
+nav.tabbar aria-label=t('nav.main')
+  = link_to dashboard_path, class: ['tabbar__item', ('active' if current_page?(dashboard_path))] do
+    span.fas.fa-house
+    span = t('nav.home')
+  = link_to itineraries_path, class: ['tabbar__item', ('active' if controller_name == 'itineraries' && action_name == 'index')] do
+    span.fas.fa-magnifying-glass
+    span = t('nav.search')
+  = link_to new_itinerary_path, class: 'tabbar__post', aria: { label: t('nav.post') } do
+    span.fas.fa-plus
+  = link_to bookings_path, class: ['tabbar__item', ('active' if controller_name == 'bookings')] do
+    span.fas.fa-ticket
+    span = t('bookings.title')
+    - if pending_requests.positive?
+      span.tabbar__badge = pending_requests
+  = link_to user_path(current_user), class: ['tabbar__item', ('active' if controller_name == 'users' && %w[show settings].include?(action_name))] do
+    span.fas.fa-user
+    span = t('nav.profile')

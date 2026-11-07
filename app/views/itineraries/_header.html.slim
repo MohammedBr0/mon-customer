@@ -1,63 +1,81 @@
-.page-header
-  h1 = @itinerary.title
-.row.itinerary-header.mb-2
-  .col-sm-6
-    = image_tag @itinerary.static_map, class: 'google-static-map img-fluid', alt: ''
-  .col-sm-6
-    .d-flex
-      .flex-shrink-0
-        = link_to user_path(@itinerary.user), class: 'me-2' do
-          = user_profile_picture @itinerary.user
-      .flex-grow-1
-        h5.m-0
-          - if user_signed_in?
-            = link_to @itinerary.user, user_path(@itinerary.user)
-          - else
-            = t('.app_user', appname: APP_CONFIG.app_name)
-        p.pre-line = @itinerary.description
-    .tag-list
-      span.tag.tag-icare = Itinerary.human_attribute_name :start_address
-      span.tag = @itinerary.start_address
-    .tag-list
-      span.tag.tag-icare = Itinerary.human_attribute_name :end_address
-      span.tag = @itinerary.end_address
-    - unless @itinerary.daily?
-      .tag-list
-        span.tag.tag-icare = Itinerary.human_attribute_name :leave_date
-        span.tag = l(@itinerary.leave_date, format: :long)
-      - if @itinerary.round_trip?
-        .tag-list
-          span.tag.tag-icare = Itinerary.human_attribute_name :return_date
-          span.tag = l(@itinerary.return_date, format: :long)
-    .tag-list
-      span.tag.tag-icare = t('.expenses_to_share')
-      span.tag #{Itinerary.human_attribute_name(:fuel_cost)}: #{@itinerary.fuel_cost}#{APP_CONFIG.currency}
-      span.tag #{Itinerary.human_attribute_name(:tolls)}: #{@itinerary.tolls}#{APP_CONFIG.currency}
-    .tag-list
-      span.tag.tag-icare = t('trip.seats')
-      - if @itinerary.seats_available.nil?
-        span.tag = t('trip.seats_unlimited')
-      - elsif @itinerary.full?
-        span.tag.text-danger = t('trip.fully_booked')
+- itinerary = @itinerary
+- driver = itinerary.user
+- confirmed = user_signed_in? && (current_user == driver || @my_booking&.confirmed?)
+- if APP_CONFIG.google_maps_api_key.present?
+  .trip-map.mb-3
+    = image_tag itinerary.static_map, class: 'google-static-map img-fluid', alt: ''
+
+.surface.mb-3
+  .trip-card__route
+    .trip-card__stop
+      span.trip-card__dot
+      span = itinerary.start_address
+    .trip-card__line
+    .trip-card__stop
+      span.trip-card__dot.trip-card__dot--end
+      span = itinerary.end_address
+
+dl.facts.mb-3
+  - unless itinerary.daily?
+    .fact
+      dt = Itinerary.human_attribute_name :leave_date
+      dd = l(itinerary.leave_date.in_time_zone, format: :short)
+    - if itinerary.round_trip?
+      .fact
+        dt = Itinerary.human_attribute_name :return_date
+        dd = l(itinerary.return_date.in_time_zone, format: :short)
+  .fact
+    dt = t('trip.price_per_seat')
+    dd = money(itinerary.passenger_price_per_seat)
+  .fact
+    dt = t('trip.seats')
+    dd
+      - if itinerary.cancelled?
+        = t('bookings.statuses.cancelled')
+      - elsif itinerary.seats_available.nil?
+        = t('trip.seats_unlimited')
+      - elsif itinerary.full?
+        span.text-danger = t('trip.fully_booked')
       - else
-        span.tag = t('trip.seats_left', available: @itinerary.seats_available, total: @itinerary.num_people)
-    .tag-list
-      span.tag.tag-icare = t('trip.price_per_seat')
-      span.tag #{number_with_precision(@itinerary.cost_per_seat, precision: 2)} #{APP_CONFIG.fuel_currency}
-    - if @itinerary.user.vehicle_description
-      .tag-list
-        span.tag.tag-icare = t('trip.vehicle')
-        span.tag = @itinerary.user.vehicle_description
-    - if @itinerary.user.reviews_count.positive?
-      .tag-list
-        span.tag.tag-icare = t('trip.driver_rating')
-        span.tag
-          span.fas.fa-star.text-warning<>
-          = t('reviews.summary', rating: @itinerary.user.average_rating, count: @itinerary.user.reviews_count)
-    .tag-list
-      - if @itinerary.pink?
-        span.tag.tag-pink data-bs-toggle='tooltip' title=t('itineraries.form.pink_hint')
-          span.fas.fa-lock<>
-          = Itinerary.human_attribute_name(:pink)
-      = boolean_tag @itinerary.smoking_allowed?, 'smoking', forbidden_icon: 'ban-smoking'
-      = boolean_tag @itinerary.pets_allowed?, 'pets'
+        = t('trip.seats_left', available: itinerary.seats_available, total: itinerary.num_people)
+
+.surface.mb-3
+  .driver-card
+    = link_to user_path(driver) do
+      = user_profile_picture driver, size: 52
+    div
+      strong.d-block
+        - if user_signed_in?
+          = link_to driver, user_path(driver)
+        - else
+          = t('.app_user', appname: APP_CONFIG.app_name)
+      - if driver.reviews_count.positive?
+        span.rating
+          span.fas.fa-star<> aria-hidden='true'
+          = t('reviews.summary', rating: driver.average_rating, count: driver.reviews_count)
+      - else
+        small.text-body-secondary = t('reviews.none_yet')
+  - details = driver.visible_vehicle_details(confirmed: confirmed)
+  - if details.any?
+    .d-flex.flex-wrap.gap-2.mt-3
+      - details.each do |field, value|
+        span.chip.chip--muted
+          = "#{field.label_for}: #{value}"
+  - if confirmed && driver.phone.present? && current_user != driver
+    p.mt-3.mb-0
+      span.fas.fa-phone<> aria-hidden='true'
+      = link_to driver.phone, "tel:#{driver.phone}"
+  - if itinerary.description.present?
+    p.pre-line.mt-3.mb-0 = itinerary.description
+
+.d-flex.flex-wrap.gap-2.mb-3
+  - if itinerary.pink?
+    span.chip.chip--pink
+      span.fas.fa-lock<> aria-hidden='true'
+      = Itinerary.human_attribute_name(:pink)
+  span.chip class=('chip--muted' unless itinerary.smoking_allowed?)
+    span.fas class=(itinerary.smoking_allowed? ? 'fa-check' : 'fa-ban-smoking') aria-hidden='true'
+    = t(".smoking.#{itinerary.smoking_allowed? ? 'allowed' : 'forbidden'}")
+  span.chip class=('chip--muted' unless itinerary.pets_allowed?)
+    span.fas class=(itinerary.pets_allowed? ? 'fa-paw' : 'fa-ban') aria-hidden='true'
+    = t(".pets.#{itinerary.pets_allowed? ? 'allowed' : 'forbidden'}")

@@ -14,7 +14,7 @@ RSpec.describe 'Sessions' do
     login_via_neon
 
     click_on t('logout')
-    expect(page).to have_content t('login')
+    expect(page).to have_content t('pages.home.cta')
   end
 
   it 'redirect to itinerary viewed by guests' do

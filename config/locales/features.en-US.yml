@@ -1,4 +1,13 @@
 en-US:
+  vehicle:
+    'yes': 'Yes'
+    errors:
+      blank: is required
+      inclusion: is not one of the allowed values
+      not_a_number: must be a number
+      too_long: is too long
+      greater_than_or_equal_to: is too small
+      less_than_or_equal_to: is too large
   trip:
     seats: Seats
     seats_unlimited: Not limited
@@ -119,6 +128,16 @@ en-US:
                 zero: There are no free seats left
                 one: Only %{count} free seat left
                 other: Only %{count} free seats left
+        user:
+          attributes:
+            phone:
+              invalid_ethiopian_phone: must be an Ethiopian number such as 0911 22 33 44
+            base:
+              vehicle_field_invalid: "%{field} %{reason}"
+        itinerary:
+          attributes:
+            base:
+              vehicle_incomplete: "Complete your vehicle details first (%{fields}) in Settings"
         review:
           attributes:
             base:

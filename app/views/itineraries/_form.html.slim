@@ -1,27 +1,30 @@
 fieldset#single
-  = f.input :leave_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time' }, wrapper: :horizontal_form
-  = f.input :round_trip, as: :boolean, wrapper: :horizontal_boolean
-  = f.input :return_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time' }, disabled: !@itinerary.round_trip, wrapper: :horizontal_form
-  = f.input :fuel_cost, wrapper: :horizontal_form do
-    .input-group
-      = f.text_field :fuel_cost, class: 'form-control text-end form-control--short'
-      span.input-group-text = APP_CONFIG.currency
-    p.form-text.text-body-secondary.mb-0#fuel-help data-avg-consumption=current_user.vehicle_avg_consumption
-      small#fuel-help-text
-  = f.input :tolls, wrapper: :horizontal_form do
-    .input-group
-      = f.text_field :tolls, class: 'form-control text-end form-control--short'
-      span.input-group-text = APP_CONFIG.currency
-    - if @itinerary.errors.include?(:tolls)
-      span.help-inline
-        = @itinerary.errors.messages[:tolls].join(', ')
-  = f.input :description, as: :text, input_html: { rows: 5, maxlength: Itinerary::MAX_DESCRIPTION_LENGTH }, hint: t('.description_hint'), wrapper: :horizontal_form
-  .form-group.row
-    .col-sm-9.offset-sm-3
-      - if current_user.female?
-        = f.input :pink, as: :boolean, hint: t('.pink_hint'), wrapper: false, form_check_wrapper_html: { class: 'mb-2' }
-      = f.input :smoking_allowed, as: :boolean, wrapper_class: false, form_check_wrapper_html: { class: 'mb-2' }
-      = f.input :pets_allowed, as: :boolean, wrapper: false
+  .mb-3
+    = f.input :leave_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time form-select d-inline-block w-auto' }
+  = f.input :round_trip, as: :boolean
+  .mb-3
+    = f.input :return_date, as: :datetime, default: default_leave_date, start_year: Time.current.year, end_year: 1.year.from_now.year, minute_step: 10, ampm: t('time.ampm'), input_html: { class: 'date-time form-select d-inline-block w-auto' }, disabled: !@itinerary.round_trip
+  .row
+    .col-sm-6
+      = f.input :num_people, collection: (1..8).to_a, include_blank: false, selected: (f.object.num_people || 3), label: t('trip.free_seats'), hint: t('trip.free_seats_hint')
+    .col-sm-6
+      = f.input :price_per_seat, label: t('trip.your_price') do
+        .input-group
+          = f.text_field :price_per_seat, class: 'form-control text-end', inputmode: 'decimal', placeholder: '0'
+          span.input-group-text = platform_setting.currency_symbol
+        p.form-text.mb-0
+          - if platform_setting.fee_charged_to_passenger?
+            = t('trip.fee_hint_passenger', percent: number_with_precision(platform_setting.fee_percent, precision: 2, strip_insignificant_zeros: true))
+          - else
+            = t('trip.fee_hint_driver', percent: number_with_precision(platform_setting.fee_percent, precision: 2, strip_insignificant_zeros: true))
+        p.form-text.mb-0#fuel-help data-avg-consumption=current_user.vehicle_avg_consumption
+          small#fuel-help-text
+  = f.input :description, as: :text, input_html: { rows: 4, maxlength: Itinerary::MAX_DESCRIPTION_LENGTH }, hint: t('.description_hint')
+  .mb-3
+    - if current_user.female?
+      = f.input :pink, as: :boolean, hint: t('.pink_hint'), wrapper: false, form_check_wrapper_html: { class: 'mb-2' }
+    = f.input :smoking_allowed, as: :boolean, wrapper_class: false, form_check_wrapper_html: { class: 'mb-2' }
+    = f.input :pets_allowed, as: :boolean, wrapper: false
 
 /
   fieldset#daily.hide.mock

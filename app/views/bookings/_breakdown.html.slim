@@ -1,0 +1,18 @@
+/ Price breakdown for a booking (or a preview of one). `breakdown` is a PriceBreakdown.
+- role = local_assigns.fetch(:role, :passenger)
+table.breakdown
+  tbody
+    tr
+      td = t('bookings.fare', seats: breakdown.seats, price: money(breakdown.price_per_seat))
+      td data-fare=true = money(breakdown.fare_total)
+    - if role == :passenger && breakdown.charged_to == 'passenger' && breakdown.fee_percent.positive?
+      tr
+        td = t('bookings.service_fee', percent: number_with_precision(breakdown.fee_percent, precision: 2, strip_insignificant_zeros: true))
+        td data-fee=true = money(breakdown.fee_amount)
+    - if role == :driver && breakdown.charged_to == 'driver' && breakdown.fee_percent.positive?
+      tr
+        td = t('bookings.service_fee_deducted', percent: number_with_precision(breakdown.fee_percent, precision: 2, strip_insignificant_zeros: true))
+        td data-fee=true = "- #{money(breakdown.fee_amount)}"
+    tr.total
+      td = role == :driver ? t('bookings.you_receive') : t('bookings.total')
+      td data-total=true = money(role == :driver ? breakdown.driver_payout : breakdown.passenger_total)

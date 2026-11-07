@@ -1,22 +1,14 @@
-footer.main-footer
+footer.app-footer
   .container
-    ul.list-footer
-      li
-        = link_to 'https://diowa.com' do
-          = inline_svg_pack_tag 'static/images/diowa.svg', class: 'diowa-logo', aria: true, title: 'diowa'
+    ul.app-footer__links
+      li = link_to t('about'), :about
+      li = link_to t('how_it_works'), :how_it_works
+      li = link_to t('terms'), :terms
+      li = link_to t('privacy'), :privacy
       - if user_signed_in?
-        li = link_to t('about'), :about
-        li = link_to t('how_it_works'), :how_it_works
-        li = link_to t('terms'), :terms
-      li
-        span.fab.fa-github<> aria-hidden='true'
-        span.visually-hidden = t('.github_repository')
-        = link_to 'diowa/icare', APP_CONFIG.repository_url
-      - if user_signed_in?
-        li
-          span.fa.fa-bullhorn<> aria-hidden='true'
-          = link_to Feedback.model_name.human(count: :lot), feedbacks_url
-        li
-          = link_to user_path(current_user), method: :delete, class: 'text-danger', data: { confirm: t('helpers.links.confirm') } do
-            span.fa.fa-times<> aria-hidden='true'
-            = t('delete_account')
+        li = link_to Feedback.model_name.human(count: :lot), feedbacks_url
+        li = link_to t('delete_account'), user_path(current_user), method: :delete, class: 'text-danger', data: { confirm: t('helpers.links.confirm') }
+    p.mt-2.mb-0
+      | #{APP_CONFIG.app_name} · #{t('footer.open_source')} ·
+      '
+      = link_to t('footer.source'), APP_CONFIG.repository_url

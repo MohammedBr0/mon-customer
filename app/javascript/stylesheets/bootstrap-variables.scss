@@ -1,17 +1,35 @@
-// New variables
+// icare design tokens (mobile first, Ethiopia)
 
-$brand-icare: #3d7098;
+$brand-icare: #0b7a4b;
 $pink: #c3325f;
 
 // Overrides
 
+$primary: #0b7a4b;
+$success: #1a8a55;
+$warning: #f2b705;
+$danger: #d64541;
 $color-mode-type: media-query;
-$enable-gradients: true;
+$enable-gradients: false;
+$enable-shadows: false;
 $enable-validation-icons: false;
 $link-decoration: none;
+$font-size-base: 1rem;
+$border-radius: .75rem;
+$border-radius-sm: .5rem;
+$border-radius-lg: 1rem;
+$btn-padding-y: .65rem;
+$btn-padding-x: 1.1rem;
+$btn-font-weight: 600;
+$input-padding-y: .7rem;
+$input-padding-x: .9rem;
+$input-btn-focus-width: .2rem;
+$headings-font-weight: 700;
+$container-max-widths: (sm: 540px, md: 720px, lg: 960px, xl: 1040px, xxl: 1040px);
 
+// System fonts: nothing to download, which matters on slow or metered connections.
 // stylelint-disable value-keyword-case
-$font-family-sans-serif: Lato, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+$font-family-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Ethiopic", "Abyssinica SIL", "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 // stylelint-enable value-keyword-case
 
 @import "bootstrap/scss/variables";

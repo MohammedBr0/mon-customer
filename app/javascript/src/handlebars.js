@@ -18,3 +18,9 @@ Handlebars.registerHelper('translate', key => new Handlebars.SafeString(i18n.t(k
 Handlebars.registerHelper('localize', (scope, key) => new Handlebars.SafeString(i18n.l(scope, key)))
 
 Handlebars.registerHelper('currency', key => new Handlebars.SafeString(`${key}${$('html').data('currency')}`))
+
+Handlebars.registerHelper('money', amount => {
+  const symbol = $('html').data('fuelCurrency') || ''
+  const number = Number(amount).toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return new Handlebars.SafeString(`${number} ${symbol}`.trim())
+})

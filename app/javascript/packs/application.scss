@@ -1,9 +1,6 @@
 @import "stylesheets/bootstrap";
 @import "stylesheets/buttons";
-@import "stylesheets/footer";
-@import "stylesheets/navbar";
 @import "stylesheets/turbolinks-progress-bar";
-@import "stylesheets/home";
 @import "stylesheets/conversations";
 @import "stylesheets/forms";
 @import "stylesheets/itineraries";
@@ -11,10 +8,7 @@
 @import "stylesheets/notifications";
 @import "stylesheets/tags";
 @import "stylesheets/users";
-
-body {
-  padding-top: 4.5rem;
-}
+@import "stylesheets/design";
 
 .d-none-soft {
   display: none;

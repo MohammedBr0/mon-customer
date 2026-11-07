@@ -1,39 +1,42 @@
 - title t('.account_settings')
 .container
   == render 'shared/flash_messages'
-
-  .page-header
-    h1 = yield :title
-  p.lead = t('.user_profile_details')
+  h1.page-title = yield :title
+  p.text-body-secondary = t('.user_profile_details')
 
   = simple_form_for @user, validate: true do |f|
     == render 'shared/error_messages', object: f.object
 
-    fieldset
-      legend = t('.vehicle_information')
-      = f.input :vehicle_avg_consumption do
-        .input-group
-          = f.text_field :vehicle_avg_consumption, class: 'form-control text-end'
-          span.input-group-text = "#{APP_CONFIG.fuel_currency}/km"
-      p.form-text
-        = t('.vehicle_avg_consumption_help')
-      .row
-        .col-sm-6 = f.input :car_make, label: t('trip.car_make'), input_html: { maxlength: 40 }
-        .col-sm-6 = f.input :car_model, label: t('trip.car_model'), input_html: { maxlength: 40 }
-      .row
-        .col-sm-6 = f.input :car_color, label: t('trip.car_color'), input_html: { maxlength: 40 }
-        .col-sm-6 = f.input :car_plate, label: t('trip.car_plate'), input_html: { maxlength: 12 }, hint: t('trip.car_plate_hint')
+    fieldset.surface.settings-section
+      legend = t('.contact_information')
+      = f.input :phone, as: :tel, label: t('.phone'), hint: t('.phone_hint'), input_html: { inputmode: 'tel', placeholder: '0911 22 33 44', autocomplete: 'tel' }
 
-    fieldset
+    fieldset.surface.settings-section
+      legend = t('.vehicle_information')
+      p.form-text = t('.vehicle_intro')
+      - VehicleField.active.each do |field|
+        .mb-3
+          - unless field.boolean?
+            label.form-label for="user_vehicle_data_#{field.key}"
+              = field.label_for
+              - if field.required?
+                span.text-danger< *
+          = vehicle_field_input(f.object, field)
+          p.form-text.mb-0
+            = [field.help_text.presence, vehicle_visibility_hint(field)].compact.join(' · ')
+      = f.input :vehicle_avg_consumption, label: t('.fuel_cost_per_km') do
+        .input-group
+          = f.text_field :vehicle_avg_consumption, class: 'form-control text-end', inputmode: 'decimal'
+          span.input-group-text = "#{APP_CONFIG.fuel_currency}/km"
+      p.form-text = t('.vehicle_avg_consumption_help')
+
+    fieldset.surface.settings-section
       legend = t('.application_settings')
       = f.input :locale, collection: I18n.available_locales.map { |locale| [t('lang_native_name', locale: locale), locale] }, disabled: I18n.available_locales.one?
       = f.input :time_zone, include_blank: false
-    fieldset
-      legend = t('.send_email')
       = f.input :send_email_messages, as: :boolean
       p.form-text
         = t('.send_email_at_address')
         b< = current_user.email
 
-    .form-group
-      = f.button :button, class: 'btn btn-primary', data: { disable_with: t('helpers.disable_with') }
+    = f.button :button, class: 'btn-primary btn-lg w-100', data: { disable_with: t('helpers.disable_with') }

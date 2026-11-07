@@ -1,0 +1,9 @@
+- edit = local_assigns.fetch(:edit, false)
+- if itineraries.blank?
+  .empty.surface
+    span.fas.fa-route aria-hidden='true'
+    = t('trip.empty')
+- else
+  .trip-list
+    - itineraries.each do |itinerary|
+      == render 'itineraries/card', itinerary: itinerary, edit: edit

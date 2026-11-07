@@ -1,0 +1,250 @@
+# Amharic. Main flows are translated; anything missing falls back to English.
+# Please have a native speaker review the wording before launch.
+am-ET:
+  lang_native_name: አማርኛ
+  login: ግባ
+  logout: ውጣ
+  loading: በመጫን ላይ...
+  save: አስቀምጥ
+  close: ዝጋ
+  about: ስለ እኛ
+  how_it_works: እንዴት ይሰራል
+  privacy: የግላዊነት ፖሊሲ
+  terms: ውሎች
+  delete_account: መለያ ሰርዝ
+  meta_title: በኢትዮጵያ ውስጥ የጉዞ መጋራት
+  meta_description: ጉዞዎን ያጋሩ፣ ገንዘብ ይቆጥቡ።
+  boolean:
+    'true': አዎ
+    'false': አይ
+  helpers:
+    actions: እርምጃዎች
+    disable_with: እባክዎ ይጠብቁ...
+    links:
+      back: ተመለስ
+      confirm: እርግጠኛ ነዎት?
+      edit: አርም
+      destroy: ሰርዝ
+  nav:
+    main: ዋና ምናሌ
+    home: መነሻ
+    search: ፈልግ
+    post: ጉዞ አቅርብ
+    profile: መገለጫ
+    find_ride: ጉዞ ፈልግ
+    offer_ride: ጉዞ አቅርብ
+  footer:
+    open_source: ክፍት ምንጭ የጉዞ መጋራት
+    source: የምንጭ ኮድ
+  templates:
+    itineraries:
+      per_seat: መቀመጫ
+      read_more: ተጨማሪ
+      show_on_map: በካርታ አሳይ
+  shared:
+    navbar:
+      account_settings: የመለያ ቅንብሮች
+      admin_users: ተጠቃሚዎችን አስተዳድር
+      settings: ቅንብሮች
+  pages:
+    home:
+      headline: በመላው ኢትዮጵያ ጉዞን ይጋሩ
+      lead: በአዲስ አበባና በአገሪቱ ከተሞች መካከል ይጓዙ። አሽከርካሪዎች የራሳቸውን ዋጋ ያወጣሉ፣ ተሳፋሪዎች በደቂቃ ውስጥ መቀመጫ ይይዛሉ።
+      cta: ጀምር
+      routes:
+        addis_adama: አዲስ አበባ → አዳማ
+        addis_hawassa: አዲስ አበባ → ሀዋሳ
+        addis_bahirdar: አዲስ አበባ → ባሕር ዳር
+        addis_diredawa: አዲስ አበባ → ድሬዳዋ
+      benefit_save_title: በእያንዳንዱ ጉዞ ይቆጥቡ
+      benefit_save_text: ለመቀመጫዎ ብቻ ይከፍላሉ። አሽከርካሪዎች ተገቢ ዋጋ ያወጣሉ፣ ከመያዝዎ በፊት ሙሉ ዋጋውን ያያሉ።
+      benefit_trust_title: ከማን ጋር እንደሚጓዙ ይወቁ
+      benefit_trust_text: ደረጃዎች፣ አስተያየቶችና የተሽከርካሪ ዝርዝሮች የሚያምኑትን አሽከርካሪ እንዲመርጡ ይረዱዎታል።
+      benefit_easy_title: በደቂቃዎች ውስጥ ይያዙ
+      benefit_easy_text: መቀመጫ ይጠይቁ፣ ማረጋገጫ ያግኙ እና አሽከርካሪዎን ይገናኙ። በማንኛውም ስልክ በደንብ ይሰራል።
+      signin_terms_html: "«ጀምር»ን ሲጫኑ የ%{appname} %{terms_link}ን እንደተስማሙና %{privacy_link}ን እንዳነበቡ ይቆጠራል።"
+  users:
+    dashboard:
+      title: መነሻ
+      your_itineraries: የእርስዎ ጉዞዎች
+      latest_itineraries: የቅርብ ጊዜ ጉዞዎች
+    itineraries:
+      title: የእርስዎ ጉዞዎች
+    settings:
+      account_settings: የመለያ ቅንብሮች
+      contact_information: አድራሻ
+      phone: ስልክ ቁጥር
+      phone_hint: ለተረጋገጡ ተሳፋሪዎች ወይም አሽከርካሪዎች ብቻ ይጋራል፣ ለምሳሌ 0911 22 33 44።
+      vehicle_information: የተሽከርካሪ መረጃ
+      vehicle_intro: ተሳፋሪዎች ከመያዛቸው በፊት እነዚህን ዝርዝሮች ያያሉ።
+      fuel_cost_per_km: የነዳጅ ወጪ በኪሎ ሜትር
+      application_settings: የመተግበሪያ ቅንብሮች
+      send_email_at_address: ኢሜይሎች የሚላኩት ወደዚህ አድራሻ ነው፦
+  itineraries:
+    index:
+      title: ጉዞ ፈልግ
+    new:
+      title: አዲስ ጉዞ
+      plan_route: መንገዱን ያዘጋጁ
+      insert_details_and_confirm: ዝርዝሮችን ያስገቡና ያረጋግጡ
+      next_step: ቀጣይ
+      previous_step: ተመለስ
+      confirm_and_share: አረጋግጥና አጋራ
+    edit:
+      title: ጉዞ አርም
+    search:
+      search: ፈልግ
+      advanced_search: ተጨማሪ ፍለጋ
+      seats: የሚያስፈልጉ መቀመጫዎች
+      sort: ደርድር በ
+      sort_date: ቀዳሚ መነሻ
+      sort_price: በመቀመጫ ርካሹ
+    show:
+      contact: "%{user}ን ያነጋግሩ"
+      login_to_contact: ለማነጋገር ይግቡ
+    header:
+      app_user: "የ%{appname} ተጠቃሚ"
+      smoking:
+        allowed: ማጨስ ይፈቀዳል
+        forbidden: ማጨስ አይፈቀድም
+      pets:
+        allowed: የቤት እንስሳት ይፈቀዳሉ
+        forbidden: የቤት እንስሳት አይፈቀዱም
+  trip:
+    seats: መቀመጫዎች
+    seats_unlimited: ያልተገደበ
+    seats_left: "%{available} ከ%{total} ቀርተዋል"
+    fully_booked: ሙሉ በሙሉ ተይዟል
+    price_per_seat: በመቀመጫ ዋጋ
+    per_seat: በመቀመጫ
+    vehicle: ተሽከርካሪ
+    driver_rating: የአሽከርካሪ ደረጃ
+    cancelled_banner: ይህ ጉዞ በአሽከርካሪው ተሰርዟል።
+    cancel_trip: ጉዞ ሰርዝ
+    cancel_confirm: ይህን ጉዞ ይሰረዝ? ሁሉም ተሳፋሪዎች ይነገራቸዋል።
+    empty: ገና ምንም ጉዞ የለም።
+    free_seats: ነጻ መቀመጫዎች
+    free_seats_hint: እርስዎን ሳይጨምር።
+    your_price: በመቀመጫ ዋጋዎ
+    fee_hint_passenger: "ተሳፋሪዎች ዋጋዎን እና %{percent}% የአገልግሎት ክፍያ ይከፍላሉ።"
+    fee_hint_driver: "%{percent}% የአገልግሎት ክፍያ ከገቢዎ ይቀነሳል።"
+  bookings:
+    title: ቦታ ማስያዣዎች
+    requests_title: የመቀመጫ ጥያቄዎች
+    requests_received: ለጉዞዎችዎ የመጡ ጥያቄዎች
+    my_bookings: የእርስዎ ቦታ ማስያዣዎች
+    no_requests: ገና ምንም የመቀመጫ ጥያቄ የለም።
+    no_bookings: ገና ምንም መቀመጫ አልያዙም።
+    trip: ጉዞ
+    driver: አሽከርካሪ
+    passenger: ተሳፋሪ
+    seats: መቀመጫዎች
+    status: ሁኔታ
+    confirm: አረጋግጥ
+    decline: አልቀበልም
+    cancel: ሰርዝ
+    cancel_confirm: ይህ ቦታ ማስያዣ ይሰረዝ?
+    your_booking: የእርስዎ ቦታ ማስያዣ
+    seats_count:
+      one: "%{count} መቀመጫ"
+      other: "%{count} መቀመጫዎች"
+    request_title: መቀመጫ ይጠይቁ
+    request: መቀመጫ ጠይቅ
+    note: ለአሽከርካሪው መልእክት (አማራጭ)
+    note_placeholder: "ለምሳሌ፦ በዋናው አደባባይ እጠብቃለሁ"
+    fare: "%{seats} × %{price}"
+    service_fee: "የአገልግሎት ክፍያ (%{percent}%)"
+    service_fee_deducted: "የአገልግሎት ክፍያ (%{percent}%)"
+    total: ጠቅላላ የሚከፈል
+    you_receive: የሚደርስዎት
+    pending_banner:
+      one: 1 የመቀመጫ ጥያቄ እየጠበቀዎት ነው
+      other: "%{count} የመቀመጫ ጥያቄዎች እየጠበቁዎት ነው"
+    statuses:
+      pending: በመጠባበቅ ላይ
+      confirmed: የተረጋገጠ
+      declined: ተቀባይነት ያላገኘ
+      cancelled: የተሰረዘ
+  reviews:
+    title: አስተያየቶች
+    summary:
+      one: "%{rating} (%{count} አስተያየት)"
+      other: "%{rating} (%{count} አስተያየቶች)"
+    none_yet: ገና ምንም አስተያየት የለም
+    rate_driver: አሽከርካሪውን ይገምግሙ
+    rate_passenger: ተሳፋሪውን ይገምግሙ
+    thanks: ለአስተያየትዎ እናመሰግናለን።
+    new_title: "%{name}ን ይገምግሙ"
+    new_lead: "ጉዞው %{trip} እንዴት ነበር?"
+    rating: ደረጃ
+    stars:
+      '1': 1 - ደካማ
+      '2': 2 - መካከለኛ
+      '3': 3 - ጥሩ
+      '4': 4 - በጣም ጥሩ
+      '5': 5 - እጅግ በጣም ጥሩ
+    comment: አስተያየት (አማራጭ)
+    comment_placeholder: ጉዞው በሰዓቱና ደስ የሚል ነበር?
+    submit: አስተያየት ላክ
+    cancel: ሰርዝ
+  conversations:
+    empty: ገና ምንም መልእክት የለም።
+    new: አዲስ
+  vehicle:
+    'yes': አዎ
+    visibility:
+      public: ለሁሉም ይታያል
+      confirmed: ለተረጋገጡ ተሳፋሪዎች ብቻ ይታያል
+      private: የግል፣ አይታይም
+  flash:
+    bookings:
+      created: የመቀመጫ ጥያቄዎ ለአሽከርካሪው ተልኳል።
+      confirmed: ቦታ ማስያዣው ተረጋግጧል። ተሳፋሪው ተነግሮታል።
+      declined: ቦታ ማስያዣው አልተቀበለም። ተሳፋሪው ተነግሮታል።
+      cancelled: ቦታ ማስያዣው ተሰርዟል።
+      invalid: ይህ ቦታ ማስያዣ ከዚህ በኋላ ሊቀየር አይችልም።
+      not_enough_seats: ይህን ቦታ ማስያዣ ለማረጋገጥ በቂ ነጻ መቀመጫ የለም።
+    reviews:
+      created: እናመሰግናለን፣ አስተያየትዎ ታትሟል።
+      not_completed: ጉዞው ከተካሄደ በኋላ ብቻ መገምገም ይችላሉ።
+      already_reviewed: ይህን ጉዞ አስቀድመው ገምግመዋል።
+    itineraries:
+      success:
+        cancel: ጉዞው ተሰርዟል። ተሳፋሪዎች ተነግሯቸዋል።
+    users:
+      success:
+        update: ተጠቃሚው በተሳካ ሁኔታ ተዘምኗል።
+    errors:
+      not_allowed: ይህን ገጽ የማየት ፈቃድ የለዎትም።
+  mailers:
+    footer: ይህን ኢሜይል የደረስዎት በicare መለያ ስላለዎት ነው።
+    view_trip: ጉዞውን ይመልከቱ
+    find_another: ሌላ ጉዞ ይፈልጉ
+    booking:
+      requested:
+        subject: "%{passenger} በ%{trip} ላይ መቀመጫ ጠይቋል"
+        greeting: "ሰላም %{name}፣"
+        body: "%{passenger} በጉዞዎ %{trip} ላይ %{seats} መቀመጫ ጠይቋል። ለማረጋገጥ ወይም ላለመቀበል ጉዞውን ይክፈቱ።"
+      confirmed:
+        subject: "በ%{trip} ላይ ያለዎት ቦታ ማስያዣ ተረጋግጧል"
+        greeting: "ሰላም %{name}፣"
+        body: "%{driver} በ%{trip} ላይ %{seats} መቀመጫዎን አረጋግጧል።"
+      declined:
+        subject: "በ%{trip} ላይ ያለዎት ቦታ ማስያዣ አልተቀበለም"
+        greeting: "ሰላም %{name}፣"
+        body: "%{driver} ለ%{trip} ጥያቄዎን መቀበል አልቻለም። ሌላ ጉዞ ሊፈልጉ ይችላሉ።"
+      cancelled:
+        subject: "በ%{trip} ላይ ቦታ ማስያዣ ተሰርዟል"
+        greeting: "ሰላም %{name}፣"
+        body: "%{by} በ%{trip} ላይ የ%{seats} መቀመጫ ቦታ ማስያዣ ሰርዟል።"
+    itinerary:
+      cancelled:
+        subject: "ጉዞ ተሰርዟል፦ %{trip}"
+        greeting: "ሰላም %{name}፣"
+        body: "%{driver} ጉዞውን %{trip} ሰርዟል። ቦታ ማስያዣዎም አብሮ ተሰርዟል።"
+    message:
+      new_message:
+        subject: "ከ%{sender} አዲስ መልእክት"
+        greeting: "ሰላም %{name}፣"
+        body: "%{sender} መልእክት ልኮልዎታል፦"
+        reply: መልስ

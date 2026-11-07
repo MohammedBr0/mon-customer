@@ -1,0 +1,40 @@
+- title t('admin_extra.vehicle_fields')
+.container
+  == render 'shared/flash_messages'
+  .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+    h1.page-title.mb-0 = yield :title
+    = link_to new_admin_vehicle_field_path, class: 'btn btn-primary' do
+      span.fas.fa-plus aria-hidden='true'
+      = t('admin_extra.add_field')
+  p.text-body-secondary.mt-2 = t('admin_extra.vehicle_fields_intro')
+  - if @fields.empty?
+    .surface.empty = t('admin_extra.no_fields')
+  - else
+    .stack
+      - @fields.each_with_index do |field, index|
+        .surface class=('opacity-50' unless field.active?)
+          .row-card
+            .row-card__main
+              span.row-card__title
+                = field.label
+                small.text-body-secondary< = field.key
+              .d-flex.flex-wrap.gap-2.mt-1
+                span.chip.chip--muted = t("admin_extra.field_types.#{field.field_type}")
+                span.chip.chip--muted = t("vehicle.visibility.#{field.visibility}")
+                - if field.required?
+                  span.chip.chip--warn = t('admin_extra.required')
+                - unless field.active?
+                  span.chip.chip--danger = t('admin_extra.inactive')
+              - if field.select?
+                small.d-block.text-body-secondary.mt-1 = field.options_list.join(', ')
+            .row-card__actions
+              - if index.positive?
+                = button_to move_admin_vehicle_field_path(field, direction: 'up'), method: :patch, class: 'btn btn-outline-secondary btn-sm', title: t('admin_extra.move_up') do
+                  span.fas.fa-arrow-up aria-label=t('admin_extra.move_up')
+              - if index < @fields.size - 1
+                = button_to move_admin_vehicle_field_path(field, direction: 'down'), method: :patch, class: 'btn btn-outline-secondary btn-sm', title: t('admin_extra.move_down') do
+                  span.fas.fa-arrow-down aria-label=t('admin_extra.move_down')
+              = link_to edit_admin_vehicle_field_path(field), class: 'btn btn-outline-primary btn-sm' do
+                = t('helpers.links.edit')
+              = button_to admin_vehicle_field_path(field), method: :delete, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('admin_extra.delete_field_confirm') } do
+                = t('helpers.links.destroy')

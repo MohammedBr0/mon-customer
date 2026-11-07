@@ -8,27 +8,29 @@ html lang=I18n.locale.to_s data-default-locale=I18n.default_locale data-currency
     = csrf_meta_tags
     = yield :head
 
-    = stylesheet_link_tag 'https://fonts.googleapis.com/css?family=Lato:300,400,400italic,700|Pacifico', media: 'all', 'data-turbolinks-track': 'reload'
     = stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
 
     / Webapp
     link rel='manifest' href='/manifest.json'
     meta name='application-name' content='icare'
-    meta name='theme-color' content='#3d7098'
+    meta name='theme-color' content='#0b7a4b'
 
     link rel='apple-touch-icon' href=asset_pack_path('static/images/apple-touch-icon.png') sizes='180x180'
     meta name='apple-mobile-web-app-title' content='icare'
     meta name='apple-mobile-web-app-capable' content='yes'
-    meta name='apple-mobile-web-app-status-bar-style' content='#3d7098'
+    meta name='apple-mobile-web-app-status-bar-style' content='#0b7a4b'
 
     / Turbolinks require javascript tags inside the head
     = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
     = javascript_include_tag google_maps_api_source, 'data-turbolinks-track': 'reload', defer: true
 
-  body class=('homepage' if action_name == 'home')
+  body class=body_classes
     == render 'shared/google_tag_manager' if APP_CONFIG.google_analytics_id.present?
-    == render 'shared/navbar' unless action_name == 'home'
+    == render 'shared/navbar' unless action_name == 'home' && !user_signed_in?
 
-    = yield
+    main.app-main
+      = yield
 
-    == render 'shared/footer'
+    == render 'shared/footer' unless action_name == 'home' && !user_signed_in?
+    = yield :sticky_cta
+    == render 'shared/tabbar' if user_signed_in?

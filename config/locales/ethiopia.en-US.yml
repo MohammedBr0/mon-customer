@@ -1,0 +1,124 @@
+en-US:
+  nav:
+    main: Main navigation
+    home: Home
+    search: Search
+    post: Offer a ride
+    profile: Profile
+    find_ride: Find a ride
+    offer_ride: Offer a ride
+  footer:
+    open_source: Open-source carpooling
+    source: Source code
+  templates:
+    itineraries:
+      per_seat: seat
+  pages:
+    home:
+      headline: Share the ride across Ethiopia
+      lead: Travel between Addis Ababa and cities across the country. Drivers set their own price and passengers book a seat in a minute.
+      cta: Get started
+      routes:
+        addis_adama: Addis Ababa → Adama
+        addis_hawassa: Addis Ababa → Hawassa
+        addis_bahirdar: Addis Ababa → Bahir Dar
+        addis_diredawa: Addis Ababa → Dire Dawa
+      benefit_save_title: Save on every trip
+      benefit_save_text: Pay only for your seat. Drivers set a fair price and you see the full cost before you book.
+      benefit_trust_title: Know who you ride with
+      benefit_trust_text: Ratings, reviews and vehicle details help you choose a driver you trust.
+      benefit_easy_title: Book in minutes
+      benefit_easy_text: Request a seat, get a confirmation and meet your driver. Made to work well on any phone.
+  trip:
+    per_seat: per seat
+    empty: No trips yet.
+    free_seats: Free seats
+    free_seats_hint: Not counting you.
+    your_price: Your price per seat
+    fee_hint_passenger: "Passengers pay your price plus a %{percent}% service fee."
+    fee_hint_driver: "A %{percent}% service fee is deducted from your earnings."
+  bookings:
+    fare: "%{seats} × %{price}"
+    service_fee: "Service fee (%{percent}%)"
+    service_fee_deducted: "Service fee (%{percent}%)"
+    total: Total to pay
+    you_receive: You receive
+    pending_banner:
+      one: 1 seat request is waiting for you
+      other: "%{count} seat requests are waiting for you"
+  reviews:
+    none_yet: No reviews yet
+  conversations:
+    empty: No messages yet.
+    new: New
+  vehicle:
+    visibility:
+      public: Visible to everyone
+      confirmed: Shown to confirmed passengers only
+      private: Private, not shown
+  users:
+    settings:
+      contact_information: Contact
+      phone: Phone number
+      phone_hint: "Shared only with confirmed riders or drivers, for example 0911 22 33 44."
+      vehicle_intro: Passengers see these details before they book.
+      fuel_cost_per_km: Fuel cost per km
+  admin_extra:
+    platform_settings: Fee & payments
+    vehicle_fields: Vehicle fields
+    fee_title: Platform fee
+    fee_intro: The platform earns this percentage of every confirmed booking. Each booking keeps the fee that applied when it was made.
+    fee_percent: Fee percentage
+    fee_charged_to: Who pays the fee
+    charged_to:
+      passenger: Passenger (added to the fare)
+      driver: Driver (deducted from earnings)
+    fee_charged_to_hint: Passenger shows the fee on top of the driver's price. Driver keeps the passenger price equal to the driver's price and takes the fee from the driver's payout.
+    money_title: Currency and prices
+    currency_code: Currency code
+    currency_symbol: Currency symbol
+    max_price: Highest price per seat drivers may set
+    max_price_hint: Protects passengers from typing mistakes such as an extra zero.
+    payment_instructions: Payment instructions
+    payment_instructions_hint: Shown to passengers when they request and after they are confirmed.
+    fee_note: Fees are calculated and recorded for every booking. Collecting them online needs a payment gateway such as Telebirr or Chapa, which is not connected yet.
+    add_field: Add field
+    edit_field: Edit vehicle field
+    vehicle_fields_intro: These are the questions drivers answer about their vehicle. Change them any time; required fields must be filled before a driver posts a trip.
+    no_fields: No vehicle fields yet.
+    field_types:
+      text: Text
+      select: Choice list
+      number: Number
+      boolean: Yes / no
+    required: Required
+    inactive: Hidden
+    move_up: Move up
+    move_down: Move down
+    delete_field_confirm: Delete this field? Answers drivers gave for it will be removed.
+    field_label: Name (English)
+    field_key: Key
+    field_key_hint: Lowercase letters, digits and underscores. Cannot be changed later.
+    label_am: Name in Amharic
+    label_it: Name in Italian
+    field_type: Type
+    visibility: Who can see it
+    options: Choices
+    options_hint: One choice per line. Used by choice lists.
+    min_value: Smallest value
+    max_value: Largest value
+    help_text: Help text
+    required_before_trip: Required before a driver can post a trip
+    active_field: Active (shown to drivers)
+    stats:
+      money: Money
+      gross_fares: Fares from confirmed bookings
+      platform_fees: "Platform fees (%{percent}% today)"
+  flash:
+    admin:
+      settings:
+        updated: Settings saved. New bookings use them straight away.
+      vehicle_fields:
+        created: Vehicle field added.
+        updated: Vehicle field updated.
+        destroyed: Vehicle field deleted.

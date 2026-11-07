@@ -55,7 +55,7 @@ RSpec.describe 'Users' do
 
       login_via_neon
 
-      expect(page).to have_css('.table-itinerary tbody tr', count: 5)
+      expect(page).to have_css('.trip-card', count: 5)
     end
 
     context 'with pink itineraries' do
@@ -71,7 +71,7 @@ RSpec.describe 'Users' do
 
           login_via_neon
 
-          expect(page).to have_css('.table-itinerary tbody tr', count: 6)
+          expect(page).to have_css('.trip-card', count: 6)
         end
       end
 
@@ -81,7 +81,7 @@ RSpec.describe 'Users' do
 
           login_via_neon
 
-          expect(page).to have_css('.table-itinerary tbody tr', count: 5)
+          expect(page).to have_css('.trip-card', count: 5)
         end
       end
     end

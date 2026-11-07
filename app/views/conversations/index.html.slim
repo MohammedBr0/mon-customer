@@ -1,15 +1,18 @@
 - title t('.title')
 .container
-  .page-header
-    h1 = yield :title
-  .table-responsive
-    table.table
-      thead
-        th = User.model_name.human
-        th = t('helpers.actions')
-      tbody
-        - @conversations.each do |conversation|
-          tr class=('unread' if conversation.unread?(current_user))
-            td = link_to conversation.with(current_user), conversation_path(conversation)
-            td = link_to t('helpers.links.show'), conversation_path(conversation)
+  h1.page-title = yield :title
+  - if @conversations.empty?
+    .surface.empty
+      span.fas.fa-comments aria-hidden='true'
+      = t('conversations.empty')
+  - else
+    .stack
+      - @conversations.each do |conversation|
+        = link_to conversation_path(conversation), class: 'surface text-decoration-none text-reset' do
+          .row-card
+            .row-card__main
+              span.row-card__title = conversation.with(current_user)
+              small.text-body-secondary = conversation.conversable.try(:title)
+            - if conversation.unread?(current_user)
+              span.chip = t('conversations.new')
   == paginate @conversations

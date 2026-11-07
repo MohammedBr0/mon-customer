@@ -1,0 +1,47 @@
+- title t('admin_extra.platform_settings')
+.container
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  = form_with model: @setting, url: admin_settings_path, method: :patch, scope: :platform_setting do |f|
+    - if @setting.errors.any?
+      .alert.alert-danger
+        ul.mb-0
+          - @setting.errors.full_messages.each do |message|
+            li = message
+
+    fieldset.surface.settings-section
+      legend = t('admin_extra.fee_title')
+      p.form-text = t('admin_extra.fee_intro')
+      .mb-3
+        = f.label :fee_percent, t('admin_extra.fee_percent'), class: 'form-label'
+        .input-group
+          = f.number_field :fee_percent, step: 0.01, min: 0, max: PlatformSetting::MAX_FEE_PERCENT, class: 'form-control text-end', inputmode: 'decimal'
+          span.input-group-text %
+      .mb-3
+        = f.label :fee_charged_to, t('admin_extra.fee_charged_to'), class: 'form-label'
+        = f.select :fee_charged_to, PlatformSetting::FEE_CHARGED_TO.map { |who| [t("admin_extra.charged_to.#{who}"), who] }, {}, class: 'form-select'
+        p.form-text = t('admin_extra.fee_charged_to_hint')
+
+    fieldset.surface.settings-section
+      legend = t('admin_extra.money_title')
+      .row
+        .col-6
+          = f.label :currency_code, t('admin_extra.currency_code'), class: 'form-label'
+          = f.text_field :currency_code, class: 'form-control', maxlength: 5
+        .col-6
+          = f.label :currency_symbol, t('admin_extra.currency_symbol'), class: 'form-label'
+          = f.text_field :currency_symbol, class: 'form-control', maxlength: 6
+      .mt-3
+        = f.label :max_price_per_seat, t('admin_extra.max_price'), class: 'form-label'
+        .input-group
+          = f.number_field :max_price_per_seat, step: 1, min: 1, class: 'form-control text-end', inputmode: 'decimal'
+          span.input-group-text = @setting.currency_symbol
+        p.form-text = t('admin_extra.max_price_hint')
+      .mt-3
+        = f.label :payment_instructions, t('admin_extra.payment_instructions'), class: 'form-label'
+        = f.text_area :payment_instructions, rows: 3, maxlength: 500, class: 'form-control'
+        p.form-text = t('admin_extra.payment_instructions_hint')
+
+    p.form-text = t('admin_extra.fee_note')
+    = f.button class: 'btn btn-primary btn-lg w-100', data: { disable_with: t('helpers.disable_with') } do
+      = t('save')

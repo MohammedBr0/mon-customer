@@ -1,5 +1,4 @@
-= button_to user_neon_omniauth_authorize_path, form_class: 'd-inline-block', class: 'btn btn-primary btn-lg' do
-  = t('login')
-p.mt-4
-  br
+= button_to user_neon_omniauth_authorize_path, form_class: 'd-block', class: 'btn btn-primary btn-lg btn-block-mobile' do
+  = t('pages.home.cta')
+p.hero__terms
   = t('pages.home.signin_terms_html', appname: APP_CONFIG.app_name, terms_link: link_to(t('terms'), :terms), privacy_link: link_to(t('privacy'), :privacy))

@@ -16,6 +16,25 @@ module ApplicationHelper
     }
   end
 
+  def platform_setting
+    @platform_setting ||= PlatformSetting.current
+  end
+
+  # "1,250 Br", with cents only when there are some.
+  def money(amount)
+    value = amount.to_d
+    number = number_with_precision(value, precision: value.frac.zero? ? 0 : 2, delimiter: ',')
+    "#{number} #{platform_setting.currency_symbol}"
+  end
+
+  def body_classes
+    classes = []
+    classes << 'has-tabbar' if user_signed_in?
+    classes << 'has-sticky-cta' if content_for?(:sticky_cta)
+    classes << 'landing' if action_name == 'home' && !user_signed_in?
+    classes.join(' ')
+  end
+
   def title(page_title)
     content_for(:title) { page_title.to_s }
   end

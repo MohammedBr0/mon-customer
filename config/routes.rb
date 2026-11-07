@@ -41,6 +41,10 @@ Rails.application.routes.draw do
   # Admin Area
   namespace :admin do
     root to: 'dashboard#show'
+    resource :settings, only: %i[show update]
+    resources :vehicle_fields, except: :show do
+      patch :move, on: :member
+    end
     resources :itineraries, only: :index do
       patch :cancel, on: :member
     end
