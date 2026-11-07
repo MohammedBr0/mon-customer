@@ -277,7 +277,10 @@ Devise.setup do |config|
     neon_auth_base_url = "#{neon_auth_base_url.start_with?('localhost') ? 'http' : 'https'}://#{neon_auth_base_url}"
   end
 
-  config.omniauth :openid_connect,
+  require_relative '../../lib/omniauth/strategies/neon_auth'
+
+  config.omniauth :neon,
+                  strategy_class: OmniAuth::Strategies::NeonAuth,
                   name:           :neon,
                   issuer:         APP_CONFIG.neon_auth.issuer,
                   scope:          APP_CONFIG.neon_auth.scope,
