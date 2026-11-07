@@ -12,6 +12,8 @@ gem 'rails', '7.1.5.2'
 gem 'activerecord-postgis-adapter', '~> 9.0'
 gem 'airbrake', '~> 13.0'
 gem 'bootsnap', '~> 1.18', require: false
+# CSV left the default gems in Ruby 3.4 (used by the admin bookings export)
+gem 'csv', '~> 3.3'
 gem 'client_side_validations', '~> 22.3'
 gem 'client_side_validations-simple_form', '~> 16.0'
 gem 'devise', '~> 4.9'

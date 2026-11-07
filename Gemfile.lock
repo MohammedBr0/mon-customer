@@ -128,6 +128,7 @@ GEM
       bigdecimal
       rexml
     crass (1.0.6)
+    csv (3.3.7)
     date (3.4.1)
     devise (4.9.4)
       bcrypt (~> 3.0)
@@ -517,6 +518,7 @@ DEPENDENCIES
   capybara
   client_side_validations (~> 22.3)
   client_side_validations-simple_form (~> 16.0)
+  csv (~> 3.3)
   devise (~> 4.9)
   email_spec
   factory_bot_rails
