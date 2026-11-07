@@ -8,8 +8,6 @@ class Conversation < ApplicationRecord
 
   belongs_to :conversable, polymorphic: true
 
-  has_and_belongs_to_many :users
-
   scope :unread, lambda { |user|
     joins(:messages).where(messages: { read_at: nil }).where.not(messages: { sender: user })
   }
