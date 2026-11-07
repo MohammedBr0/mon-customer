@@ -157,10 +157,36 @@ RSpec.describe Itinerary do
 end
 
 RSpec.describe Itinerary, 'seats, cost and cancellation' do
-  let(:itinerary) { create(:itinerary, num_people: 3, fuel_cost: 30, tolls: 10) }
+  let(:itinerary) { create(:itinerary, num_people: 3, price_per_seat: 100) }
 
-  it 'splits fuel and tolls between driver and passengers' do
-    expect(itinerary.cost_per_seat).to eq 10.0
+  it 'uses the price the driver set, plus the platform fee when passengers pay it' do
+    PlatformSetting.current.update!(fee_percent: 10, fee_charged_to: 'passenger')
+    expect(itinerary.price_per_seat).to eq 100
+    expect(itinerary.passenger_price_per_seat).to eq 110
+
+    PlatformSetting.current.update!(fee_charged_to: 'driver')
+    expect(itinerary.passenger_price_per_seat).to eq 100
+  end
+
+  it 'rejects a negative price and a price above the platform limit' do
+    PlatformSetting.current.update!(max_price_per_seat: 500)
+
+    expect(build(:itinerary, price_per_seat: -1)).not_to be_valid
+    expect(build(:itinerary, price_per_seat: 501)).not_to be_valid
+    expect(build(:itinerary, price_per_seat: 0)).to be_valid
+    expect(build(:itinerary, price_per_seat: 500)).to be_valid
+  end
+
+  it 'requires the driver to have completed the required vehicle details' do
+    create(:vehicle_field, key: 'plate', label: 'Plate', required: true)
+    driver = create(:user)
+
+    itinerary = build(:itinerary, user: driver)
+    expect(itinerary).not_to be_valid
+    expect(itinerary.errors[:base].join).to include('Plate')
+
+    driver.update!(vehicle_data: { 'plate' => 'AA 12345' })
+    expect(build(:itinerary, user: driver)).to be_valid
   end
 
   it 'reports seats left and fullness' do

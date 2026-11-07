@@ -45,7 +45,7 @@ RSpec.describe Booking do
     end
 
     it 'rejects bookings on a trip that already left' do
-      itinerary.update_columns(leave_date: 1.hour.ago) # rubocop:disable Rails/SkipsModelValidations
+      itinerary.update_columns(leave_date: 1.hour.ago)
 
       expect(build(:booking, itinerary:, passenger:)).not_to be_valid
     end

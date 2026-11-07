@@ -18,6 +18,8 @@ class Booking < ApplicationRecord
   scope :pending, -> { where(status: 'pending') }
   scope :confirmed, -> { where(status: 'confirmed') }
 
+  before_validation :snapshot_pricing, on: :create
+
   validates :status, inclusion: { in: STATUSES }
   validates :seats, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: MAX_SEATS }
   validates :note, length: { maximum: MAX_NOTE_LENGTH }
@@ -89,7 +91,27 @@ class Booking < ApplicationRecord
 
   class InvalidTransition < StandardError; end
 
+  # What the passenger pays and what the driver gets, frozen when the booking is made so that
+  # later price or fee changes never alter an existing booking.
+  def price_breakdown
+    PriceBreakdown.new(price_per_seat, seats, fee_percent, fee_charged_to)
+  end
+
   private
+
+  def snapshot_pricing
+    return unless itinerary
+
+    setting = PlatformSetting.current
+    breakdown = PriceBreakdown.for(price_per_seat: itinerary.price_per_seat, seats: seats.to_i.clamp(1, MAX_SEATS), setting:)
+    self.price_per_seat = itinerary.price_per_seat
+    self.fee_percent = setting.fee_percent
+    self.fee_charged_to = setting.fee_charged_to
+    self.fare_total = breakdown.fare_total
+    self.fee_amount = breakdown.fee_amount
+    self.passenger_total = breakdown.passenger_total
+    self.driver_payout = breakdown.driver_payout
+  end
 
   def raise_unless(condition, reason)
     raise InvalidTransition, reason.to_s unless condition

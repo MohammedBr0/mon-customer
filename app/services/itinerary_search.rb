@@ -43,10 +43,10 @@ class ItinerarySearch
     params[:seats].to_i.clamp(1, Booking::MAX_SEATS)
   end
 
-  # Earliest departure first by default; "price" lists the cheapest share per seat first.
+  # Earliest departure first by default; "price" lists the cheapest seat first.
   def ordered(itineraries)
     if params[:sort] == 'price'
-      itineraries.order(Arel.sql('(itineraries.fuel_cost + itineraries.tolls)::float / (COALESCE(itineraries.num_people, 0) + 1)'), :leave_date)
+      itineraries.order(:price_per_seat, :leave_date)
     else
       itineraries.order(:leave_date)
     end

@@ -2,6 +2,7 @@
 
 class User < ApplicationRecord
   include NeonAuthOmniauthable
+  include VehicleDetails
 
   # Include default devise modules. Others available are:
   devise :omniauthable, omniauth_providers: [:neon]
@@ -24,10 +25,8 @@ class User < ApplicationRecord
   has_many :conversations, ->(user) { unscope(:where).where(sender: user).or(where(receiver: user)) }, inverse_of: :sender, dependent: :destroy
 
   validates :gender, inclusion: GENDER, allow_blank: true
-  validates :car_make, :car_model, :car_color, length: { maximum: 40 }
-  validates :car_plate, length: { maximum: 12 }
   validates :time_zone, inclusion: ActiveSupport::TimeZone.all.map(&:name)
-  validates :vehicle_avg_consumption, numericality: { greater_than: 0, less_than: 10 }, presence: true
+  validates :vehicle_avg_consumption, numericality: { greater_than: 0, less_than: 1000 }, presence: true
 
   def age
     ((Time.current.to_fs(:number).to_i - birthday.at_midnight.to_fs(:number).to_i) / 1e10.to_i) if birthday?
@@ -51,10 +50,6 @@ class User < ApplicationRecord
 
   def reviews_count
     reviews_received.count
-  end
-
-  def vehicle_description
-    [car_color, car_make, car_model].compact_blank.join(' ').presence
   end
 
   def unread_conversations_count

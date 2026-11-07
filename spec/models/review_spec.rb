@@ -35,7 +35,7 @@ RSpec.describe Review do
 
   it 'rejects reviews of an unconfirmed booking' do
     pending_booking = create(:booking)
-    pending_booking.itinerary.update_columns(leave_date: 2.days.ago) # rubocop:disable Rails/SkipsModelValidations
+    pending_booking.itinerary.update_columns(leave_date: 2.days.ago)
 
     expect(build(:review, booking: pending_booking, reviewer: pending_booking.passenger, reviewee: pending_booking.driver)).not_to be_valid
   end

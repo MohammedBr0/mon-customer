@@ -5,6 +5,7 @@
 
 SimpleConfig.for :application do
   group :itineraries do
+    set :geo_restricted, false
     set :bounds, [
       [5, 4],
       [7, 4],

@@ -16,6 +16,7 @@ FactoryBot.define do
 
     fuel_cost { 22 }
     tolls { 9 }
+    price_per_seat { 50 }
 
     round_trip { false }
     leave_date { 1.day.from_now.utc }

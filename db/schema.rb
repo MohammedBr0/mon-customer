@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_07_190300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -26,6 +26,13 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
     t.bigint "cancelled_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.decimal "price_per_seat", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "fee_percent", precision: 5, scale: 2, default: "0.0", null: false
+    t.string "fee_charged_to", default: "passenger", null: false
+    t.decimal "fare_total", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "fee_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "passenger_total", precision: 10, scale: 2, default: "0.0", null: false
+    t.decimal "driver_payout", precision: 10, scale: 2, default: "0.0", null: false
     t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
     t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
     t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
@@ -85,6 +92,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.datetime "cancelled_at"
+    t.decimal "price_per_seat", precision: 10, scale: 2, default: "0.0", null: false
     t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
     t.index ["user_id"], name: "index_itineraries_on_user_id"
@@ -99,6 +107,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
     t.datetime "updated_at", null: false
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["sender_id"], name: "index_messages_on_sender_id"
+  end
+
+  create_table "platform_settings", force: :cascade do |t|
+    t.decimal "fee_percent", precision: 5, scale: 2, default: "10.0", null: false
+    t.string "fee_charged_to", default: "passenger", null: false
+    t.string "currency_code", default: "ETB", null: false
+    t.string "currency_symbol", default: "Br", null: false
+    t.decimal "max_price_per_seat", precision: 10, scale: 2, default: "10000.0", null: false
+    t.text "payment_instructions"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "reviews", force: :cascade do |t|
@@ -128,8 +147,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
     t.string "locale"
     t.boolean "send_email_messages", default: false
     t.string "telephone"
-    t.string "time_zone", default: "UTC"
-    t.decimal "vehicle_avg_consumption", precision: 5, scale: 2, default: "0.12"
+    t.string "time_zone", default: "Nairobi"
+    t.decimal "vehicle_avg_consumption", precision: 5, scale: 2, default: "8.0"
     t.boolean "admin", default: false
     t.boolean "banned", default: false
     t.string "access_token"
@@ -140,8 +159,28 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_180300) do
     t.string "car_model"
     t.string "car_color"
     t.string "car_plate"
+    t.jsonb "vehicle_data", default: {}, null: false
+    t.string "phone"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
+  end
+
+  create_table "vehicle_fields", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "label", null: false
+    t.jsonb "labels", default: {}, null: false
+    t.string "field_type", default: "text", null: false
+    t.jsonb "options", default: [], null: false
+    t.boolean "required", default: false, null: false
+    t.string "visibility", default: "public", null: false
+    t.string "help_text"
+    t.integer "min_value"
+    t.integer "max_value"
+    t.integer "position", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_vehicle_fields_on_key", unique: true
   end
 
   add_foreign_key "bookings", "itineraries"

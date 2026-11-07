@@ -23,6 +23,10 @@ class Itinerary < ApplicationRecord
   delegate :name, to: :user, prefix: true
   delegate :first_name, to: :user, prefix: true
 
+  validates :price_per_seat, numericality: { greater_than_or_equal_to: 0 }
+  validate :price_within_platform_limit
+  validate :driver_vehicle_is_complete, on: :create
+
   validates :description, length: { maximum: MAX_DESCRIPTION_LENGTH }, presence: true
   validates :num_people, numericality: { only_integer: true, greater_than: 0, less_than: 10 }, allow_blank: true
   validates :fuel_cost, numericality: { only_integer: true, greater_than_or_equal_to: 0, less_than: 10_000 }
@@ -34,6 +38,18 @@ class Itinerary < ApplicationRecord
 
   def driver_is_female
     errors.add(:pink, :driver_must_be_female) unless user.female?
+  end
+
+  def price_within_platform_limit
+    max = PlatformSetting.current.max_price_per_seat
+    errors.add(:price_per_seat, :less_than_or_equal_to, count: max.to_i) if price_per_seat.to_d > max
+  end
+
+  # Passengers need to recognise the car, so required vehicle details come before the first trip.
+  def driver_vehicle_is_complete
+    return if user.blank? || user.vehicle_complete?
+
+    errors.add(:base, :vehicle_incomplete, fields: user.missing_vehicle_fields.map(&:label_for).to_sentence)
   end
 
   before_create do
@@ -70,10 +86,13 @@ class Itinerary < ApplicationRecord
     seats_available == 0
   end
 
-  # Fuel and tolls are shared between the driver and the passengers.
-  def cost_per_seat
-    shared_people = num_people.to_i + 1
-    ((fuel_cost.to_i + tolls.to_i).to_f / shared_people).round(2)
+  # What one seat costs the passenger: the driver's price plus the platform fee when passengers pay it.
+  def passenger_price_per_seat
+    PriceBreakdown.for(price_per_seat:, seats: 1).passenger_total
+  end
+
+  def price_breakdown(seats = 1)
+    PriceBreakdown.for(price_per_seat:, seats:)
   end
 
   def bookable_by?(user)

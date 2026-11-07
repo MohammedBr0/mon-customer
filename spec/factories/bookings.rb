@@ -15,7 +15,7 @@ FactoryBot.define do
     # A confirmed booking on a trip that has already left.
     trait :completed do
       confirmed
-      after(:create) { |booking| booking.itinerary.update_columns(leave_date: 2.days.ago) } # rubocop:disable Rails/SkipsModelValidations
+      after(:create) { |booking| booking.itinerary.update_columns(leave_date: 2.days.ago) }
     end
   end
 end

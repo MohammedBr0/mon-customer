@@ -5,6 +5,8 @@ module GeoItinerary
 
   RGEO_FACTORY = RGeo::Geographic.simple_mercator_factory(buffer_resolution: 4)
   LINEAR_RING = RGEO_FACTORY.linear_ring(APP_CONFIG.itineraries.bounds.map { |p| RGeo::Geographic.spherical_factory.point(*p) })
+  # The ring is only an outline; testing whether a point lies inside needs the area it encloses.
+  BOUNDARY_AREA = RGEO_FACTORY.polygon(LINEAR_RING)
 
   included do
     attr_accessor :route
@@ -34,8 +36,13 @@ module GeoItinerary
       super
     end
 
+    # Points on the edge count as inside; the area test alone would leave them out.
+    def within_bounds?(point)
+      BOUNDARY_AREA.contains?(point) || LINEAR_RING.contains?(point)
+    end
+
     def inside_bounds
-      errors.add(:base, :out_of_boundaries) unless LINEAR_RING.contains?(start_location) && LINEAR_RING.contains?(end_location)
+      errors.add(:base, :out_of_boundaries) unless within_bounds?(start_location) && within_bounds?(end_location)
     end
 
     def route=(param)

@@ -44,7 +44,6 @@ RSpec.describe User do
       expect(unknown_birthday.age).to be_nil
     end
   end
-  # rubocop:enable Naming/VariableNumber
 
   describe '#female?' do
     it 'answers true if user is female' do

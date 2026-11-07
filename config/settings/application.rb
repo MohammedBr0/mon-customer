@@ -14,11 +14,10 @@ SimpleConfig.for :application do
   set :base_url, 'localhost:3000'
   set :single_process_mode, true
 
-  set :currency, '.00 €'
-  set :fuel_consumption, 0.12
-  set :fuel_currency, '€'
-
-  set :costs_calculation_service_link, 'http://servizi.aci.it/CKInternet/'
+  # Ethiopian Birr. Amounts are shown as "150 Br"; PlatformSetting lets a super admin change the symbol.
+  set :currency, ' Br'
+  set :fuel_consumption, 8.0
+  set :fuel_currency, 'Br'
 
   set :google_analytics_id, nil
   set :google_maps_api_key, nil
@@ -38,23 +37,20 @@ SimpleConfig.for :application do
   end
 
   group :map do
-    # defaults to Italy
-    set :center, [41.87194, 12.567379999999957]
-    set :zoom, 8
+    # Addis Ababa
+    set :center, [9.0192, 38.7525]
+    set :zoom, 7
   end
 
   group :itineraries do
-    # Enable this option if you want to restrict itineraries inside a geographic area
-    set :geo_restricted, false
+    # Trips must start and end inside Ethiopia. Set GEO_RESTRICTED=false to allow anywhere.
+    set :geo_restricted, ENV.fetch('GEO_RESTRICTED', 'true') != 'false'
 
-    # Island of Ischia boundaries as Line String, in [lng, lat] format
-    # Create one at https://www.gmapgis.com/
+    # Approximate outline of Ethiopia as a closed ring, in [lng, lat] format
     set :bounds, [
-      [13.85861, 40.77019],
-      [13.97695, 40.74631],
-      [13.97463, 40.69827],
-      [13.86784, 40.6822],
-      [13.8335, 40.72306]
+      [36.55, 14.27], [37.9, 14.88], [39.4, 14.55], [40.8, 14.1], [41.8, 12.7], [42.4, 12.4], [43.1, 10.9],
+      [44.0, 9.9], [47.97, 8.0], [44.2, 5.0], [42.9, 4.9], [41.9, 3.95], [39.1, 3.5], [36.05, 4.45],
+      [34.0, 4.2], [33.0, 7.8], [34.1, 9.5], [34.3, 10.7], [35.3, 11.8], [36.0, 12.7]
     ]
   end
 
