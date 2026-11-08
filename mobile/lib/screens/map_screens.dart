@@ -156,6 +156,7 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
   bool _looking = false;
   bool _moved = false;
   bool _dragging = false;
+  bool _satellite = true;
   int _serial = 0;
 
   @override
@@ -223,6 +224,7 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
             if (_dragging) setState(() => _dragging = false);
             if (_moved || widget.initial == null) _lookup();
           },
+          mapType: _satellite ? MapType.hybrid : MapType.normal,
           zoomControlsEnabled: false,
           myLocationButtonEnabled: false,
           mapToolbarEnabled: false,
@@ -254,8 +256,12 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
         ),
         Positioned(
           right: 12,
-          bottom: 150,
-          child: FloatingActionButton.small(heroTag: 'loc', onPressed: _myLocation, child: const Icon(Icons.my_location)),
+          bottom: 190,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            FloatingActionButton.small(heroTag: 'pickerLayers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
+            const SizedBox(height: 10),
+            FloatingActionButton.small(heroTag: 'loc', onPressed: _myLocation, child: const Icon(Icons.my_location)),
+          ]),
         ),
         Positioned(
           left: 0,
@@ -293,6 +299,8 @@ class TripMapScreen extends StatefulWidget {
 }
 
 class _TripMapScreenState extends State<TripMapScreen> {
+  bool _satellite = true;
+
   Future<void> _navigate() async {
     final a = widget.points.first, b = widget.points.last;
     final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&origin=${a.latitude},${a.longitude}&destination=${b.latitude},${b.longitude}&travelmode=driving');
@@ -307,12 +315,17 @@ class _TripMapScreenState extends State<TripMapScreen> {
       body: GoogleMap(
         initialCameraPosition: framing(points),
         markers: endMarkers(points),
-        polylines: {routeLine(points)},
+        polylines: {routeLine(points, satellite: _satellite)},
+        mapType: _satellite ? MapType.hybrid : MapType.normal,
         onMapCreated: (c) => Future.delayed(const Duration(milliseconds: 350), () => c.animateCamera(CameraUpdate.newLatLngBounds(boundsOf(points), 64))),
         mapToolbarEnabled: false,
         myLocationButtonEnabled: false,
       ),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _navigate, icon: const Icon(Icons.navigation_outlined), label: Text(context.t('open_in_maps'))),
+      floatingActionButton: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+        FloatingActionButton.small(heroTag: 'tripLayers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
+        const SizedBox(height: 10),
+        FloatingActionButton.extended(onPressed: _navigate, icon: const Icon(Icons.navigation_outlined), label: Text(context.t('open_in_maps'))),
+      ]),
     );
   }
 }
@@ -343,7 +356,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   Object? _error;
   bool _dirty = false; // the map moved since the last search
   bool _programmatic = false;
-  bool _satellite = false;
+  bool _satellite = true; // satellite imagery is the default look
   bool _located = false;
   String _sort = 'date';
   int _seats = 1;
@@ -610,7 +623,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   Set<Polyline> get _lines {
     final id = _selected == null ? null : _trips[_selected!].id;
     final points = id == null ? null : _routes[id];
-    return {if (points != null && points.length >= 2) routeLine(points)};
+    return {if (points != null && points.length >= 2) routeLine(points, satellite: _satellite)};
   }
 
   @override

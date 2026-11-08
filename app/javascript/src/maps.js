@@ -177,7 +177,7 @@ window.initMap = function () {
 
     const map = new google.maps.Map($(id)[0], {
       center: new google.maps.LatLng(mapConfig.center[0], mapConfig.center[1]),
-      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      mapTypeId: google.maps.MapTypeId.HYBRID, // satellite imagery with road and place names
       scrollwheel: false,
       styles: styleArray,
       zoom: mapConfig.zoom
