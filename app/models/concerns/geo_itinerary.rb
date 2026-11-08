@@ -61,7 +61,10 @@ module GeoItinerary
       overview_path.coordinates.in_groups(precision).map(&:first).insert(-1, overview_path.coordinates.last).compact
     end
 
+    # Static Maps is a separate Google API; only used when switched on.
     def static_map(width = 640, height = 360)
+      return unless APP_CONFIG.google_static_maps
+
       URI::DEFAULT_PARSER.escape [
         "https://maps.googleapis.com/maps/api/staticmap?size=#{width}x#{height}",
         'scale=2',

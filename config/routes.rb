@@ -18,6 +18,9 @@ Rails.application.routes.draw do
 
   resources :feedbacks, only: %i[show new create edit update destroy index]
 
+  get 'maps/geocode', to: 'maps#geocode'
+  get 'maps/route', to: 'maps#route'
+
   resources :city_commutes, only: %i[index new create]
 
   resources :itineraries, only: %i[show new create edit update destroy index search] do

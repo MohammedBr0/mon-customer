@@ -21,17 +21,15 @@ const {
   icare
 } = window
 
+// `route` is what /maps/route returns (Google Routes API through our server).
 const setItinerary = function (route) {
-  // NOTE server side is limited to 2.500 requests per day, so we create routes on client
-
-  // Set visible fields at first
-  $('.itinerary-from-j').text(route.legs[0].start_address)
-  $('.itinerary-to-j').text(route.legs[0].end_address)
-  $('#distance').text(route.legs[0].distance.text)
-  $('#duration').text(route.legs[0].duration.text)
-  $('#copyrights').text(route.copyrights)
+  $('.itinerary-from-j').text(route.start_address)
+  $('.itinerary-to-j').text(route.end_address)
+  $('#distance').text(route.distance_text)
+  $('#duration').text(route.duration_text)
+  $('#copyrights').text('')
   $('#map-result-j').show()
-  const routeKm = (Number)(route.legs[0].distance.value / 1000)
+  const routeKm = (Number)(route.distance_value / 1000)
   const routeGasoline = routeKm * (Number)($('#fuel-help').data('avg-consumption'))
   $('#fuel-help-text').text(i18n.t('javascript.fuel_help_text', { km: routeKm.toFixed(2), est: Math.ceil(routeGasoline), avg_consumption: $('#fuel-help').data('avg-consumption'), fuel_currency: $('html').data('fuelCurrency'), currency: $('html').data('currency') }))
   $('#fuel-help').show()
@@ -40,29 +38,14 @@ const setItinerary = function (route) {
   const $price = $('#itinerary_price_per_seat')
   if (!Number($price.val())) { $price.val(Math.max(5, Math.ceil(routeGasoline / (seats + 1) / 5) * 5)) }
 
-  const rleg = route.legs[0]
+  $('#remove-waypoints-link').hide()
 
   const data = {
-    start_location: [rleg.start_location.lng(), rleg.start_location.lat()],
-    end_location: [rleg.end_location.lng(), rleg.end_location.lat()],
+    start_location: route.start_location,
+    end_location: route.end_location,
     via_waypoints: [],
-    overview_path: [],
+    overview_path: route.overview_path,
     overview_polyline: route.overview_polyline
-  }
-
-  for (const waypoint of Array.from(rleg.via_waypoints)) {
-    data.via_waypoints.push([waypoint.lng(), waypoint.lat()])
-  }
-
-  // Show a link to remove waypoints
-  if (rleg.via_waypoints.length > 0) {
-    $('#remove-waypoints-link').show()
-  } else {
-    $('#remove-waypoints-link').hide()
-  }
-
-  for (const point of Array.from(route.overview_path)) {
-    data.overview_path.push([point.lng(), point.lat()])
   }
 
   window.icare.route = data
@@ -148,34 +131,27 @@ const lastStepInit = function () {
     route
   } = window.icare
   const $itineraryPreviewImage = $('#itinerary-preview-image')
+  if ($itineraryPreviewImage.hasClass('d-none')) { return }
   const googleMapsApiKey = $itineraryPreviewImage.data('googleMapsApiKey')
   return $itineraryPreviewImage.attr('src', `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&markers=color:green|label:B|${route.end_location[1]},${route.end_location[0]}&markers=color:green|label:A|${route.start_location[1]},${route.start_location[0]}&path=enc:${route.overview_polyline}&key=${googleMapsApiKey}`)
 }
 
-const setRoute = function (dr, result) {
-  dr.setDirections(result)
-  dr.setOptions({
-    polylineOptions: {
-      strokeColor: '#0000ff',
-      strokeWeight: 5,
-      strokeOpacity: 0.45
-    }
-  })
-  return dr.map.fitBounds(dr.directions.routes[0].bounds)
-}
-// dr.setOptions
-//  suppressMarkers: true
-
-const getWaypoints = function () {
-  try {
-    return Array.from(JSON.parse($('#itinerary_via_waypoints').val())).map((point) => (
-      { location: new google.maps.LatLng(point[1], point[0]), stopover: false }))
-  } catch (e) {
-    return []
-  }
+// Draws the route from /maps/route on the map: the line, A and B markers, and zoomed to fit.
+const drawRoute = function (state, route) {
+  if (state.line) { state.line.setMap(null) }
+  state.markers.forEach(marker => marker.setMap(null))
+  const path = route.overview_path.map(point => ({ lat: point[1], lng: point[0] }))
+  state.line = new google.maps.Polyline({ map: state.map, path, strokeColor: '#0b7a4b', strokeWeight: 5, strokeOpacity: 0.8 })
+  state.markers = [
+    new google.maps.Marker({ map: state.map, position: path[0], label: 'A' }),
+    new google.maps.Marker({ map: state.map, position: path[path.length - 1], label: 'B' })
+  ]
+  const bounds = new google.maps.LatLngBounds()
+  path.forEach(point => bounds.extend(point))
+  state.map.fitBounds(bounds)
 }
 
-const calculateRoute = function (dr, ds) {
+const calculateRoute = function (state) {
   if (($('#itinerary_start_address').val() === '') || ($('#itinerary_end_address').val() === '')) { return }
   $('#itineraries-spinner-j').show()
   $('#map-error-j').hide()
@@ -184,51 +160,36 @@ const calculateRoute = function (dr, ds) {
   $('#copyrights').text('')
   $('#distance').text('')
   $('#duration').text('')
-  ds.route({
+  $.getJSON('/maps/route', {
     origin: $('#itinerary_start_address').val(),
     destination: $('#itinerary_end_address').val(),
-    travelMode: 'DRIVING', // $("#mode").val()
-    avoidHighways: $('#itinerary_avoid_highways').prop('checked'),
-    avoidTolls: $('#itinerary_avoid_tolls').prop('checked'),
-    waypoints: getWaypoints()
-  }
-  , function (result, status) {
+    avoid_highways: $('#itinerary_avoid_highways').prop('checked'),
+    avoid_tolls: $('#itinerary_avoid_tolls').prop('checked')
+  }).done(function (route) {
     $('#itineraries-spinner-j').hide()
-    if (status === google.maps.DirectionsStatus.OK) {
-      setRoute(dr, result)
-    } else {
-      let message
-      switch (status) {
-        case 'NOT_FOUND':
-          message = i18n.t('javascript.not_found')
-          break
-        case 'ZERO_RESULTS':
-          message = i18n.t('javascript.zero_results')
-          break
-        default:
-          message = status
-      }
-      $('#map-error-j').text(message).show()
+    drawRoute(state, route)
+    setItinerary(route)
+    $('#new_itinerary_submit-j').prop('disabled', false)
+  }).fail(function (xhr) {
+    $('#itineraries-spinner-j').hide()
+    const code = xhr.responseJSON && xhr.responseJSON.error
+    let message
+    switch (code) {
+      case 'not_found':
+        message = i18n.t('javascript.not_found')
+        break
+      case 'zero_results':
+        message = i18n.t('javascript.zero_results')
+        break
+      default:
+        message = i18n.t('javascript.an_error_occurred')
     }
+    $('#map-error-j').text(message).show()
   })
 }
 
 const createRouteMapInit = function (id) {
-  const map = icare.initGoogleMaps(id)
-
-  const dr = new google.maps.DirectionsRenderer({
-    map,
-    draggable: true,
-    preserveViewport: true
-  })
-
-  const ds = new google.maps.DirectionsService()
-
-  google.maps.event.addListener(dr, 'directions_changed', function () {
-    map.fitBounds(dr.directions.routes[0].bounds)
-    setItinerary(dr.getDirections().routes[0])
-    return $('#new_itinerary_submit-j').prop('disabled', false)
-  })
+  const state = { map: icare.initGoogleMaps(id), line: null, markers: [] }
 
   const $itineraryAddressInputs = $('#itinerary_start_address, #itinerary_end_address')
 
@@ -236,7 +197,7 @@ const createRouteMapInit = function (id) {
   $itineraryAddressInputs.on('keypress', function (e) {
     if (e && (e.keyCode === 13)) {
       e.preventDefault()
-      return calculateRoute(dr, ds)
+      return calculateRoute(state)
     }
   })
 
@@ -249,11 +210,11 @@ const createRouteMapInit = function (id) {
       if (!$(this).isValid(validators)) { valid = false }
     })
     if (!valid) { return }
-    return calculateRoute(dr, ds)
+    return calculateRoute(state)
   })
 
   // Set route if it's already available
-  return calculateRoute(dr, ds)
+  return calculateRoute(state)
 }
 
 const initItineraryNew = function () {

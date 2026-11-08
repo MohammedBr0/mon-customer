@@ -9,6 +9,9 @@ SimpleConfig.for :application do
 
   set :google_analytics_id, ENV['GOOGLE_ANALYTICS_ID']
   set :google_maps_api_key, ENV['GOOGLE_MAPS_API_KEY']
+  # Optional second key for server calls; use it when the browser key is limited to website referrers.
+  set :google_maps_server_key, ENV['GOOGLE_MAPS_SERVER_KEY']
+  set :google_static_maps, ENV['GOOGLE_STATIC_MAPS'] == 'true'
 
   group :neon_auth do
     set :issuer, ENV['NEON_AUTH_URL']

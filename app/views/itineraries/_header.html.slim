@@ -1,7 +1,7 @@
 - itinerary = @itinerary
 - driver = itinerary.user
 - confirmed = user_signed_in? && (current_user == driver || @my_booking&.confirmed?)
-- if APP_CONFIG.google_maps_api_key.present?
+- if APP_CONFIG.google_maps_api_key.present? && itinerary.static_map.present?
   .trip-map.mb-3
     = image_tag itinerary.static_map, class: 'google-static-map img-fluid', alt: ''
 

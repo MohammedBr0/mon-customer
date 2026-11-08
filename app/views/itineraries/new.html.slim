@@ -22,7 +22,7 @@
       #wizard-step-2-content.d-none-soft data-step='2'
         .row
           .col-sm-4
-            = image_tag transparent_gif_image_data, class: 'img-fluid google-static-map', id: 'itinerary-preview-image', alt: '', data: { google_maps_api_key: APP_CONFIG.google_maps_api_key }
+            = image_tag transparent_gif_image_data, class: ['img-fluid', 'google-static-map', ('d-none' unless APP_CONFIG.google_static_maps)], id: 'itinerary-preview-image', alt: '', data: { google_maps_api_key: APP_CONFIG.google_maps_api_key }
           .col-sm-8
             h1.m-0
               small.h5.d-block.mb-0 = Itinerary.human_attribute_name :start_address

@@ -93,25 +93,12 @@ const clearItineraries = () => {
   icare.customMarkers = {}
 }
 
+// Turns what the person typed into coordinates, through the server (Google Places).
 const lookupPosition = function (searchField) {
   const deferred = $.Deferred()
-  const geocoder = new google.maps.Geocoder()
-
-  geocoder.geocode(
-    { address: $(`#itineraries_search_${searchField}`).val() }
-    , function (results, status) {
-      if (status === google.maps.GeocoderStatus.OK) {
-        const firstResult = results[0]
-        return deferred.resolve({
-          formatted_address: firstResult.formatted_address,
-          lat: firstResult.geometry.location.lat(),
-          lng: firstResult.geometry.location.lng()
-        })
-      } else {
-        return deferred.reject(status)
-      }
-    })
-
+  $.getJSON('/maps/geocode', { q: $(`#itineraries_search_${searchField}`).val() })
+    .done(place => deferred.resolve({ formatted_address: place.address, lat: place.lat, lng: place.lng }))
+    .fail(xhr => deferred.reject((xhr.responseJSON && xhr.responseJSON.error) || 'error'))
   return deferred.promise()
 }
 
