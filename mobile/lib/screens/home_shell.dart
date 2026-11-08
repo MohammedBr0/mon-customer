@@ -8,6 +8,7 @@ import '../widgets/common.dart';
 import '../widgets/paged_trips.dart';
 import 'bookings_screen.dart';
 import 'messages_screen.dart';
+import 'notifications_screen.dart';
 import 'offer_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
@@ -58,6 +59,11 @@ class _HomeShellState extends State<HomeShell> {
         titleSpacing: 16,
         title: const Text('icare', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24)),
         actions: [
+          IconButton(
+            tooltip: context.t('notifications'),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())).then((_) => app.checkNotifications()),
+            icon: Badge(isLabelVisible: app.unreadNotifications > 0, label: Text('${app.unreadNotifications}'), child: const Icon(Icons.notifications_none)),
+          ),
           IconButton(
             tooltip: context.t('messages'),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MessagesScreen())).then((_) => app.refreshUnread()),

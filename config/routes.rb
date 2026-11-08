@@ -67,6 +67,10 @@ Rails.application.routes.draw do
       resources :conversations, only: %i[index show create] do
         post :message, on: :member
       end
+      resources :notifications, only: :index do
+        collection { post :read_all }
+        patch :read, on: :member
+      end
       resources :ride_alerts, only: %i[index create destroy]
       resources :reports, only: :create
     end

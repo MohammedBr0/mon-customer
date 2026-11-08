@@ -18,6 +18,9 @@ class Booking < ApplicationRecord
   scope :pending, -> { where(status: 'pending') }
   scope :confirmed, -> { where(status: 'confirmed') }
 
+  after_create_commit :notify_driver_of_request
+  after_update_commit :notify_of_status_change, if: :saved_change_to_status?
+
   before_validation :default_ride_dates, on: :create
   before_validation :snapshot_pricing, on: :create
 
@@ -103,6 +106,7 @@ class Booking < ApplicationRecord
     self.ride_dates = remaining
     snapshot_pricing(keep_fee_terms: true)
     save!
+    Notification.notify(counterpart_of(by), 'date_skipped', booking_id: id, itinerary_id: itinerary_id, trip: itinerary.title, person: by.to_s, date: date.iso8601)
     self
   end
 
@@ -123,6 +127,25 @@ class Booking < ApplicationRecord
   end
 
   private
+
+  def notify_driver_of_request
+    Notification.notify(driver, 'booking_requested', booking_id: id, itinerary_id:, trip: itinerary.title, person: passenger.to_s, seats:)
+  end
+
+  def notify_of_status_change
+    common = { booking_id: id, itinerary_id:, trip: itinerary.title }
+    case status
+    when 'confirmed' then Notification.notify(passenger, 'booking_confirmed', **common, person: driver.to_s)
+    when 'declined' then Notification.notify(passenger, 'booking_declined', **common, person: driver.to_s)
+    when 'cancelled'
+      if cancelled_by == driver && itinerary.cancelled?
+        Notification.notify(passenger, 'itinerary_cancelled', **common, person: driver.to_s)
+      else
+        recipient = cancelled_by == passenger ? driver : passenger
+        Notification.notify(recipient, 'booking_cancelled', **common, person: (cancelled_by || passenger).to_s)
+      end
+    end
+  end
 
   def default_ride_dates
     return unless itinerary

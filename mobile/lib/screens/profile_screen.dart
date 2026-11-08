@@ -43,6 +43,14 @@ class ProfileTab extends StatelessWidget {
       _Tile(Icons.directions_car_outlined, context.t('vehicle_details'), () => push(const VehicleScreen()), warn: !user.vehicleComplete),
       _Tile(Icons.route_outlined, context.t('my_trips'), () => push(const MyTripsScreen())),
       _Tile(Icons.notifications_outlined, context.t('alerts_title'), () => push(const AlertsScreen())),
+      Card(
+        child: SwitchListTile(
+          title: Text(context.t('phone_alerts'), style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text(context.t('phone_alerts_hint')),
+          value: app.phoneAlerts,
+          onChanged: app.setPhoneAlerts,
+        ),
+      ),
       const SizedBox(height: 12),
       Card(
         child: Padding(

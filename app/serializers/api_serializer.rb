@@ -117,4 +117,10 @@ module ApiSerializer
       visibility: field.visibility, help_text: field.help_text, min_value: field.min_value, max_value: field.max_value
     }
   end
+
+  def notification(notification)
+    ids = notification.data.slice('itinerary_id', 'booking_id', 'conversation_id')
+    { id: notification.id, kind: notification.kind, title: notification.title, body: notification.body, read: notification.read?,
+      created_at: notification.created_at.iso8601, data: ids }
+  end
 end

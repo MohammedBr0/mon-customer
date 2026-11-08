@@ -7,6 +7,10 @@ abstract class TokenStore {
   Future<void> clearToken();
   Future<String?> readLocale();
   Future<void> saveLocale(String locale);
+  Future<int?> readLastNotified();
+  Future<void> saveLastNotified(int id);
+  Future<bool> readPhoneAlerts();
+  Future<void> savePhoneAlerts(bool on);
 }
 
 class SecureTokenStore implements TokenStore {
@@ -23,12 +27,22 @@ class SecureTokenStore implements TokenStore {
   Future<String?> readLocale() => _storage.read(key: 'locale');
   @override
   Future<void> saveLocale(String locale) => _storage.write(key: 'locale', value: locale);
+  @override
+  Future<int?> readLastNotified() async => int.tryParse(await _storage.read(key: 'last_notified') ?? '');
+  @override
+  Future<void> saveLastNotified(int id) => _storage.write(key: 'last_notified', value: '$id');
+  @override
+  Future<bool> readPhoneAlerts() async => (await _storage.read(key: 'phone_alerts')) != 'off';
+  @override
+  Future<void> savePhoneAlerts(bool on) => _storage.write(key: 'phone_alerts', value: on ? 'on' : 'off');
 }
 
 /// For tests: nothing touches the device.
 class MemoryTokenStore implements TokenStore {
   String? token;
   String? locale;
+  int? lastNotified;
+  bool phoneAlerts = true;
 
   @override
   Future<String?> readToken() async => token;
@@ -40,4 +54,12 @@ class MemoryTokenStore implements TokenStore {
   Future<String?> readLocale() async => locale;
   @override
   Future<void> saveLocale(String value) async => locale = value;
+  @override
+  Future<int?> readLastNotified() async => lastNotified;
+  @override
+  Future<void> saveLastNotified(int id) async => lastNotified = id;
+  @override
+  Future<bool> readPhoneAlerts() async => phoneAlerts;
+  @override
+  Future<void> savePhoneAlerts(bool on) async => phoneAlerts = on;
 }

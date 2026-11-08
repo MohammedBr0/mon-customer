@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
 import 'package:icare/core/format.dart';
+import 'package:icare/core/phone_notifier.dart';
 import 'package:icare/core/token_store.dart';
 import 'package:icare/l10n/strings.dart';
 import 'package:icare/main.dart';
@@ -141,6 +142,8 @@ void main() {
     });
   });
 
+  group('notifications', notificationTests);
+
   testWidgets('the welcome screen validates before sending', (tester) async {
     var calls = 0;
     final state = _state((r) async {
@@ -166,5 +169,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('ግባ'), findsWidgets);
     expect(find.byType(MaterialApp), findsOneWidget);
+  });
+}
+
+class _Recorder extends NoopNotifier {}
+
+void notificationTests() {
+  Map<String, dynamic> n(int id, {bool read = false}) => {'id': id, 'kind': 'new_message', 'title': 'New message', 'body': 'Hi $id', 'read': read, 'created_at': '2026-11-08T10:00:00Z', 'data': {'conversation_id': 3}};
+
+  test('first check only remembers where things stand; later ones raise phone alerts', () async {
+    final store = MemoryTokenStore()..token = 't';
+    final notifier = _Recorder();
+    var batch = [n(2), n(1)];
+    final state = AppState(
+      api: Api(client: MockClient((r) async {
+        if (r.url.path.endsWith('/notifications')) return _json({'notifications': batch, 'unread': batch.length, 'meta': {'last': true}});
+        if (r.url.path.endsWith('/me')) return _json({'user': _profile});
+        if (r.url.path.endsWith('/conversations')) return _json({'conversations': [], 'unread': 0});
+        return _json({});
+      }), base: 'https://x.test'),
+      store: store,
+      notifier: notifier,
+      pollEvery: const Duration(hours: 1),
+    );
+    await state.start();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(notifier.shown, isEmpty);
+    expect(store.lastNotified, 2);
+    expect(state.unreadNotifications, 2);
+
+    batch = [n(4), n(3)];
+    await state.checkNotifications();
+    expect(notifier.shown, ['New message|Hi 3', 'New message|Hi 4']);
+    expect(store.lastNotified, 4);
+
+    await state.setPhoneAlerts(false);
+    batch = [n(5)];
+    await state.checkNotifications();
+    expect(notifier.shown.length, 2);
+    state.dispose();
+  });
+
+  test('a notification parses its targets', () {
+    final item = AppNotification.fromJson({'id': 1, 'kind': 'booking_requested', 'title': 'T', 'body': 'B', 'read': false, 'data': {'itinerary_id': 9, 'booking_id': 4}});
+    expect(item.tripId, 9);
+    expect(item.bookingId, 4);
+    expect(item.conversationId, isNull);
   });
 }

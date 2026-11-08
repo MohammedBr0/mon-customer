@@ -178,4 +178,18 @@ class Api {
 
   Future<void> report(String type, int id, String reason, String details) =>
       _send('POST', '/reports', body: {'type': type, 'id': id, 'reason': reason, 'details': details});
+
+  // ---- notifications ----
+  Future<({List<AppNotification> items, int unread, bool last})> notifications({int page = 1, int? after}) async {
+    final data = await _send('GET', '/notifications', query: {'page': page, 'after': after});
+    final meta = Map<String, dynamic>.from(data['meta'] as Map? ?? const {});
+    return (
+      items: [for (final n in (data['notifications'] as List? ?? const [])) AppNotification.fromJson(Map<String, dynamic>.from(n as Map))],
+      unread: (data['unread'] as num?)?.toInt() ?? 0,
+      last: meta['last'] != false,
+    );
+  }
+
+  Future<void> markNotificationRead(int id) => _send('PATCH', '/notifications/$id/read');
+  Future<void> markAllNotificationsRead() => _send('POST', '/notifications/read_all');
 }

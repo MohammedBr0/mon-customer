@@ -409,3 +409,31 @@ class RideAlert {
   factory RideAlert.fromJson(Map<String, dynamic> j) =>
       RideAlert(id: _i(j['id']) ?? 0, start: j['start_label'] as String? ?? '', end: j['end_label'] as String? ?? '', matches: _i(j['matches']) ?? 0);
 }
+
+class AppNotification {
+  const AppNotification({required this.id, required this.kind, required this.title, required this.body, required this.read, this.createdAt, this.tripId, this.bookingId, this.conversationId});
+  final int id;
+  final String kind;
+  final String title;
+  final String body;
+  final bool read;
+  final DateTime? createdAt;
+  final int? tripId;
+  final int? bookingId;
+  final int? conversationId;
+
+  factory AppNotification.fromJson(Map<String, dynamic> j) {
+    final data = Map<String, dynamic>.from(j['data'] as Map? ?? const {});
+    return AppNotification(
+      id: _i(j['id']) ?? 0,
+      kind: j['kind'] as String? ?? '',
+      title: j['title'] as String? ?? '',
+      body: j['body'] as String? ?? '',
+      read: j['read'] == true,
+      createdAt: _t(j['created_at']),
+      tripId: _i(data['itinerary_id']),
+      bookingId: _i(data['booking_id']),
+      conversationId: _i(data['conversation_id']),
+    );
+  }
+}

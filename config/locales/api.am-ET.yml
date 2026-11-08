@@ -4,3 +4,31 @@ am-ET:
     unauthorized: እባክዎ እንደገና ይግቡ
     banned: ይህ መለያ ታግዷል
     rate_limited: ብዙ ሙከራዎች። ከጥቂት ደቂቃዎች በኋላ እንደገና ይሞክሩ።
+  notifications:
+    booking_requested:
+      title: አዲስ የመቀመጫ ጥያቄ
+      body: "%{person} በ%{trip} ላይ %{seats} መቀመጫ ጠይቀዋል"
+    booking_confirmed:
+      title: ቦታ ማስያዣ ተረጋግጧል
+      body: "%{person} በ%{trip} ላይ መቀመጫዎን አረጋግጠዋል"
+    booking_declined:
+      title: ቦታ ማስያዣ አልተቀበለም
+      body: "%{person} በ%{trip} ላይ ሊያሳፍርዎት አልቻሉም"
+    booking_cancelled:
+      title: ቦታ ማስያዣ ተሰርዟል
+      body: "%{person} በ%{trip} ላይ ያለውን ቦታ ማስያዣ ሰርዘዋል"
+    date_skipped:
+      title: አንድ ቀን ተዘሏል
+      body: "%{person} በ%{trip} ላይ %{date} ዘለዋል"
+    itinerary_cancelled:
+      title: ጉዞ ተሰርዟል
+      body: "%{person} %{trip} ሰርዘዋል"
+    new_message:
+      title: አዲስ መልእክት
+      body: "%{person}: %{preview}"
+    review_received:
+      title: አዲስ አስተያየት
+      body: "%{person} %{rating}/5 ሰጥተዎታል"
+    alert_match:
+      title: አንድ ጉዞ ከማንቂያዎ ጋር ይስማማል
+      body: "%{route}: %{trip}"

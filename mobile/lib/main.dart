@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api.dart';
 import 'core/app_state.dart';
+import 'core/phone_notifier.dart';
 import 'core/token_store.dart';
 import 'screens/home_shell.dart';
 import 'screens/welcome_screen.dart';
@@ -13,7 +14,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('en');
   await initializeDateFormatting('am');
-  final state = AppState(api: Api(), store: const SecureTokenStore());
+  final state = AppState(api: Api(), store: const SecureTokenStore(), notifier: LocalPhoneNotifier());
   runApp(IcareApp(state: state));
   state.start();
 }

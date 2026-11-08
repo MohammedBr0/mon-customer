@@ -14,6 +14,8 @@ class Review < ApplicationRecord
   validate :trip_is_completed
   validate :reviewer_and_reviewee_are_the_two_participants
 
+  after_create_commit :notify_reviewee
+
   scope :recent, -> { order(created_at: :desc) }
   scope :visible, -> { where(hidden_at: nil) }
 
@@ -22,6 +24,10 @@ class Review < ApplicationRecord
   end
 
   private
+
+  def notify_reviewee
+    Notification.notify(reviewee, 'review_received', booking_id:, person: reviewer.to_s, rating:)
+  end
 
   def trip_is_completed
     errors.add(:base, :trip_not_completed) unless booking&.completed?

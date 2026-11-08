@@ -4,3 +4,31 @@ en-US:
     unauthorized: Please sign in again
     banned: This account is suspended
     rate_limited: Too many attempts. Try again in a few minutes.
+  notifications:
+    booking_requested:
+      title: New seat request
+      body: "%{person} asked for %{seats} seat(s) on %{trip}"
+    booking_confirmed:
+      title: Booking confirmed
+      body: "%{person} confirmed your seat on %{trip}"
+    booking_declined:
+      title: Booking declined
+      body: "%{person} could not take you on %{trip}"
+    booking_cancelled:
+      title: Booking cancelled
+      body: "%{person} cancelled the booking on %{trip}"
+    date_skipped:
+      title: A day was skipped
+      body: "%{person} skipped %{date} on %{trip}"
+    itinerary_cancelled:
+      title: Trip cancelled
+      body: "%{person} cancelled %{trip}"
+    new_message:
+      title: New message
+      body: "%{person}: %{preview}"
+    review_received:
+      title: New review
+      body: "%{person} rated you %{rating}/5"
+    alert_match:
+      title: A trip matches your alert
+      body: "%{route}: %{trip}"
