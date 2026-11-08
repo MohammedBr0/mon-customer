@@ -736,7 +736,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
         // ---- side buttons ----
         Positioned(
           right: 12,
-          bottom: (_trips.isEmpty ? 140 : 215),
+          bottom: (_trips.isEmpty ? 140 : 250),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             FloatingActionButton.small(heroTag: 'layers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
             const SizedBox(height: 10),
@@ -757,11 +757,19 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                       ? (_loading ? const SizedBox(height: 100) : _EmptyMapCard(canAlert: _hasRoute, onAlert: _alert))
                       : Column(mainAxisSize: MainAxisSize.min, children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                            child: Row(children: [
-                              Expanded(child: Text(context.t('trips_on_map', {'count': _trips.length}), style: const TextStyle(fontWeight: FontWeight.w800))),
-                              TextButton.icon(onPressed: _showList, icon: const Icon(Icons.view_list_outlined, size: 18), label: Text(context.t('list_view'))),
-                            ]),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Material(
+                              elevation: 3,
+                              color: scheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 14, right: 4),
+                                child: Row(children: [
+                                  Expanded(child: Text(context.t('trips_on_map', {'count': _trips.length}), style: const TextStyle(fontWeight: FontWeight.w800))),
+                                  TextButton.icon(onPressed: _showList, icon: const Icon(Icons.view_list_outlined, size: 18), label: Text(context.t('list_view'))),
+                                ]),
+                              ),
+                            ),
                           ),
                           SizedBox(
                             height: 132,
