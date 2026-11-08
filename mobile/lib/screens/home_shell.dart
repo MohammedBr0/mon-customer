@@ -18,11 +18,13 @@ import 'trip_screen.dart';
 class SearchRequest extends ChangeNotifier {
   Place? from;
   Place? to;
+  String? city; // set for a search inside one city
   int serial = 0;
 
-  void set(Place? newFrom, Place? newTo) {
+  void set(Place? newFrom, Place? newTo, {String? inCity}) {
     from = newFrom;
     to = newTo;
+    city = inCity;
     serial++;
     notifyListeners();
   }
@@ -39,8 +41,8 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final _search = SearchRequest();
 
-  void _goSearch(Place? from, Place? to) {
-    _search.set(from, to);
+  void _goSearch(Place? from, Place? to, {String? city}) {
+    _search.set(from, to, inCity: city);
     setState(() => _index = 1);
   }
 
@@ -96,7 +98,7 @@ class _HomeShellState extends State<HomeShell> {
 
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, required this.onRoute});
-  final void Function(Place? from, Place? to) onRoute;
+  final void Function(Place? from, Place? to, {String? city}) onRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +116,20 @@ class HomeTab extends StatelessWidget {
             decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(12)),
             child: Row(children: [const Icon(Icons.campaign_outlined, color: Color(0xFF3A2C00)), const SizedBox(width: 8), Expanded(child: Text(config.announcement!, style: const TextStyle(color: Color(0xFF3A2C00), fontWeight: FontWeight.w600)))]),
           ),
+        if (config.cities.isNotEmpty) ...[
+          SectionTitle(context.t('city_commutes')),
+          for (final city in config.cities)
+            Card(
+              child: ListTile(
+                leading: CircleAvatar(backgroundColor: scheme.primaryContainer, child: Icon(Icons.location_city, color: scheme.onPrimaryContainer)),
+                title: Text(city.place.label(app.locale), style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text(context.t('city_commutes_hint')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => onRoute(null, null, city: city.key),
+              ),
+            ),
+          const SizedBox(height: 4),
+        ],
         if (config.popularRoutes.isNotEmpty) ...[
           SectionTitle(context.t('popular_routes')),
           Wrap(spacing: 8, runSpacing: 8, children: [

@@ -18,6 +18,7 @@ module Api
           vehicle_fields: VehicleField.active.map { |field| serializer.vehicle_field(field) },
           popular_routes: PopularRoute.active.map { |route| { from: route.from_label, to: route.to_label } },
           places: EthiopianPlace.all.map(&:as_json),
+          cities: EthiopianPlace.cities_with_areas.map { |city| city.as_json.merge(areas: EthiopianPlace.areas(city.key).map(&:as_json)) },
           languages: I18n.available_locales.map(&:to_s), api_version: 1
         }
       end

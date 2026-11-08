@@ -1,0 +1,74 @@
+- title t('city.new_title')
+.container
+  h1.page-title = yield :title
+  p.text-muted = t('city.new_intro')
+  - if @itinerary.errors.any?
+    .alert.alert-danger
+      ul.mb-0
+        - @itinerary.errors.full_messages.each do |message|
+          li = message
+  = form_with url: city_commutes_path, method: :post, local: true, scope: :itinerary do |f|
+    .surface.mb-3
+      .row.g-3
+        .col-12.col-md-4
+          = label_tag :city, t('city.city'), class: 'form-label'
+          = select_tag :city, options_for_select(@cities.map { |city| [city.label, city.key] }, @city.key), class: 'form-select', onchange: "window.location='#{new_city_commute_path}?city='+this.value"
+        - areas = EthiopianPlace.areas(@city.key)
+        .col-6.col-md-4
+          = label_tag :from_area, t('city.from_area'), class: 'form-label'
+          = select_tag :from_area, options_for_select(areas.map { |area| [area.label, area.key] }, params[:from_area]), include_blank: t('city.pick_area'), class: 'form-select', required: true
+        .col-6.col-md-4
+          = label_tag :to_area, t('city.to_area'), class: 'form-label'
+          = select_tag :to_area, options_for_select(areas.map { |area| [area.label, area.key] }, params[:to_area]), include_blank: t('city.pick_area'), class: 'form-select', required: true
+        .col-6.col-md-4
+          = label_tag :start_date, t('city.start_date'), class: 'form-label'
+          = date_field_tag :start_date, params[:start_date] || Itinerary.today.iso8601, min: Itinerary.today.iso8601, class: 'form-control', required: true
+        .col-6.col-md-4
+          = label_tag :time, t('city.time'), class: 'form-label'
+          = time_field_tag :time, params[:time] || '07:30', class: 'form-control', required: true
+        .col-6.col-md-2
+          = label_tag :itinerary_num_people, t('trip.free_seats'), class: 'form-label'
+          = f.select :num_people, (1..8).to_a, { selected: (@itinerary.num_people || 3) }, class: 'form-select'
+        .col-6.col-md-2
+          = label_tag :itinerary_price_per_seat, t('trip.your_price'), class: 'form-label'
+          .input-group
+            = f.text_field :price_per_seat, class: 'form-control text-end', inputmode: 'decimal', placeholder: '0', required: true
+            span.input-group-text = platform_setting.currency_symbol
+      p.form-text.mt-2.mb-0
+        - if platform_setting.fee_charged_to_passenger?
+          = t('trip.fee_hint_passenger', percent: number_with_precision(platform_setting.fee_percent, precision: 2, strip_insignificant_zeros: true))
+        - else
+          = t('trip.fee_hint_driver', percent: number_with_precision(platform_setting.fee_percent, precision: 2, strip_insignificant_zeros: true))
+    .surface.mb-3
+      label.form-label = t('commute.repeat_title')
+      p.form-text = t('commute.repeat_hint')
+      = hidden_field_tag 'itinerary[commute_days][]', ''
+      .d-flex.flex-wrap.gap-2.mb-2
+        - [1, 2, 3, 4, 5, 6, 0].each do |wday|
+          = check_box_tag 'itinerary[commute_days][]', wday, false, id: "commute_day_#{wday}", class: 'btn-check'
+          = label_tag "commute_day_#{wday}", t('date.abbr_day_names')[wday], class: 'btn btn-outline-primary btn-sm'
+      = label_tag :itinerary_commute_until, t('commute.until'), class: 'form-label'
+      = f.date_field :commute_until, class: 'form-control w-auto'
+    .surface.mb-3
+      .row.g-3
+        .col-sm-6
+          = label_tag :itinerary_pickup_point, t('commute.pickup_point'), class: 'form-label'
+          = f.text_field :pickup_point, class: 'form-control', maxlength: 120
+          p.form-text = t('commute.pickup_hint')
+        .col-sm-6
+          = label_tag :itinerary_dropoff_point, t('commute.dropoff_point'), class: 'form-label'
+          = f.text_field :dropoff_point, class: 'form-control', maxlength: 120
+      = label_tag :itinerary_description, Itinerary.human_attribute_name(:description), class: 'form-label mt-3'
+      = f.text_area :description, rows: 3, maxlength: Itinerary::MAX_DESCRIPTION_LENGTH, class: 'form-control', required: true
+      .form-check.mt-3
+        = f.check_box :smoking_allowed, class: 'form-check-input'
+        = f.label :smoking_allowed, Itinerary.human_attribute_name(:smoking_allowed), class: 'form-check-label'
+      .form-check
+        = f.check_box :pets_allowed, class: 'form-check-input'
+        = f.label :pets_allowed, Itinerary.human_attribute_name(:pets_allowed), class: 'form-check-label'
+      - if current_user.female?
+        .form-check
+          = f.check_box :pink, class: 'form-check-input'
+          = f.label :pink, Itinerary.human_attribute_name(:pink), class: 'form-check-label'
+    p.form-text = t('city.area_note')
+    = f.submit t('city.submit'), class: 'btn btn-primary w-100'

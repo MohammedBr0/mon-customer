@@ -1,0 +1,30 @@
+en-US:
+  city:
+    title: City commutes
+    nav: City
+    intro: Daily rides inside one city, between neighbourhoods. Passengers book the days they need.
+    city: City
+    from_area: From (neighbourhood)
+    to_area: To (neighbourhood)
+    any_area: Anywhere in the city
+    pick_area: Choose a neighbourhood
+    search: Show city commutes
+    empty: No city commutes match yet. Offer one, or set a ride alert.
+    offer: Offer a city commute
+    new_title: Offer a city commute
+    new_intro: Pick the city and your neighbourhoods. Drivers set their own price per seat.
+    time: Departure time
+    start_date: First ride
+    submit: Post commute
+    created: Your city commute is live.
+    chip: In the city
+    swap: Swap
+    area_note: Neighbourhood locations are approximate. Agree the exact meeting point in the pickup field or by message.
+  activerecord:
+    errors:
+      models:
+        itinerary:
+          attributes:
+            base:
+              city_area_invalid: Choose neighbourhoods from the selected city
+              city_same_area: Start and end neighbourhoods must be different

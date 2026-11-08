@@ -237,6 +237,7 @@ class TripCard extends StatelessWidget {
                   Chip2(context.t('seats_left', {'available': trip.seatsAvailable, 'total': trip.seatsTotal}))
                 else
                   Chip2(context.t('seats_unlimited')),
+                if (trip.cityCommute) Chip2(context.t('city_chip'), icon: Icons.location_city),
                 if (trip.commute) Chip2(context.t('commute'), icon: Icons.repeat),
                 if (trip.pink) Chip2(context.t('women_only'), icon: Icons.lock_outline, tone: ChipTone.warn),
               ]),
@@ -319,13 +320,13 @@ class PriceBreakdown extends StatelessWidget {
 }
 
 /// Opens a searchable list of Ethiopian towns.
-Future<Place?> pickPlace(BuildContext context, {Place? selected}) {
+Future<Place?> pickPlace(BuildContext context, {Place? selected, List<Place>? places}) {
   final app = context.read<AppState>();
   return showModalBottomSheet<Place>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (ctx) => _PlaceSheet(places: app.config.places, locale: app.locale, selected: selected),
+    builder: (ctx) => _PlaceSheet(places: places ?? app.config.places, locale: app.locale, selected: selected),
   );
 }
 
@@ -380,7 +381,9 @@ class _PlaceSheetState extends State<_PlaceSheet> {
 
 /// A tappable field that shows the chosen town and opens the picker.
 class PlaceField extends StatelessWidget {
-  const PlaceField({super.key, required this.label, required this.value, required this.onChanged, this.icon = Icons.trip_origin});
+  const PlaceField({super.key, required this.label, required this.value, required this.onChanged, this.icon = Icons.trip_origin, this.places, this.placeholder});
+  final List<Place>? places;
+  final String? placeholder;
   final String label;
   final Place? value;
   final ValueChanged<Place> onChanged;
@@ -392,12 +395,12 @@ class PlaceField extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        final place = await pickPlace(context, selected: value);
+        final place = await pickPlace(context, selected: value, places: places);
         if (place != null) onChanged(place);
       },
       child: InputDecorator(
         decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), suffixIcon: const Icon(Icons.arrow_drop_down)),
-        child: Text(value?.label(locale) ?? context.t('pick_place'), style: TextStyle(color: value == null ? Theme.of(context).colorScheme.onSurfaceVariant : null)),
+        child: Text(value?.label(locale) ?? placeholder ?? context.t('pick_place'), style: TextStyle(color: value == null ? Theme.of(context).colorScheme.onSurfaceVariant : null)),
       ),
     );
   }

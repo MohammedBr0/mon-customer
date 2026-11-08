@@ -1,0 +1,36 @@
+- title t('city.title')
+.container
+  h1.page-title = yield :title
+  p.text-muted = t('city.intro')
+  .surface.mb-3
+    = form_with url: city_commutes_path, method: :get, local: true do
+      .row.g-2
+        .col-12.col-md-3
+          = label_tag :city, t('city.city'), class: 'form-label'
+          = select_tag :city, options_for_select(@cities.map { |city| [city.label, city.key] }, @city.key), class: 'form-select', onchange: 'this.form.submit()'
+        .col-6.col-md-3
+          = label_tag :from, t('city.from_area'), class: 'form-label'
+          = select_tag :from, options_for_select(@areas.map { |area| [area.label, area.key] }, params[:from]), include_blank: t('city.any_area'), class: 'form-select'
+        .col-6.col-md-3
+          = label_tag :to, t('city.to_area'), class: 'form-label'
+          = select_tag :to, options_for_select(@areas.map { |area| [area.label, area.key] }, params[:to]), include_blank: t('city.any_area'), class: 'form-select'
+        .col-6.col-md-2
+          = label_tag :seats, t('itineraries.search.seats'), class: 'form-label'
+          = select_tag :seats, options_for_select((1..Booking::MAX_SEATS).to_a, params[:seats]), class: 'form-select'
+        .col-6.col-md-1.d-flex.align-items-end
+          = button_tag type: 'submit', class: 'btn btn-primary w-100', 'aria-label': t('city.search') do
+            span.fas.fa-magnifying-glass aria-hidden='true'
+      .d-flex.flex-wrap.gap-2.mt-3
+        = link_to new_city_commute_path(city: @city.key), class: 'btn btn-outline-primary btn-sm' do
+          span.fas.fa-plus<> aria-hidden='true'
+          = t('city.offer')
+        = link_to ride_alerts_path, class: 'btn btn-outline-secondary btn-sm' do
+          span.fas.fa-bell<> aria-hidden='true'
+          = t('alerts.title')
+  - if @itineraries.empty?
+    .empty-state
+      p = t('city.empty')
+  - else
+    == render 'itineraries/cards', itineraries: @itineraries
+    == paginate @itineraries
+  p.form-text.mt-3 = t('city.area_note')

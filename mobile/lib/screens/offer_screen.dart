@@ -25,6 +25,7 @@ class _OfferScreenState extends State<OfferScreen> {
   final _description = TextEditingController();
   Place? _from;
   Place? _to;
+  String? _city; // set when the trip stays inside one city
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _time = const TimeOfDay(hour: 7, minute: 0);
   int _seats = 3;
@@ -67,8 +68,8 @@ class _OfferScreenState extends State<OfferScreen> {
 
   Future<void> _submit() async {
     final app = context.read<AppState>();
-    setState(() => _placeError = (_from == null || _to == null) ? context.tr('required') : null);
-    if (!_form.currentState!.validate() || _from == null || _to == null) return;
+    setState(() => _placeError = (_from == null || _to == null || _from!.key == _to!.key) ? context.tr('required') : null);
+    if (!_form.currentState!.validate() || _from == null || _to == null || _from!.key == _to!.key) return;
     if (_repeat && _days.isEmpty) {
       showMessage(context, context.tr('repeat_hint'), error: true);
       return;
@@ -76,6 +77,7 @@ class _OfferScreenState extends State<OfferScreen> {
     setState(() => _busy = true);
     try {
       final trip = await app.api.createTrip({
+        if (_city != null) 'city': _city,
         'start': {'key': _from!.key},
         'end': {'key': _to!.key},
         'leave_date': _leaveUtc.toIso8601String(),
@@ -85,7 +87,7 @@ class _OfferScreenState extends State<OfferScreen> {
         if (_repeat && _until != null) 'commute_until': isoDay(_until!),
         if (_pickup.text.trim().isNotEmpty) 'pickup_point': _pickup.text.trim(),
         if (_dropoff.text.trim().isNotEmpty) 'dropoff_point': _dropoff.text.trim(),
-        if (_description.text.trim().isNotEmpty) 'description': _description.text.trim(),
+        'description': _description.text.trim(),
         'smoking_allowed': _smoking,
         'pets_allowed': _pets,
         if (_womenOnly) 'pink': true,
@@ -129,9 +131,42 @@ class _OfferScreenState extends State<OfferScreen> {
                 ),
               ]),
             ),
-          PlaceField(label: context.t('from'), value: _from, onChanged: (p) => setState(() => _from = p)),
-          const SizedBox(height: 12),
-          PlaceField(label: context.t('to'), value: _to, icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
+          if (config.cities.isNotEmpty) ...[
+            SegmentedButton<bool>(
+              showSelectedIcon: false,
+              segments: [ButtonSegment(value: false, label: Text(context.t('mode_towns'))), ButtonSegment(value: true, label: Text(context.t('mode_city')))],
+              selected: {_city != null},
+              onSelectionChanged: (s) => setState(() {
+                _from = null;
+                _to = null;
+                _city = s.first ? config.cities.first.key : null;
+              }),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (_city != null) ...[
+            if (config.cities.length > 1) ...[
+              DropdownButtonFormField<String>(
+                initialValue: _city,
+                decoration: InputDecoration(labelText: context.t('city')),
+                items: [for (final c in config.cities) DropdownMenuItem(value: c.key, child: Text(c.place.label(locale)))],
+                onChanged: (v) => setState(() {
+                  _city = v;
+                  _from = null;
+                  _to = null;
+                }),
+              ),
+              const SizedBox(height: 12),
+            ],
+            PlaceField(label: context.t('from_area'), value: _from, places: config.cities.firstWhere((c) => c.key == _city).areas, placeholder: context.t('pick_area'), onChanged: (p) => setState(() => _from = p)),
+            const SizedBox(height: 12),
+            PlaceField(label: context.t('to_area'), value: _to, places: config.cities.firstWhere((c) => c.key == _city).areas, placeholder: context.t('pick_area'), icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
+            Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(context.t('area_note'), style: Theme.of(context).textTheme.bodySmall)),
+          ] else ...[
+            PlaceField(label: context.t('from'), value: _from, onChanged: (p) => setState(() => _from = p)),
+            const SizedBox(height: 12),
+            PlaceField(label: context.t('to'), value: _to, icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
+          ],
           if (_placeError != null) Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(_placeError!, style: TextStyle(color: scheme.error, fontSize: 12))),
           const SizedBox(height: 12),
           Row(children: [
@@ -190,7 +225,13 @@ class _OfferScreenState extends State<OfferScreen> {
           const SizedBox(height: 12),
           TextFormField(controller: _dropoff, maxLength: 140, decoration: InputDecoration(labelText: context.t('dropoff_point'), counterText: '')),
           const SizedBox(height: 12),
-          TextFormField(controller: _description, maxLines: 3, maxLength: 1000, decoration: InputDecoration(labelText: context.t('description'), hintText: context.t('description_hint'))),
+          TextFormField(
+            controller: _description,
+            maxLines: 3,
+            maxLength: 1000,
+            decoration: InputDecoration(labelText: context.t('description'), hintText: context.t('description_hint')),
+            validator: (v) => (v ?? '').trim().isEmpty ? context.tr('description_required') : null,
+          ),
           SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('smoking_allowed')), value: _smoking, onChanged: (v) => setState(() => _smoking = v)),
           SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('pets_allowed')), value: _pets, onChanged: (v) => setState(() => _pets = v)),
           if (user?.gender == 'female') SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('women_only_option')), value: _womenOnly, onChanged: (v) => setState(() => _womenOnly = v)),

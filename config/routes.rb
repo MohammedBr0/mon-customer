@@ -18,6 +18,8 @@ Rails.application.routes.draw do
 
   resources :feedbacks, only: %i[show new create edit update destroy index]
 
+  resources :city_commutes, only: %i[index new create]
+
   resources :itineraries, only: %i[show new create edit update destroy index search] do
     post :search, on: :collection
     patch :cancel, on: :member

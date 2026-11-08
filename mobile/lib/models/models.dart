@@ -9,17 +9,29 @@ List<T> _list<T>(Object? v, T Function(Map<String, dynamic>) build) =>
     (v as List? ?? const []).map((e) => build(Map<String, dynamic>.from(e as Map))).toList();
 
 class Place {
-  const Place({required this.key, required this.name, this.nameAm, required this.lat, required this.lng});
+  const Place({required this.key, required this.name, this.nameAm, required this.lat, required this.lng, this.city});
   final String key;
   final String name;
   final String? nameAm;
   final double lat;
   final double lng;
+  final String? city;
 
   factory Place.fromJson(Map<String, dynamic> j) =>
-      Place(key: j['key'] as String, name: j['name'] as String, nameAm: j['name_am'] as String?, lat: _d(j['lat']), lng: _d(j['lng']));
+      Place(key: j['key'] as String, name: j['name'] as String, nameAm: j['name_am'] as String?, lat: _d(j['lat']), lng: _d(j['lng']), city: j['city'] as String?);
 
   String label(String locale) => locale == 'am' && (nameAm ?? '').isNotEmpty ? nameAm! : name;
+}
+
+/// A city with neighbourhoods, for rides that stay inside town.
+class City {
+  const City({required this.place, required this.areas});
+  final Place place;
+  final List<Place> areas;
+
+  String get key => place.key;
+
+  factory City.fromJson(Map<String, dynamic> j) => City(place: Place.fromJson(j), areas: _list(j['areas'], Place.fromJson));
 }
 
 class VehicleField {
@@ -70,6 +82,7 @@ class AppConfig {
     this.vehicleFields = const [],
     this.popularRoutes = const [],
     this.places = const [],
+    this.cities = const [],
   });
   final String currencySymbol;
   final double feePercent;
@@ -82,6 +95,7 @@ class AppConfig {
   final List<VehicleField> vehicleFields;
   final List<({String from, String to})> popularRoutes;
   final List<Place> places;
+  final List<City> cities;
 
   static const fallback = AppConfig(
     currencySymbol: 'Br',
@@ -110,6 +124,7 @@ class AppConfig {
         for (final r in (j['popular_routes'] as List? ?? const [])) (from: '${(r as Map)['from']}', to: '${r['to']}'),
       ],
       places: _list(j['places'], Place.fromJson),
+      cities: _list(j['cities'], City.fromJson),
     );
   }
 
@@ -194,7 +209,8 @@ class Profile {
 }
 
 class TripSummary {
-  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false});
+  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false, this.cityCommute = false});
+  final bool cityCommute;
   final int id;
   final String title;
   final String startAddress;
@@ -213,6 +229,7 @@ class TripSummary {
         commute: j['commute'] == true,
         scheduleSummary: j['schedule_summary'] as String?,
         cancelled: j['cancelled'] == true,
+        cityCommute: j['city_commute'] == true,
       );
 }
 
@@ -303,7 +320,11 @@ class Trip {
     this.days = const [],
     this.bookable = false,
     this.myBooking,
+    this.cityCommute = false,
+    this.city,
   });
+  final bool cityCommute;
+  final String? city;
   final int id;
   final String title;
   final String startAddress;
@@ -358,6 +379,8 @@ class Trip {
             DaySeats('${(d as Map)['date']}', _i(d['seats_available'])),
         ],
         bookable: j['bookable'] == true,
+        cityCommute: j['city_commute'] == true,
+        city: j['city'] as String?,
         myBooking: j['my_booking'] == null ? null : Booking.fromJson(Map<String, dynamic>.from(j['my_booking'] as Map)),
       );
 }

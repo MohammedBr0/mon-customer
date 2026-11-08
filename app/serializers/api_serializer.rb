@@ -42,6 +42,7 @@ module ApiSerializer
       start_address: itinerary.start_address, end_address: itinerary.end_address,
       start_location: point(itinerary.start_location), end_location: point(itinerary.end_location),
       leave_date: itinerary.leave_date&.iso8601, return_date: itinerary.return_date&.iso8601,
+      city: itinerary.city, city_commute: itinerary.city_commute?,
       commute: itinerary.commute?, commute_days: itinerary.commute_days, commute_until: itinerary.commute_until&.iso8601,
       schedule_summary: itinerary.schedule_summary, pickup_point: itinerary.pickup_point, dropoff_point: itinerary.dropoff_point,
       price_per_seat: money(itinerary.price_per_seat), passenger_price_per_seat: money(itinerary.passenger_price_per_seat),
@@ -85,7 +86,7 @@ module ApiSerializer
   def itinerary_summary(itinerary)
     {
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title, start_address: itinerary.start_address, end_address: itinerary.end_address,
-      leave_date: itinerary.leave_date&.iso8601, commute: itinerary.commute?, schedule_summary: itinerary.schedule_summary, cancelled: itinerary.cancelled?
+      leave_date: itinerary.leave_date&.iso8601, city_commute: itinerary.city_commute?, commute: itinerary.commute?, schedule_summary: itinerary.schedule_summary, cancelled: itinerary.cancelled?
     }
   end
 

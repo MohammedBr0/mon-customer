@@ -8,7 +8,7 @@ module Api
 
       # Search by route (coordinates) or list the latest trips.
       def index
-        records, meta = paginate(searching? ? search_scope : latest_scope)
+        records, meta = paginate(city_search? ? city_scope : (searching? ? search_scope : latest_scope))
         render json: { itineraries: records.map { |itinerary| serializer.itinerary(itinerary, viewer: current_user) }, meta: }
       end
 
@@ -25,7 +25,11 @@ module Api
 
       def create
         itinerary = current_user.itineraries.new(trip_attributes)
-        itinerary.route = RouteBuilder.call(from: coordinates(:start), to: coordinates(:end))
+        if params.dig(:itinerary, :city).present?
+          itinerary.use_city_areas(city: params[:itinerary][:city], from: place_param(:start)[:key], to: place_param(:end)[:key])
+        else
+          itinerary.route = RouteBuilder.call(from: coordinates(:start), to: coordinates(:end))
+        end
         if itinerary.save
           RideAlertMatchJob.perform_later(itinerary)
           render json: { itinerary: serializer.itinerary(itinerary, viewer: current_user, detail: true) }, status: :created
@@ -59,6 +63,10 @@ module Api
         render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden) unless @itinerary.user == current_user
       end
 
+      def city_search?
+        params[:city].present?
+      end
+
       def searching?
         %i[start_lat start_lng end_lat end_lng].all? { |key| params[key].present? }
       end
@@ -72,6 +80,10 @@ module Api
         ItinerarySearch.call(criteria, current_user).itineraries.includes(:user)
       end
 
+      def city_scope
+        CityCommuteSearch.call(city: params[:city], from: params[:from_area], to: params[:to_area], seats: params[:seats], sort: params[:sort], user: current_user)
+      end
+
       def latest_scope
         scope = Itinerary.not_cancelled.upcoming_or_commute.includes(:user).order(created_at: :desc)
         current_user.female? ? scope : scope.where(pink: false)
@@ -80,8 +92,8 @@ module Api
       def trip_attributes
         permitted = params.require(:itinerary).permit(:start_address, :end_address, :description, :leave_date, :return_date, :round_trip, :price_per_seat, :num_people,
                                                       :commute_until, :pickup_point, :dropoff_point, :smoking_allowed, :pets_allowed, :pink, commute_days: [])
-        permitted[:start_address] ||= place_name(:start)
-        permitted[:end_address] ||= place_name(:end)
+        permitted[:start_address] ||= place_name(:start) unless params.dig(:itinerary, :city).present?
+        permitted[:end_address] ||= place_name(:end) unless params.dig(:itinerary, :city).present?
         permitted.delete(:pink) unless current_user.female?
         permitted
       end

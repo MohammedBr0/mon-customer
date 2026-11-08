@@ -18,6 +18,10 @@
         span.fas.fa-plus aria-hidden='true'
         = t('nav.offer_ride')
     .col-6.col-md-4
+      = link_to city_commutes_path, class: 'btn btn-outline-primary w-100' do
+        span.fas.fa-city aria-hidden='true'
+        = t('city.title')
+    .col-6.col-md-4
       = link_to itineraries_user_path(current_user), class: 'btn btn-outline-secondary w-100' do
         span.fas.fa-route aria-hidden='true'
         = t('.your_itineraries')

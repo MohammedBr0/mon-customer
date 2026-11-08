@@ -8,6 +8,7 @@ header.app-bar.main-navbar
         nav.app-bar__links aria-label=t('nav.main')
           = link_to t('nav.home'), :dashboard, class: ['app-bar__link', ('active' if current_page?(dashboard_path))]
           = link_to t('nav.search'), itineraries_path, class: ['app-bar__link', ('active' if controller_name == 'itineraries' && action_name == 'index')]
+          = link_to t('city.nav'), city_commutes_path, class: ['app-bar__link', ('active' if controller_name == 'city_commutes')]
           = link_to t('nav.post'), new_itinerary_path, class: ['app-bar__link', ('active' if controller_name == 'itineraries' && action_name == 'new')]
           = link_to t('bookings.title'), bookings_path, class: ['app-bar__link', ('active' if controller_name == 'bookings')]
         .app-bar__actions

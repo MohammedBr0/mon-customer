@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_08_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_08_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -124,7 +124,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_08_120000) do
     t.date "commute_until"
     t.string "pickup_point"
     t.string "dropoff_point"
+    t.string "city"
     t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
+    t.index ["city", "leave_date"], name: "index_itineraries_on_city_and_leave_date", where: "(city IS NOT NULL)"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
     t.index ["user_id"], name: "index_itineraries_on_user_id"
   end

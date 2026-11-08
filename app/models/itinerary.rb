@@ -22,6 +22,7 @@ class Itinerary < ApplicationRecord
   has_many :conversations, as: :conversable, dependent: :destroy
   has_many :bookings, dependent: :destroy
 
+  scope :in_city, ->(key) { where(city: key) }
   scope :not_cancelled, -> { where(cancelled_at: nil) }
   scope :upcoming, -> { where(leave_date: Time.current..) }
   # Trips a person could still ride: one-offs that have not left, and commutes that have not ended.
@@ -38,6 +39,8 @@ class Itinerary < ApplicationRecord
   before_save { self.daily = commute? }
 
   validate :commute_schedule_is_valid
+  validate :city_areas_are_valid, if: -> { city_commute? && start_area_key }
+  validates :city, inclusion: { in: EthiopianPlace::AREAS.keys }, allow_nil: true
   validates :pickup_point, :dropoff_point, length: { maximum: 120 }
   validates :price_per_seat, numericality: { greater_than_or_equal_to: 0 }
   validate :price_within_platform_limit
@@ -62,6 +65,13 @@ class Itinerary < ApplicationRecord
   end
 
   # Passengers need to recognise the car, so required vehicle details come before the first trip.
+  def city_areas_are_valid
+    start = EthiopianPlace.find(start_area_key)
+    finish = EthiopianPlace.find(end_area_key)
+    errors.add(:base, :city_area_invalid) unless start&.city == city && finish&.city == city
+    errors.add(:base, :city_same_area) if start && finish && start.key == finish.key
+  end
+
   def clean_commute_days
     self.commute_days = commute_days # normalises and sorts
   end
@@ -92,6 +102,32 @@ class Itinerary < ApplicationRecord
 
   def cancelled?
     cancelled_at.present?
+  end
+
+  attr_accessor :start_area_key, :end_area_key
+
+  # Fills in a trip that stays inside one city: addresses and a simple route come from the chosen neighbourhoods.
+  def use_city_areas(city:, from:, to:)
+    self.city = city.presence
+    self.start_area_key = from
+    self.end_area_key = to
+    start = EthiopianPlace.find(from)
+    finish = EthiopianPlace.find(to)
+    return unless city_commute? && start && finish && start.city == city && finish.city == city && start.key != finish.key
+
+    city_name = city_place&.name
+    self.start_address = "#{start.name}, #{city_name}"
+    self.end_address = "#{finish.name}, #{city_name}"
+    self.route = RouteBuilder.call(from: [start.lat, start.lng], to: [finish.lat, finish.lng])
+  end
+
+  # A trip that stays inside one city, between neighbourhoods.
+  def city_commute?
+    city.present?
+  end
+
+  def city_place
+    EthiopianPlace.find(city) if city.present?
   end
 
   # A weekly commute repeats on these weekdays (0 = Sunday ... 6 = Saturday).

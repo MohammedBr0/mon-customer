@@ -3,13 +3,13 @@
 # Towns and cities riders can pick in the mobile app, with coordinates. Search and trip creation work
 # from coordinates, so the app does not need a maps service to offer a route.
 class EthiopianPlace
-  Place = Struct.new(:key, :name, :name_am, :lat, :lng, keyword_init: true) do
+  Place = Struct.new(:key, :name, :name_am, :lat, :lng, :city, keyword_init: true) do
     def label(locale = I18n.locale)
       locale.to_s.start_with?('am') && name_am.present? ? name_am : name
     end
 
     def as_json(*)
-      { key:, name:, name_am:, lat:, lng: }
+      { key:, name:, name_am:, lat:, lng:, city: }.compact
     end
   end
 
@@ -30,12 +30,41 @@ class EthiopianPlace
     ['Yabelo', 'ያቤሎ', 4.8833, 38.0833], ['Moyale', 'ሞያሌ', 3.5167, 39.05]
   ].map { |name, am, lat, lng| Place.new(key: name.parameterize, name:, name_am: am, lat:, lng:) }.freeze
 
+  # Neighbourhoods inside a city, for commutes that never leave town. Coordinates are approximate centres
+  # (good to within about a kilometre), which is what the city search radius assumes.
+  AREAS = {
+    'addis-ababa' => [
+      ['Bole', 'ቦሌ', 8.9967, 38.7867], ['Bole Medhanealem', 'ቦሌ መድኃኔዓለም', 8.9937, 38.7745], ['Piassa', 'ፒያሳ', 9.0350, 38.7467],
+      ['Mexico', 'ሜክሲኮ', 9.0100, 38.7400], ['Megenagna', 'መገናኛ', 9.0200, 38.8000], ['CMC', 'ሲኤምሲ', 9.0300, 38.8350],
+      ['Sarbet', 'ሳርቤት', 8.9880, 38.7270], ['Kazanchis', 'ካዛንቺስ', 9.0150, 38.7650], ['Merkato', 'መርካቶ', 9.0350, 38.7350],
+      ['Lideta', 'ልደታ', 9.0120, 38.7300], ['Gerji', 'ገርጂ', 9.0050, 38.8250], ['Ayat', 'አያት', 9.0220, 38.8700],
+      ['Summit', 'ሰሚት', 9.0000, 38.8600], ['4 Kilo', 'አራት ኪሎ', 9.0350, 38.7620], ['6 Kilo', 'ስድስት ኪሎ', 9.0450, 38.7600],
+      ['Lebu', 'ለቡ', 8.9550, 38.7150], ['Saris', 'ሳሪስ', 8.9650, 38.7600], ['Kality', 'ቃሊቲ', 8.9100, 38.7800],
+      ['Jemo', 'ጀሞ', 8.9700, 38.7050], ['Gotera', 'ጎተራ', 8.9900, 38.7600], ['Old Airport', 'አሮጌው ኤርፖርት', 8.9990, 38.7200],
+      ['Stadium', 'ስታዲየም', 9.0120, 38.7580], ['Mekanisa', 'መካኒሳ', 8.9830, 38.7350], ['Shiro Meda', 'ሽሮ ሜዳ', 9.0560, 38.7500]
+    ]
+  }.freeze
+
+  AREA_PLACES = AREAS.flat_map do |city_key, areas|
+    areas.map { |name, am, lat, lng| Place.new(key: "#{city_key}:#{name.parameterize}", name:, name_am: am, lat:, lng:, city: city_key) }
+  end.freeze
+
   def self.all
     ALL
   end
 
+  # Cities that have neighbourhoods to choose from.
+  def self.cities_with_areas
+    ALL.select { |place| AREAS.key?(place.key) }
+  end
+
+  def self.areas(city_key)
+    AREA_PLACES.select { |place| place.city == city_key.to_s }
+  end
+
+  # Finds a town, or a neighbourhood by its "city:area" key.
   def self.find(key)
-    ALL.find { |place| place.key == key.to_s }
+    ALL.find { |place| place.key == key.to_s } || AREA_PLACES.find { |place| place.key == key.to_s }
   end
 
   # Nearest known place to a point (used to label a position in a few words).

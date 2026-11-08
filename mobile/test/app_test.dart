@@ -72,6 +72,42 @@ void main() {
     });
   });
 
+  group('city commutes', () {
+    test('config lists cities with their neighbourhoods', () {
+      final config = AppConfig.fromJson({
+        'cities': [
+          {'key': 'addis-ababa', 'name': 'Addis Ababa', 'name_am': 'አዲስ አበባ', 'lat': 9.0, 'lng': 38.7, 'areas': [
+            {'key': 'addis-ababa:bole', 'name': 'Bole', 'name_am': 'ቦሌ', 'lat': 9.0, 'lng': 38.78, 'city': 'addis-ababa'}
+          ]}
+        ]
+      });
+      expect(config.cities.single.areas.single.label('am'), 'ቦሌ');
+      expect(config.cities.single.areas.single.city, 'addis-ababa');
+    });
+
+    test('an old server without cities still parses', () {
+      expect(AppConfig.fromJson({}).cities, isEmpty);
+    });
+
+    test('a city trip is flagged', () {
+      final trip = Trip.fromJson({'id': 1, 'city': 'addis-ababa', 'city_commute': true, 'driver': _profile});
+      expect(trip.cityCommute, isTrue);
+    });
+
+    test('a city search sends the city and neighbourhoods', () async {
+      late Uri seen;
+      final api = Api(client: MockClient((r) async {
+        seen = r.url;
+        return _json({'itineraries': [], 'meta': {'page': 1, 'last': true}});
+      }), base: 'https://x.test');
+      const bole = Place(key: 'addis-ababa:bole', name: 'Bole', lat: 9, lng: 38.7);
+      await api.trips(city: 'addis-ababa', fromArea: bole);
+      expect(seen.queryParameters['city'], 'addis-ababa');
+      expect(seen.queryParameters['from_area'], 'addis-ababa:bole');
+      expect(seen.queryParameters.containsKey('to_area'), isFalse);
+    });
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;
