@@ -7,6 +7,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import '../widgets/paged_trips.dart';
 import 'home_shell.dart';
+import 'map_screens.dart';
 import 'trip_screen.dart';
 
 class SearchTab extends StatefulWidget {
@@ -159,6 +160,12 @@ class _SearchTabState extends State<SearchTab> {
             Expanded(flex: 3, child: FilledButton.icon(onPressed: _ready ? _search : null, icon: const Icon(Icons.search), label: Text(context.t('search_button')))),
             const SizedBox(width: 10),
             Expanded(flex: 2, child: OutlinedButton.icon(onPressed: _ready && !_inCity ? _alert : null, icon: const Icon(Icons.notifications_none), label: Text(context.t('alert_me')))),
+            const SizedBox(width: 10),
+            IconButton.filledTonal(
+              tooltip: context.t('map_view'),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MapSearchScreen(from: _inCity ? null : _from, to: _inCity ? null : _to))),
+              icon: const Icon(Icons.map_outlined),
+            ),
           ]),
         ]),
       ),

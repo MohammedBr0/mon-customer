@@ -7,6 +7,8 @@ import 'package:http/testing.dart';
 import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
 import 'package:icare/core/format.dart';
+import 'package:icare/core/polyline.dart';
+import 'package:icare/widgets/route_map.dart';
 import 'package:icare/core/phone_notifier.dart';
 import 'package:icare/core/token_store.dart';
 import 'package:icare/l10n/strings.dart';
@@ -105,6 +107,60 @@ void main() {
       expect(seen.queryParameters['city'], 'addis-ababa');
       expect(seen.queryParameters['from_area'], 'addis-ababa:bole');
       expect(seen.queryParameters.containsKey('to_area'), isFalse);
+    });
+  });
+
+  group('maps', () {
+    test('decodes Google polylines', () {
+      final points = decodePolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@');
+      expect(points, [(38.5, -120.2), (40.7, -120.95), (43.252, -126.453)]);
+      expect(decodePolyline(null), isEmpty);
+      expect(decodePolyline(''), isEmpty);
+    });
+
+    test('a route falls back to a straight line between the ends', () {
+      final line = routePoints(polyline: null, startLat: 9.0, startLng: 38.7, endLat: 9.1, endLng: 38.8);
+      expect(line.length, 2);
+      expect(routePoints(), isEmpty);
+      expect(routePoints(polyline: '_p~iF~ps|U_ulLnnqC').length, 2);
+    });
+
+    test('a trip carries its route and end points', () {
+      final trip = Trip.fromJson({'id': 1, 'overview_polyline': 'abc', 'start_location': {'lat': 9.0, 'lng': 38.7}, 'end_location': {'lat': 9.1, 'lng': 38.8}, 'driver': _profile});
+      expect(trip.polyline, 'abc');
+      expect(trip.startLat, 9.0);
+      expect(trip.endLng, 38.8);
+    });
+
+    test('a pin on the map is not a listed town', () {
+      final pin = Place.pin(9.01, 38.74, 'Mexico');
+      expect(pin.isPin, isTrue);
+      expect(pin.key, 'pin:9.01000,38.74000');
+    });
+
+    test('search, reverse lookup and route preview call the server', () async {
+      final seen = <String>[];
+      final api = Api(client: MockClient((r) async {
+        seen.add(r.url.path);
+        if (r.url.path.endsWith('/maps/search')) {
+          return _json({'places': [{'name': 'Bole', 'address': 'Bole, Addis Ababa', 'lat': 8.99, 'lng': 38.78}]});
+        }
+        if (r.url.path.endsWith('/maps/reverse')) return _json({'place': {'address': 'Mexico, Addis Ababa'}});
+        if (r.url.path.endsWith('/ride_alerts')) {
+          expect(jsonDecode(r.body)['ride_alert']['start'], {'name': 'Bole', 'lat': 8.99, 'lng': 38.78});
+          return _json({});
+        }
+        return _json({'route': {'distance_text': '7.1 km', 'duration_text': '21 min', 'overview_polyline': 'xyz'}});
+      }), base: 'https://x.test');
+
+      final found = await api.searchPlaces('Bole', nearLat: 9, nearLng: 38.7);
+      expect(found.single.isPin, isTrue);
+      expect(found.single.address, 'Bole, Addis Ababa');
+      expect((await api.reverse(9.01, 38.74)).name, 'Mexico, Addis Ababa');
+      final preview = await api.routePreview(found.single, Place.pin(9.03, 38.74, 'Piassa'));
+      expect(preview.distanceText, '7.1 km');
+      await api.createAlert(found.single, const Place(key: 'adama', name: 'Adama', lat: 8.5, lng: 39.2));
+      expect(seen, containsAll(['/api/v1/maps/search', '/api/v1/maps/reverse', '/api/v1/maps/route', '/api/v1/ride_alerts']));
     });
   });
 

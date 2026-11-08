@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +8,7 @@ import '../core/app_state.dart';
 import '../core/format.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
+import '../screens/map_screens.dart';
 
 const brand = Color(0xFF0B7A4B);
 const accent = Color(0xFFF2B705);
@@ -321,17 +324,19 @@ class PriceBreakdown extends StatelessWidget {
 
 /// Opens a searchable list of Ethiopian towns.
 Future<Place?> pickPlace(BuildContext context, {Place? selected, List<Place>? places}) {
+  final allowAny = places == null; // a fixed list (like a city's neighbourhoods) stays a fixed list
   final app = context.read<AppState>();
   return showModalBottomSheet<Place>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (ctx) => _PlaceSheet(places: places ?? app.config.places, locale: app.locale, selected: selected),
+    builder: (ctx) => _PlaceSheet(places: places ?? app.config.places, locale: app.locale, selected: selected, allowAny: allowAny),
   );
 }
 
 class _PlaceSheet extends StatefulWidget {
-  const _PlaceSheet({required this.places, required this.locale, this.selected});
+  const _PlaceSheet({required this.places, required this.locale, this.selected, this.allowAny = false});
+  final bool allowAny;
   final List<Place> places;
   final String locale;
   final Place? selected;
@@ -342,6 +347,45 @@ class _PlaceSheet extends StatefulWidget {
 
 class _PlaceSheetState extends State<_PlaceSheet> {
   String _query = '';
+  Timer? _debounce;
+  List<Place> _remote = [];
+  bool _searching = false;
+  int _serial = 0;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _changed(String value) {
+    setState(() => _query = value);
+    _debounce?.cancel();
+    if (!widget.allowAny || value.trim().length < 3) {
+      setState(() {
+        _remote = [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 450), () async {
+      final mine = ++_serial;
+      try {
+        final found = await context.read<AppState>().api.searchPlaces(value.trim());
+        if (mounted && mine == _serial) setState(() => _remote = found);
+      } catch (_) {
+        // Listed towns still work if the lookup fails.
+      } finally {
+        if (mounted && mine == _serial) setState(() => _searching = false);
+      }
+    });
+  }
+
+  Future<void> _chooseOnMap() async {
+    final picked = await Navigator.push<Place>(context, MaterialPageRoute(builder: (_) => PlacePickerScreen(initial: widget.selected?.isPin == true ? widget.selected : null)));
+    if (picked != null && mounted) Navigator.pop(context, picked);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,28 +393,42 @@ class _PlaceSheetState extends State<_PlaceSheet> {
     final shown = widget.places.where((p) => q.isEmpty || p.name.toLowerCase().contains(q) || (p.nameAm ?? '').contains(_query.trim())).toList();
     return SafeArea(
       child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.75 + MediaQuery.of(context).viewInsets.bottom * 0,
+        height: MediaQuery.of(context).size.height * 0.75,
         child: Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: Column(children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: TextField(autofocus: false, decoration: InputDecoration(hintText: context.t('search_places'), prefixIcon: const Icon(Icons.search)), onChanged: (v) => setState(() => _query = v)),
+              child: TextField(
+                decoration: InputDecoration(hintText: widget.allowAny ? context.t('search_any_place') : context.t('search_places'), prefixIcon: const Icon(Icons.search), suffixIcon: _searching ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))) : null),
+                onChanged: _changed,
+              ),
             ),
+            if (widget.allowAny)
+              ListTile(
+                leading: const CircleAvatar(backgroundColor: brand, child: Icon(Icons.map_outlined, color: Colors.white)),
+                title: Text(context.t('choose_on_map'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                onTap: _chooseOnMap,
+              ),
             Expanded(
-              child: ListView.builder(
-                itemCount: shown.length,
-                itemBuilder: (_, i) {
-                  final place = shown[i];
-                  return ListTile(
-                    leading: const Icon(Icons.location_on_outlined),
+              child: ListView(children: [
+                for (final place in _remote)
+                  ListTile(
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(place.address ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                    onTap: () => Navigator.pop(context, place),
+                  ),
+                if (_remote.isNotEmpty && shown.isNotEmpty) const Divider(),
+                for (final place in shown)
+                  ListTile(
+                    leading: const Icon(Icons.location_city_outlined),
                     title: Text(place.label(widget.locale)),
                     subtitle: widget.locale == 'am' ? Text(place.name) : ((place.nameAm ?? '').isEmpty ? null : Text(place.nameAm!)),
                     trailing: widget.selected?.key == place.key ? const Icon(Icons.check) : null,
                     onTap: () => Navigator.pop(context, place),
-                  );
-                },
-              ),
+                  ),
+              ]),
             ),
           ]),
         ),

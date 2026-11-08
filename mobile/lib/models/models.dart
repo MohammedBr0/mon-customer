@@ -5,11 +5,19 @@ library;
 double _d(Object? v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
 int? _i(Object? v) => v is num ? v.toInt() : int.tryParse('$v');
 DateTime? _t(Object? v) => v == null ? null : DateTime.tryParse('$v');
+double? _pt(Object? point, String key) => point is Map && point[key] is num ? (point[key] as num).toDouble() : null;
 List<T> _list<T>(Object? v, T Function(Map<String, dynamic>) build) =>
     (v as List? ?? const []).map((e) => build(Map<String, dynamic>.from(e as Map))).toList();
 
 class Place {
-  const Place({required this.key, required this.name, this.nameAm, required this.lat, required this.lng, this.city});
+  const Place({required this.key, required this.name, this.nameAm, required this.lat, required this.lng, this.city, this.address});
+
+  /// Any spot on the map (not one of the listed towns).
+  factory Place.pin(double lat, double lng, String name, {String? address}) =>
+      Place(key: 'pin:${lat.toStringAsFixed(5)},${lng.toStringAsFixed(5)}', name: name, lat: lat, lng: lng, address: address);
+
+  final String? address;
+  bool get isPin => key.startsWith('pin:');
   final String key;
   final String name;
   final String? nameAm;
@@ -322,7 +330,17 @@ class Trip {
     this.myBooking,
     this.cityCommute = false,
     this.city,
+    this.polyline,
+    this.startLat,
+    this.startLng,
+    this.endLat,
+    this.endLng,
   });
+  final String? polyline;
+  final double? startLat;
+  final double? startLng;
+  final double? endLat;
+  final double? endLng;
   final bool cityCommute;
   final String? city;
   final int id;
@@ -381,6 +399,11 @@ class Trip {
         bookable: j['bookable'] == true,
         cityCommute: j['city_commute'] == true,
         city: j['city'] as String?,
+        polyline: j['overview_polyline'] as String?,
+        startLat: _pt(j['start_location'], 'lat'),
+        startLng: _pt(j['start_location'], 'lng'),
+        endLat: _pt(j['end_location'], 'lat'),
+        endLng: _pt(j['end_location'], 'lng'),
         myBooking: j['my_booking'] == null ? null : Booking.fromJson(Map<String, dynamic>.from(j['my_booking'] as Map)),
       );
 }
@@ -459,4 +482,14 @@ class AppNotification {
       conversationId: _i(data['conversation_id']),
     );
   }
+}
+
+class RoutePreview {
+  const RoutePreview({required this.distanceText, required this.durationText, required this.polyline});
+  final String distanceText;
+  final String durationText;
+  final String polyline;
+
+  factory RoutePreview.fromJson(Map<String, dynamic> j) =>
+      RoutePreview(distanceText: j['distance_text'] as String? ?? '', durationText: j['duration_text'] as String? ?? '', polyline: j['overview_polyline'] as String? ?? '');
 }

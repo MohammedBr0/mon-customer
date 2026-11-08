@@ -172,8 +172,10 @@ class Api {
   Future<List<RideAlert>> alerts() async =>
       [for (final a in ((await _send('GET', '/ride_alerts'))['ride_alerts'] as List? ?? const [])) RideAlert.fromJson(Map<String, dynamic>.from(a as Map))];
 
+  Map<String, dynamic> _placeRef(Place p) => p.isPin ? {'name': p.name, 'lat': p.lat, 'lng': p.lng} : {'key': p.key};
+
   Future<void> createAlert(Place from, Place to) =>
-      _send('POST', '/ride_alerts', body: {'ride_alert': {'start': {'key': from.key}, 'end': {'key': to.key}}});
+      _send('POST', '/ride_alerts', body: {'ride_alert': {'start': _placeRef(from), 'end': _placeRef(to)}});
 
   Future<void> deleteAlert(int id) => _send('DELETE', '/ride_alerts/$id');
 
@@ -193,4 +195,26 @@ class Api {
 
   Future<void> markNotificationRead(int id) => _send('PATCH', '/notifications/$id/read');
   Future<void> markAllNotificationsRead() => _send('POST', '/notifications/read_all');
+
+  // ---- maps ----
+  /// Places matching what was typed, nearest to [nearLat]/[nearLng] first.
+  Future<List<Place>> searchPlaces(String q, {double? nearLat, double? nearLng}) async {
+    final data = await _send('GET', '/maps/search', query: {'q': q, 'lat': nearLat, 'lng': nearLng});
+    return [
+      for (final p in (data['places'] as List? ?? const []))
+        Place.pin((p['lat'] as num).toDouble(), (p['lng'] as num).toDouble(), '${p['name'] ?? p['address']}', address: p['address'] as String?),
+    ];
+  }
+
+  /// The address at a point on the map.
+  Future<Place> reverse(double lat, double lng) async {
+    final data = await _send('GET', '/maps/reverse', query: {'lat': lat, 'lng': lng});
+    final place = Map<String, dynamic>.from(data['place'] as Map);
+    return Place.pin(lat, lng, '${place['address']}', address: place['address'] as String?);
+  }
+
+  Future<RoutePreview> routePreview(Place from, Place to) async {
+    final data = await _send('GET', '/maps/route', query: {'from': '${from.lat},${from.lng}', 'to': '${to.lat},${to.lng}'});
+    return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] as Map));
+  }
 }

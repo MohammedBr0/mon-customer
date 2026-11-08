@@ -54,6 +54,7 @@ module ApiSerializer
     return data unless detail
 
     data.merge(
+      overview_polyline: itinerary.overview_polyline,
       occurrence_dates: itinerary.occurrence_dates.map { |date| { date: date.iso8601, seats_available: itinerary.seats_available(date) } },
       bookable:         viewer.present? && itinerary.bookable_by?(viewer),
       my_booking:       booking && booking(booking, viewer:),

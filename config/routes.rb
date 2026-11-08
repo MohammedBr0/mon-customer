@@ -76,6 +76,9 @@ Rails.application.routes.draw do
         collection { post :read_all }
         patch :read, on: :member
       end
+      get 'maps/search', to: 'maps#search'
+      get 'maps/reverse', to: 'maps#reverse'
+      get 'maps/route', to: 'maps#route'
       resources :ride_alerts, only: %i[index create destroy]
       resources :reports, only: :create
     end

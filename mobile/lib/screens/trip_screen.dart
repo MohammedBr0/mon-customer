@@ -10,6 +10,8 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import 'chat_screen.dart';
 import 'dialogs.dart';
+import 'map_screens.dart';
+import '../widgets/route_map.dart';
 
 void openTrip(BuildContext context, int id) => Navigator.push(context, MaterialPageRoute(builder: (_) => TripScreen(tripId: id)));
 
@@ -98,6 +100,14 @@ class _TripScreenState extends State<TripScreen> {
           decoration: BoxDecoration(color: const Color(0x33F2B705), borderRadius: BorderRadius.circular(12)),
           child: Row(children: [const Icon(Icons.block), const SizedBox(width: 8), Expanded(child: Text(context.t('trip_cancelled')))]),
         ),
+      Builder(builder: (context) {
+        final points = routePoints(polyline: trip.polyline, startLat: trip.startLat, startLng: trip.startLng, endLat: trip.endLat, endLng: trip.endLng);
+        if (points.length < 2) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: RouteMap(points: points, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TripMapScreen(trip: trip, points: points)))),
+        );
+      }),
       Card(child: Padding(padding: const EdgeInsets.all(16), child: RouteLine(from: trip.startAddress, to: trip.endAddress))),
       const SizedBox(height: 12),
       Wrap(spacing: 10, runSpacing: 10, children: [

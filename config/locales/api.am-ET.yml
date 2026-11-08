@@ -4,6 +4,8 @@ am-ET:
     unauthorized: እባክዎ እንደገና ይግቡ
     banned: ይህ መለያ ታግዷል
     rate_limited: ብዙ ሙከራዎች። ከጥቂት ደቂቃዎች በኋላ እንደገና ይሞክሩ።
+    maps_unavailable: ካርታዎች አሁን አይገኙም
+    no_route: በእነዚህ ቦታዎች መካከል የመኪና መንገድ አልተገኘም
   notifications:
     booking_requested:
       title: አዲስ የመቀመጫ ጥያቄ

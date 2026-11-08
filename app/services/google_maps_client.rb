@@ -24,11 +24,29 @@ class GoogleMapsClient
   def geocode(text)
     return coordinates_from(text) if coordinates?(text)
 
-    body = { textQuery: text.to_s, regionCode: 'ET', locationBias: ETHIOPIA, pageSize: 1, languageCode: I18n.locale.to_s.start_with?('am') ? 'am' : 'en' }
+    body = { textQuery: text.to_s, regionCode: 'ET', locationBias: ETHIOPIA, pageSize: 1, languageCode: language }
     place = post(PLACES_URL, body, 'places.formattedAddress,places.location').fetch('places', []).first
     return unless place
 
     { address: place['formattedAddress'], lat: place.dig('location', 'latitude'), lng: place.dig('location', 'longitude') }
+  end
+
+  # Several matches for what someone typed, nearest to `near` ([lat, lng]) first when given.
+  def search(text, limit: 6, near: nil)
+    body = { textQuery: text.to_s, regionCode: 'ET', pageSize: limit.clamp(1, 10), languageCode: language }
+    body[:locationBias] = near ? { circle: { center: { latitude: near[0], longitude: near[1] }, radius: 30_000.0 } } : ETHIOPIA
+    post(PLACES_URL, body, 'places.displayName,places.formattedAddress,places.location').fetch('places', []).map do |place|
+      { name: place.dig('displayName', 'text'), address: place['formattedAddress'], lat: place.dig('location', 'latitude'), lng: place.dig('location', 'longitude') }
+    end
+  end
+
+  # The address at a point on the map.
+  def reverse(lat, lng)
+    uri = URI("https://geocode.googleapis.com/v4beta/geocode/location/#{Float(lat)},#{Float(lng)}?languageCode=#{language}")
+    result = get(uri).fetch('results', []).first
+    { address: result&.dig('formattedAddress') || format('%.5f, %.5f', lat.to_f, lng.to_f), lat: lat.to_f, lng: lng.to_f }
+  rescue ArgumentError, TypeError
+    raise Error, 'bad_point'
   end
 
   # A driving route between two places (text or "lat,lng"), in the shape the trip form stores.
@@ -79,6 +97,22 @@ class GoogleMapsClient
   end
 
   private
+
+  def language
+    I18n.locale.to_s.start_with?('am') ? 'am' : 'en'
+  end
+
+  def get(uri)
+    raise Error, 'not_configured' unless self.class.enabled?
+
+    request = Net::HTTP::Get.new(uri, 'X-Goog-Api-Key' => self.class.key)
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 10) { |http| http.request(request) }
+    raise Error, "google_#{response.code}" unless response.is_a?(Net::HTTPSuccess)
+
+    JSON.parse(response.body)
+  rescue Net::OpenTimeout, Net::ReadTimeout, SocketError, JSON::ParserError => e
+    raise Error, e.class.name
+  end
 
   def waypoint(place)
     { location: { latLng: { latitude: place[:lat], longitude: place[:lng] } } }

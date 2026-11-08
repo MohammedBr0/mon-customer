@@ -4,6 +4,8 @@ en-US:
     unauthorized: Please sign in again
     banned: This account is suspended
     rate_limited: Too many attempts. Try again in a few minutes.
+    maps_unavailable: Maps are not available right now
+    no_route: No driving route found between those places
   notifications:
     booking_requested:
       title: New seat request

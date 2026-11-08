@@ -28,6 +28,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // The Google Maps key is not stored in the repository: build with MAPS_API_KEY set (env var or -PMAPS_API_KEY=...).
+        manifestPlaceholders["MAPS_API_KEY"] = System.getenv("MAPS_API_KEY") ?: (project.findProperty("MAPS_API_KEY") as String?) ?: ""
     }
 
     buildTypes {

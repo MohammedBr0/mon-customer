@@ -6,6 +6,7 @@ import '../core/format.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
+import '../widgets/route_map.dart';
 import 'profile_screen.dart';
 import 'trip_screen.dart';
 
@@ -37,6 +38,28 @@ class _OfferScreenState extends State<OfferScreen> {
   bool _pets = false;
   bool _busy = false;
   String? _placeError;
+  RoutePreview? _preview;
+  bool _previewing = false;
+  int _previewSerial = 0;
+
+  /// Shows the drive (distance, time, line on the map) once both ends are chosen outside a city.
+  Future<void> _loadPreview() async {
+    final from = _from, to = _to;
+    final mine = ++_previewSerial;
+    if (_city != null || from == null || to == null || from.key == to.key) {
+      setState(() => _preview = null);
+      return;
+    }
+    setState(() => _previewing = true);
+    try {
+      final preview = await context.read<AppState>().api.routePreview(from, to);
+      if (mounted && mine == _previewSerial) setState(() => _preview = preview);
+    } catch (_) {
+      if (mounted && mine == _previewSerial) setState(() => _preview = null);
+    } finally {
+      if (mounted && mine == _previewSerial) setState(() => _previewing = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -139,6 +162,7 @@ class _OfferScreenState extends State<OfferScreen> {
               onSelectionChanged: (s) => setState(() {
                 _from = null;
                 _to = null;
+                _preview = null;
                 _city = s.first ? config.cities.first.key : null;
               }),
             ),
@@ -163,9 +187,26 @@ class _OfferScreenState extends State<OfferScreen> {
             PlaceField(label: context.t('to_area'), value: _to, places: config.cities.firstWhere((c) => c.key == _city).areas, placeholder: context.t('pick_area'), icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
             Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(context.t('area_note'), style: Theme.of(context).textTheme.bodySmall)),
           ] else ...[
-            PlaceField(label: context.t('from'), value: _from, onChanged: (p) => setState(() => _from = p)),
+            PlaceField(label: context.t('from'), value: _from, onChanged: (p) {
+              setState(() => _from = p);
+              _loadPreview();
+            }),
             const SizedBox(height: 12),
-            PlaceField(label: context.t('to'), value: _to, icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
+            PlaceField(label: context.t('to'), value: _to, icon: Icons.place_outlined, onChanged: (p) {
+              setState(() => _to = p);
+              _loadPreview();
+            }),
+            if (_previewing) const Padding(padding: EdgeInsets.only(top: 12), child: LinearProgressIndicator()),
+            if (_preview != null && _from != null && _to != null) ...[
+              const SizedBox(height: 12),
+              Builder(builder: (context) {
+                final points = routePoints(polyline: _preview!.polyline, startLat: _from!.lat, startLng: _from!.lng, endLat: _to!.lat, endLng: _to!.lng);
+                return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  RouteMap(points: points, height: 170),
+                  Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text('${_preview!.distanceText} · ${_preview!.durationText}', style: const TextStyle(fontWeight: FontWeight.w700))),
+                ]);
+              }),
+            ],
           ],
           if (_placeError != null) Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(_placeError!, style: TextStyle(color: scheme.error, fontSize: 12))),
           const SizedBox(height: 12),
