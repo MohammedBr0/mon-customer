@@ -1,0 +1,6 @@
+am-ET:
+  api:
+    not_found: አልተገኘም
+    unauthorized: እባክዎ እንደገና ይግቡ
+    banned: ይህ መለያ ታግዷል
+    rate_limited: ብዙ ሙከራዎች። ከጥቂት ደቂቃዎች በኋላ እንደገና ይሞክሩ።

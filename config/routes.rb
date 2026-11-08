@@ -42,6 +42,36 @@ Rails.application.routes.draw do
     get :itineraries, on: :member
   end
 
+  # JSON API for the mobile app
+  namespace :api, defaults: { format: :json } do
+    namespace :v1 do
+      resource :config, only: :show, controller: :config
+      post 'auth/sign_in', to: 'auth#sign_in'
+      post 'auth/sign_up', to: 'auth#sign_up'
+      delete 'auth/sign_out', to: 'auth#sign_out'
+      resource :me, only: %i[show update destroy], controller: :me
+      resources :itineraries, only: %i[index show create update] do
+        get :mine, on: :collection
+        patch :cancel, on: :member
+        resources :bookings, only: :create
+      end
+      resources :bookings, only: :index do
+        member do
+          patch :confirm
+          patch :decline
+          patch :cancel
+          patch :skip_date
+        end
+        resources :reviews, only: :create
+      end
+      resources :conversations, only: %i[index show create] do
+        post :message, on: :member
+      end
+      resources :ride_alerts, only: %i[index create destroy]
+      resources :reports, only: :create
+    end
+  end
+
   # Admin Area
   namespace :admin do
     root to: 'dashboard#show'

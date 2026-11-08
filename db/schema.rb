@@ -10,10 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_07_200100) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_08_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
+
+  create_table "api_tokens", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "token_digest", null: false
+    t.string "device_name"
+    t.datetime "last_used_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_api_tokens_on_user_id"
+  end
 
   create_table "audit_logs", force: :cascade do |t|
     t.bigint "actor_id", null: false
@@ -251,6 +263,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_200100) do
     t.index ["key"], name: "index_vehicle_fields_on_key", unique: true
   end
 
+  add_foreign_key "api_tokens", "users"
   add_foreign_key "audit_logs", "users", column: "actor_id"
   add_foreign_key "bookings", "itineraries"
   add_foreign_key "bookings", "users", column: "cancelled_by_id"

@@ -4,6 +4,10 @@
 # USE ENVIRONMENT VARIABLES OR 'local.rb' INSTEAD
 
 SimpleConfig.for :application do
+  group :neon_auth do
+    set :issuer, 'https://neon-auth.test/icare/auth'
+  end
+
   group :itineraries do
     set :geo_restricted, false
     set :bounds, [

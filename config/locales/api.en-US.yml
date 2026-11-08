@@ -1,0 +1,6 @@
+en-US:
+  api:
+    not_found: Not found
+    unauthorized: Please sign in again
+    banned: This account is suspended
+    rate_limited: Too many attempts. Try again in a few minutes.
