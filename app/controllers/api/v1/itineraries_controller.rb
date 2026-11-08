@@ -8,7 +8,7 @@ module Api
 
       # Search by route (coordinates) or list the latest trips.
       def index
-        records, meta = paginate(city_search? ? city_scope : (searching? ? search_scope : latest_scope))
+        records, meta = paginate(city_search? ? city_scope : (searching? ? search_scope : (near_search? ? near_scope : latest_scope)))
         render json: { itineraries: records.map { |itinerary| serializer.itinerary(itinerary, viewer: current_user) }, meta: }
       end
 
@@ -61,6 +61,23 @@ module Api
 
       def require_owner
         render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden) unless @itinerary.user == current_user
+      end
+
+      def near_search?
+        params[:near_lat].present? && params[:near_lng].present?
+      end
+
+      # Trips that start within a radius of a point on the map ("search this area"), nearest first.
+      def near_scope
+        lat = Float(params[:near_lat], exception: false)
+        lng = Float(params[:near_lng], exception: false)
+        return latest_scope unless lat && lng
+
+        meters = (Float(params[:radius_km], exception: false) || 10).clamp(1, 50) * 1000
+        point = "ST_SetSRID(ST_MakePoint(#{lng.to_f}, #{lat.to_f}), 4326)::geography"
+        scope = latest_scope.reorder(nil).where("ST_DWithin(itineraries.start_location, #{point}, ?)", meters)
+        scope = scope.where(ItinerarySearch::SEATS_CONDITION, seats: params[:seats].to_i.clamp(1, Booking::MAX_SEATS)) if params[:seats].present?
+        params[:sort] == 'price' ? scope.order(:price_per_seat) : scope.order(Arel.sql("ST_Distance(itineraries.start_location, #{point})"))
       end
 
       def city_search?

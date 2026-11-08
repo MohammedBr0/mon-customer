@@ -104,10 +104,11 @@ class Api {
   Future<void> deleteAccount() => _send('DELETE', '/me');
 
   // ---- trips ----
-  Future<ResultPage<Trip>> trips({Place? from, Place? to, int? seats, String? sort, int page = 1, String? city, Place? fromArea, Place? toArea}) async {
+  Future<ResultPage<Trip>> trips({Place? from, Place? to, int? seats, String? sort, int page = 1, String? city, Place? fromArea, Place? toArea, double? nearLat, double? nearLng, double? radiusKm}) async {
     final data = await _send('GET', '/itineraries', query: {
       'start_lat': from?.lat, 'start_lng': from?.lng, 'end_lat': to?.lat, 'end_lng': to?.lng, 'seats': seats, 'sort': sort, 'page': page,
       'city': city, 'from_area': fromArea?.key, 'to_area': toArea?.key,
+      'near_lat': nearLat, 'near_lng': nearLng, 'radius_km': radiusKm,
     });
     return _tripPage(data);
   }

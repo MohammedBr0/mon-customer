@@ -8,7 +8,9 @@ import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
 import 'package:icare/core/format.dart';
 import 'package:icare/core/polyline.dart';
+import 'package:icare/widgets/map_markers.dart';
 import 'package:icare/widgets/route_map.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:icare/core/phone_notifier.dart';
 import 'package:icare/core/token_store.dart';
 import 'package:icare/l10n/strings.dart';
@@ -130,6 +132,22 @@ void main() {
       expect(trip.polyline, 'abc');
       expect(trip.startLat, 9.0);
       expect(trip.endLng, 38.8);
+    });
+
+    test('distance between points, for sizing a search area', () {
+      expect(distanceKm(const LatLng(9.03, 38.74), const LatLng(9.03, 38.74)), 0);
+      expect(distanceKm(const LatLng(9.03, 38.74), const LatLng(9.03, 38.83)), closeTo(9.9, 0.3));
+    });
+
+    test('a nearby search sends the point and radius', () async {
+      late Uri seen;
+      final api = Api(client: MockClient((r) async {
+        seen = r.url;
+        return _json({'itineraries': [], 'meta': {'page': 1, 'last': true}});
+      }), base: 'https://x.test');
+      await api.trips(nearLat: 9.03, nearLng: 38.74, radiusKm: 6.5);
+      expect(seen.queryParameters, containsPair('near_lat', '9.03'));
+      expect(seen.queryParameters, containsPair('radius_km', '6.5'));
     });
 
     test('a pin on the map is not a listed town', () {

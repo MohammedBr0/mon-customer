@@ -43,4 +43,24 @@ RSpec.describe 'API maps' do
     expect(response).to have_http_status(:created), response.body
     expect(json['itinerary']['overview_polyline']).to eq '_p~iF~ps|U_ulLnnqC'
   end
+
+  describe 'searching an area of the map' do
+    let(:driver) { create(:user) }
+
+    it 'lists trips that start near a point, nearest first' do
+      near = create(:itinerary, user: driver)
+      lat, lng = near.start_location.lat, near.start_location.lon
+
+      get '/api/v1/itineraries', params: { near_lat: lat, near_lng: lng, radius_km: 5 }, headers: api_headers(user)
+      expect(json['itineraries'].pluck('id')).to include(near.id)
+
+      get '/api/v1/itineraries', params: { near_lat: lat + 1.0, near_lng: lng, radius_km: 5 }, headers: api_headers(user)
+      expect(json['itineraries']).to be_empty
+    end
+
+    it 'ignores a bad point instead of failing' do
+      get '/api/v1/itineraries', params: { near_lat: 'x', near_lng: 'y' }, headers: api_headers(user)
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end
