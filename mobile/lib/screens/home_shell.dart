@@ -6,15 +6,9 @@ import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../widgets/brand.dart';
 import '../widgets/common.dart';
-import '../widgets/paged_trips.dart';
-import 'dart:io' show Platform;
-
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-
-import '../core/device_location.dart';
 import '../core/format.dart';
 import 'bookings_screen.dart';
-import 'map_screens.dart';
+import 'home_tab.dart';
 import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'offer_screen.dart';
@@ -49,21 +43,17 @@ class _HomeShellState extends State<HomeShell> {
   String _tab = 'home';
   final _search = SearchRequest();
 
-  void _goSearch(Place? from, Place? to, {String? city}) {
-    _search.set(from, to, inCity: city);
-    setState(() => _tab = 'search');
-  }
-
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final driver = app.driverMode;
-    // Drivers get the Offer button; passengers get a simpler bar without it.
-    final ids = driver ? const ['home', 'search', 'offer', 'bookings', 'profile'] : const ['home', 'search', 'bookings', 'profile'];
+    const ids = ['home', 'search', 'bookings', 'profile'];
     const pages = ['home', 'search', 'bookings', 'profile'];
     final current = ids.contains(_tab) ? _tab : 'home';
     return Scaffold(
-      appBar: AppBar(
+      appBar: current == 'home'
+          ? null
+          : AppBar(
         titleSpacing: 16,
         title: const BrandLogo(),
         actions: [
@@ -81,7 +71,7 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: IndexedStack(index: pages.indexOf(current), children: [
-        HomeTab(onRoute: _goSearch),
+        HomeTab(onOffer: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen()))),
         SearchTab(request: _search),
         BookingsTab(key: ValueKey('bookings-$driver')),
         const ProfileTab(),
@@ -89,10 +79,6 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: ids.indexOf(current),
         onDestinationSelected: (i) {
-          if (ids[i] == 'offer') {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen()));
-            return;
-          }
           setState(() => _tab = ids[i]);
         },
         destinations: [
@@ -100,7 +86,6 @@ class _HomeShellState extends State<HomeShell> {
             switch (id) {
               'home' => NavigationDestination(icon: const Icon(Icons.home_outlined), selectedIcon: const Icon(Icons.home), label: context.t('tab_home')),
               'search' => NavigationDestination(icon: const Icon(Icons.search), label: context.t('tab_search')),
-              'offer' => NavigationDestination(icon: const CircleAvatar(radius: 18, backgroundColor: brand, child: Icon(Icons.add, color: Colors.white)), label: context.t('tab_offer')),
               'bookings' => NavigationDestination(icon: const Icon(Icons.confirmation_number_outlined), selectedIcon: const Icon(Icons.confirmation_number), label: context.t(driver ? 'tab_requests' : 'tab_bookings')),
               _ => NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: context.t('tab_profile')),
             },
@@ -119,159 +104,6 @@ Future<void> switchMode(BuildContext context, String mode) async {
     if (context.mounted) showMessage(context, context.tr(mode == 'driver' ? 'now_driver' : 'now_passenger'));
   } catch (e) {
     if (context.mounted) showMessage(context, errorText(context, e), error: true);
-  }
-}
-
-class HomeTab extends StatelessWidget {
-  const HomeTab({super.key, required this.onRoute});
-  final void Function(Place? from, Place? to, {String? city}) onRoute;
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    final config = app.config;
-    final scheme = Theme.of(context).colorScheme;
-    return PagedTrips(
-      loader: (page) => app.api.trips(page: page),
-      onOpen: (trip) => openTrip(context, trip.id),
-      header: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(context.t(app.driverMode ? 'home_prompt_driver' : 'home_prompt_passenger'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2)),
-        const SizedBox(height: 12),
-        HomeMapHero(driver: app.driverMode),
-        const SizedBox(height: 12),
-        NextRideCard(key: ValueKey('next-${app.driverMode}'), driver: app.driverMode),
-        if ((config.announcement ?? '').isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(12)),
-            child: Row(children: [const Icon(Icons.campaign_outlined, color: Color(0xFF3A2C00)), const SizedBox(width: 8), Expanded(child: Text(config.announcement!, style: const TextStyle(color: Color(0xFF3A2C00), fontWeight: FontWeight.w600)))]),
-          ),
-        if (config.cities.isNotEmpty) ...[
-          SectionTitle(context.t('city_commutes')),
-          for (final city in config.cities)
-            Card(
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: scheme.primaryContainer, child: Icon(Icons.location_city, color: scheme.onPrimaryContainer)),
-                title: Text(city.place.label(app.locale), style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(context.t('city_commutes_hint')),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => onRoute(null, null, city: city.key),
-              ),
-            ),
-          const SizedBox(height: 4),
-        ],
-        if (config.popularRoutes.isNotEmpty) ...[
-          SectionTitle(context.t('popular_routes')),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final route in config.popularRoutes)
-              ActionChip(
-                avatar: Icon(Icons.alt_route, size: 16, color: scheme.primary),
-                label: Text('${route.from} → ${route.to}'),
-                onPressed: () => onRoute(config.placeByName(route.from), config.placeByName(route.to)),
-              ),
-          ]),
-        ],
-        SectionTitle(context.t('latest_trips')),
-      ]),
-    );
-  }
-}
-
-/// The map at the top of the home screen, with the main action on it: search for passengers, offer for drivers.
-class HomeMapHero extends StatefulWidget {
-  const HomeMapHero({super.key, required this.driver});
-  final bool driver;
-
-  @override
-  State<HomeMapHero> createState() => _HomeMapHeroState();
-}
-
-class _HomeMapHeroState extends State<HomeMapHero> {
-  LatLng _center = const LatLng(9.0300, 38.7400);
-  bool _located = false;
-
-  // Widget tests have no map engine; they get a plain panel instead.
-  static final bool _canShowMap = !Platform.environment.containsKey('FLUTTER_TEST');
-
-  @override
-  void initState() {
-    super.initState();
-    if (_canShowMap) _locate();
-  }
-
-  Future<void> _locate() async {
-    final here = await currentLocation();
-    if (here != null && mounted) {
-      setState(() {
-        _center = LatLng(here.$1, here.$2);
-        _located = true;
-      });
-    }
-  }
-
-  void _openMap() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapSearchScreen()));
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox(
-        height: 210,
-        child: Stack(children: [
-          Positioned.fill(
-            child: _canShowMap
-                ? GoogleMap(
-                    key: ValueKey(_located),
-                    initialCameraPosition: CameraPosition(target: _center, zoom: 13),
-                    mapType: MapType.hybrid,
-                    liteModeEnabled: true,
-                    zoomControlsEnabled: false,
-                    mapToolbarEnabled: false,
-                    myLocationButtonEnabled: false,
-                    markers: {if (_located) Marker(markerId: const MarkerId('me'), position: _center, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))},
-                  )
-                : ColoredBox(color: scheme.primaryContainer),
-          ),
-          Positioned.fill(child: Material(color: Colors.transparent, child: InkWell(onTap: _openMap))),
-          Positioned(
-            left: 12,
-            right: 12,
-            top: 12,
-            child: Material(
-              elevation: 3,
-              color: scheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: _openMap,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  child: Row(children: [
-                    Icon(Icons.search, color: scheme.primary),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(context.t('where_to'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant))),
-                    Icon(Icons.map_outlined, color: scheme.onSurfaceVariant),
-                  ]),
-                ),
-              ),
-            ),
-          ),
-          if (widget.driver)
-            Positioned(
-              left: 12,
-              bottom: 12,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen())),
-                icon: const Icon(Icons.add),
-                label: Text(context.t('offer_cta')),
-              ),
-            ),
-        ]),
-      ),
-    );
   }
 }
 

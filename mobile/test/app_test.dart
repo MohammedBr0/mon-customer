@@ -333,6 +333,34 @@ void main() {
     expect(picked?.lat, 8.99);
   });
 
+  testWidgets('home lists nearby rides with price, seats and one main action, on a small phone', (tester) async {
+    tester.view.physicalSize = const Size(720, 1480); // 360 x 740 dp
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.reset);
+    final store = MemoryTokenStore()..token = 't';
+    Map<String, dynamic> trip(int id, String to, int seats) => {
+          'id': id, 'start_address': 'Bole Medhanialem, Addis Ababa', 'end_address': to, 'leave_date': '2026-12-01T05:00:00Z',
+          'price_per_seat': 120, 'passenger_price_per_seat': 135, 'seats_total': 3, 'seats_available': seats,
+          'start_location': {'lat': 9.0, 'lng': 38.78}, 'driver': _profile,
+        };
+    final state = _state((r) async {
+      if (r.url.path.endsWith('/me')) return _json({'user': {..._profile, 'app_mode': 'driver', 'verified': true}});
+      if (r.url.path.endsWith('/itineraries')) return _json({'itineraries': [trip(1, 'Megenagna taxi station with a very long name indeed', 1), trip(2, 'Mexico Square', 3)], 'meta': {'page': 1, 'last': true}});
+      return _json({'conversations': [], 'notifications': [], 'made': [], 'received': [], 'itineraries': [], 'unread': 0, 'meta': {'last': true}});
+    }, store: store);
+    await tester.pumpWidget(IcareApp(state: state));
+    await state.start();
+    await tester.pumpAndSettle();
+    expect(find.text('SHARED RIDES NEAR YOU'), findsOneWidget);
+    expect(find.text('To Mexico Square'), findsOneWidget);
+    expect(find.textContaining('135'), findsNWidgets(2));
+    expect(find.textContaining('/Seat'), findsNWidgets(2));
+    expect(find.text('1 seats left'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Post a ride'), findsOneWidget);
+    expect(find.text('Where to?'), findsOneWidget);
+    state.dispose();
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;
