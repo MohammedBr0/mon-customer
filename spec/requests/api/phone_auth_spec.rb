@@ -134,6 +134,8 @@ RSpec.describe 'API phone registration with an SMS code' do
     post '/api/v1/auth/send_code', params: { phone: '123' }
     expect(json['error']['code']).to eq 'invalid_phone'
 
+    ids = %w[ver-a ver-b ver-c].map { |id| { body: { acknowledge: 'success', response: { verificationId: id } }.to_json } }
+    stub_request(:get, challenge_url).to_return(*ids)
     3.times { post '/api/v1/auth/send_code', params: { phone: '0922334455' } }
     post '/api/v1/auth/send_code', params: { phone: '0922334455' }
     expect(response).to have_http_status(:too_many_requests)

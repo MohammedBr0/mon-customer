@@ -78,8 +78,8 @@ class AppState extends ChangeNotifier {
     await _adopt(session);
   }
 
-  Future<void> signUp(String name, String phone, String password, {required String mode}) async {
-    final session = await api.signUp(name.trim(), phone.trim(), password, mode: mode);
+  Future<void> signUp(String name, String phone, String password, {required String mode, String? verificationId, String? code}) async {
+    final session = await api.signUp(name.trim(), phone.trim(), password, mode: mode, verificationId: verificationId, code: code);
     await _adopt(session);
   }
 

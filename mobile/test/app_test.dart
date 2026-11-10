@@ -231,6 +231,51 @@ void main() {
     });
   });
 
+  testWidgets('with SMS codes on, registering texts a code and finishes on the code screen', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2600);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    final calls = <String, dynamic>{};
+    final state = _state((r) async {
+      if (r.url.path.endsWith('/config')) return _json({'phone_verification': true});
+      if (r.url.path.endsWith('/auth/send_code')) {
+        calls['send_code'] = jsonDecode(r.body);
+        return _json({'verification_id': 'ver-9', 'expires_in': 600, 'code_length': 6}, 201);
+      }
+      if (r.url.path.endsWith('/auth/sign_up')) {
+        calls['sign_up'] = jsonDecode(r.body);
+        return _json({'token': 'tok', 'user': {..._profile, 'app_mode': 'driver', 'phone_account': true}}, 201);
+      }
+      return _json({'conversations': [], 'notifications': [], 'itineraries': [], 'unread': 0, 'meta': {'last': true}});
+    });
+    await tester.pumpWidget(IcareApp(state: state));
+    await state.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New here? Create an account'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Full name'), 'Abebe Bikila');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Phone number'), '0911 22 33 44');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'secret123');
+    await tester.tap(find.text('Driver'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(calls['send_code'], {'phone': '+251911223344'});
+    expect(find.text('Enter the code'), findsOneWidget);
+    expect(calls.containsKey('sign_up'), isFalse);
+
+    await tester.enterText(find.widgetWithText(TextField, 'Code'), '123456');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(calls['sign_up'], containsPair('verification_id', 'ver-9'));
+    expect(calls['sign_up'], containsPair('code', '123456'));
+    expect(calls['sign_up'], containsPair('app_mode', 'driver'));
+    expect(state.status, AuthStatus.signedIn);
+    state.dispose();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 61));
+  });
+
   testWidgets('registration asks for a phone number and a role', (tester) async {
     tester.view.physicalSize = const Size(1080, 2600);
     tester.view.devicePixelRatio = 2.5;

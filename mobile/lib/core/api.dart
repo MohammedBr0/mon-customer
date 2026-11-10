@@ -83,8 +83,18 @@ class Api {
     return (token: data['token'] as String, user: Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map)));
   }
 
-  Future<({String token, Profile user})> signUp(String name, String phone, String password, {required String mode}) async {
-    final data = await _send('POST', '/auth/sign_up', body: {'name': name, 'phone': phone, 'password': password, 'app_mode': mode, 'device_name': 'android'});
+  /// Texts a security code to the number. Returns the id to send back with the code.
+  Future<({String verificationId, int codeLength})> sendCode(String phone) async {
+    final data = await _send('POST', '/auth/send_code', body: {'phone': phone});
+    return (verificationId: '${data['verification_id']}', codeLength: (data['code_length'] as num?)?.toInt() ?? 6);
+  }
+
+  Future<({String token, Profile user})> signUp(String name, String phone, String password, {required String mode, String? verificationId, String? code}) async {
+    final data = await _send('POST', '/auth/sign_up', body: {
+      'name': name, 'phone': phone, 'password': password, 'app_mode': mode, 'device_name': 'android',
+      'verification_id': ?verificationId,
+      'code': ?code,
+    });
     return (token: data['token'] as String, user: Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map)));
   }
 

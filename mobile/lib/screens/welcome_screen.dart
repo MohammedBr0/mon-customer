@@ -5,6 +5,7 @@ import '../core/app_state.dart';
 import '../core/phone.dart';
 import '../l10n/strings.dart';
 import '../widgets/common.dart';
+import 'code_screen.dart';
 
 /// Sign in or create an account. Credentials go to the icare server, which checks them with Neon Auth.
 class WelcomeScreen extends StatefulWidget {
@@ -42,7 +43,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
     try {
       if (_signUp) {
-        await app.signUp(_name.text, normalizeEthiopianPhone(_email.text)!, _password.text, mode: _mode);
+        final phone = normalizeEthiopianPhone(_email.text)!;
+        if (app.config.phoneVerification) {
+          // Prove the number first: text a code, then finish on the code screen.
+          final sent = await app.api.sendCode(phone);
+          if (!mounted) return;
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => CodeScreen(name: _name.text, phone: phone, password: _password.text, mode: _mode, verificationId: sent.verificationId, codeLength: sent.codeLength)));
+        } else {
+          await app.signUp(_name.text, phone, _password.text, mode: _mode);
+        }
       } else {
         await app.signIn(_email.text, _password.text);
       }

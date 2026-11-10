@@ -91,7 +91,11 @@ class AppConfig {
     this.popularRoutes = const [],
     this.places = const [],
     this.cities = const [],
+    this.phoneVerification = false,
   });
+
+  /// The server texts a code to confirm a phone number before creating the account.
+  final bool phoneVerification;
   final String currencySymbol;
   final double feePercent;
   final String feeChargedTo;
@@ -133,6 +137,7 @@ class AppConfig {
       ],
       places: _list(j['places'], Place.fromJson),
       cities: _list(j['cities'], City.fromJson),
+      phoneVerification: j['phone_verification'] == true,
     );
   }
 
