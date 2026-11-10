@@ -356,10 +356,10 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   Object? _error;
   bool _dirty = false; // the map moved since the last search
   bool _programmatic = false;
-  bool _satellite = true; // satellite imagery is the default look
+  static const _satellite = true; // satellite imagery is the map's look
   bool _located = false;
   String _sort = 'date';
-  int _seats = 1;
+  static const _seats = 1;
   LatLng _center = _addis;
   int _serial = 0;
 
@@ -686,20 +686,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
                 child: ListView(scrollDirection: Axis.horizontal, children: [
                   _MapChip(icon: Icons.trip_origin, label: _from?.label(app.locale) ?? context.t('from'), active: _from != null, onTap: () => _editStop('from')),
                   _MapChip(icon: Icons.place, label: _to?.label(app.locale) ?? context.t('to'), active: _to != null, onTap: () => _editStop('to')),
-                  if (_from != null && _to != null) _MapChip(icon: Icons.swap_horiz, label: '', onTap: () {
-                    setState(() {
-                      final t = _from;
-                      _from = _to;
-                      _to = t;
-                    });
-                    _load();
-                  }),
                   _MapChip(icon: Icons.sort, label: _sort == 'price' ? context.t('sort_price') : context.t('sort_date'), onTap: () {
                     setState(() => _sort = _sort == 'price' ? 'date' : 'price');
-                    _load();
-                  }),
-                  _MapChip(icon: Icons.event_seat_outlined, label: '$_seats', active: _seats > 1, onTap: () {
-                    setState(() => _seats = _seats % 4 + 1);
                     _load();
                   }),
                 ]),
@@ -737,11 +725,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
         Positioned(
           right: 12,
           bottom: (_trips.isEmpty ? 140 : 250),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            FloatingActionButton.small(heroTag: 'layers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
-            const SizedBox(height: 10),
-            FloatingActionButton.small(heroTag: 'here', tooltip: context.t('my_location'), onPressed: _myLocation, child: const Icon(Icons.my_location)),
-          ]),
+          child: FloatingActionButton.small(heroTag: 'here', tooltip: context.t('my_location'), onPressed: _myLocation, child: const Icon(Icons.my_location)),
         ),
         // ---- bottom: trip cards ----
         Positioned(

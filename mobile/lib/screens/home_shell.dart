@@ -67,7 +67,6 @@ class _HomeShellState extends State<HomeShell> {
         titleSpacing: 16,
         title: const BrandLogo(),
         actions: [
-          ModeSwitchChip(driver: driver),
           IconButton(
             tooltip: context.t('notifications'),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())).then((_) => app.checkNotifications()),
@@ -123,35 +122,6 @@ Future<void> switchMode(BuildContext context, String mode) async {
   }
 }
 
-/// The current mode in the top bar; tap it to switch.
-class ModeSwitchChip extends StatelessWidget {
-  const ModeSwitchChip({super.key, required this.driver});
-  final bool driver;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 2),
-      child: Tooltip(
-        message: context.t(driver ? 'switch_to_passenger' : 'switch_to_driver'),
-        child: ActionChip(
-          visualDensity: VisualDensity.compact,
-          backgroundColor: Colors.white,
-          side: BorderSide.none,
-          avatar: Icon(driver ? Icons.directions_car : Icons.airline_seat_recline_normal, size: 18, color: brand),
-          label: Text(context.t(driver ? 'role_driver' : 'role_passenger'), style: const TextStyle(fontWeight: FontWeight.w700, color: brand)),
-          onPressed: () async {
-            final target = driver ? 'passenger' : 'driver';
-            if (await confirmDialog(context, context.tr(driver ? 'switch_to_passenger_q' : 'switch_to_driver_q'), action: context.tr(driver ? 'switch_to_passenger' : 'switch_to_driver')) && context.mounted) {
-              await switchMode(context, target);
-            }
-          },
-        ),
-      ),
-    );
-  }
-}
-
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, required this.onRoute});
   final void Function(Place? from, Place? to, {String? city}) onRoute;
@@ -165,7 +135,6 @@ class HomeTab extends StatelessWidget {
       loader: (page) => app.api.trips(page: page),
       onOpen: (trip) => openTrip(context, trip.id),
       header: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(context.t('greeting', {'name': app.user?.firstName ?? app.user?.name.split(' ').first ?? ''}), style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
         Text(context.t(app.driverMode ? 'home_prompt_driver' : 'home_prompt_passenger'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2)),
         const SizedBox(height: 12),
         HomeMapHero(driver: app.driverMode),
@@ -289,23 +258,17 @@ class _HomeMapHeroState extends State<HomeMapHero> {
               ),
             ),
           ),
-          Positioned(
-            left: 12,
-            bottom: 12,
-            child: widget.driver
-                ? FilledButton.icon(
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen())),
-                    icon: const Icon(Icons.add),
-                    label: Text(context.t('offer_cta')),
-                  )
-                : FilledButton.icon(
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
-                    onPressed: _openMap,
-                    icon: const Icon(Icons.explore_outlined),
-                    label: Text(context.t('explore_map')),
-                  ),
-          ),
+          if (widget.driver)
+            Positioned(
+              left: 12,
+              bottom: 12,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen())),
+                icon: const Icon(Icons.add),
+                label: Text(context.t('offer_cta')),
+              ),
+            ),
         ]),
       ),
     );
@@ -360,7 +323,6 @@ class _NextRideCardState extends State<NextRideCard> {
   Widget build(BuildContext context) {
     final next = _next;
     if (next == null) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
@@ -384,7 +346,7 @@ class _NextRideCardState extends State<NextRideCard> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                      child: Text(next.status != null ? context.t('status_${next.status}') : '${next.pending} ${context.t('requests').toLowerCase()}', style: TextStyle(color: scheme.brightness == Brightness.dark ? brand : brand, fontWeight: FontWeight.w800, fontSize: 12)),
+                      child: Text(next.status != null ? context.t('status_${next.status}') : '${next.pending} ${context.t('requests').toLowerCase()}', style: const TextStyle(color: brand, fontWeight: FontWeight.w800, fontSize: 12)),
                     ),
                   ],
                 ]),

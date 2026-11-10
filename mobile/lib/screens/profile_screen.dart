@@ -157,17 +157,13 @@ class ProfileFormScreen extends StatefulWidget {
 
 class _ProfileFormScreenState extends State<ProfileFormScreen> {
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
-  late final _fuel = TextEditingController(text: _fuelText(context.read<AppState>().user?.fuelPerKm ?? 0));
   late bool _email = context.read<AppState>().user?.sendEmail ?? false;
   late final bool _phoneAccount = context.read<AppState>().user?.phoneAccount ?? false;
   bool _busy = false;
 
-  static String _fuelText(double v) => v == 0 ? '' : v.toString();
-
   @override
   void dispose() {
     _phone.dispose();
-    _fuel.dispose();
     super.dispose();
   }
 
@@ -178,7 +174,6 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
       app.updateUser(await app.api.updateMe({
         if (!_phoneAccount) 'phone': _phone.text.trim(),
         if (!_phoneAccount) 'send_email_messages': _email,
-        if (_fuel.text.trim().isNotEmpty) 'vehicle_avg_consumption': _fuel.text.trim(),
       }));
       if (mounted) {
         showMessage(context, context.tr('saved'));
@@ -196,8 +191,6 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         appBar: AppBar(title: Text(context.t('profile'))),
         body: ListView(padding: const EdgeInsets.all(16), children: [
           TextField(controller: _phone, enabled: !_phoneAccount, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: context.t('phone'), helperText: context.t(_phoneAccount ? 'phone_is_login' : 'phone_hint'), helperMaxLines: 3)),
-          const SizedBox(height: 16),
-          TextField(controller: _fuel, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.t('fuel_per_km'), prefixText: '${context.watch<AppState>().config.currencySymbol} ')),
           if (!_phoneAccount) SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('email_notifications')), value: _email, onChanged: (v) => setState(() => _email = v)),
           const SizedBox(height: 12),
           FilledButton(onPressed: _busy ? null : _save, child: Text(context.t('save'))),
