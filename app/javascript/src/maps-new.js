@@ -141,7 +141,7 @@ const drawRoute = function (state, route) {
   if (state.line) { state.line.setMap(null) }
   state.markers.forEach(marker => marker.setMap(null))
   const path = route.overview_path.map(point => ({ lat: point[1], lng: point[0] }))
-  state.line = new google.maps.Polyline({ map: state.map, path, strokeColor: '#ffd54f', strokeWeight: 5, strokeOpacity: 0.8 })
+  state.line = new google.maps.Polyline({ map: state.map, path, strokeColor: '#1a56db', strokeWeight: 5, strokeOpacity: 0.8 })
   state.markers = [
     new google.maps.Marker({ map: state.map, position: path[0], label: 'A' }),
     new google.maps.Marker({ map: state.map, position: path[path.length - 1], label: 'B' })

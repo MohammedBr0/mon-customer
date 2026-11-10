@@ -19,7 +19,7 @@ import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'trip_screen.dart';
 
-const _addis = LatLng(9.0300, 38.7400);
+const _addis = addisAbaba;
 
 /// Home: the map with you on it, the shared rides near you, and one main action.
 class HomeTab extends StatefulWidget {
@@ -165,6 +165,8 @@ class _HomeTabState extends State<HomeTab> {
       Positioned.fill(
         child: _canShowMap
             ? GoogleMap(
+                cameraTargetBounds: ethiopiaCamera,
+                minMaxZoomPreference: ethiopiaZoom,
                 initialCameraPosition: CameraPosition(target: _center, zoom: 12.5),
                 onMapCreated: (c) => _map = c,
                 style: mapStyle(context),

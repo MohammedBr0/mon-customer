@@ -9,7 +9,7 @@ class GoogleMapsClient
 
   PLACES_URL = URI('https://places.googleapis.com/v1/places:searchText')
   ROUTES_URL = URI('https://routes.googleapis.com/directions/v2:computeRoutes')
-  # Rough box around Ethiopia, so "Bole" means Addis Ababa and not somewhere else.
+  # Box around Ethiopia: place search never returns anything outside it.
   ETHIOPIA = { rectangle: { low: { latitude: 3.4, longitude: 32.9 }, high: { latitude: 14.9, longitude: 48.0 } } }.freeze
 
   def self.key
@@ -24,7 +24,7 @@ class GoogleMapsClient
   def geocode(text)
     return coordinates_from(text) if coordinates?(text)
 
-    body = { textQuery: text.to_s, regionCode: 'ET', locationBias: ETHIOPIA, pageSize: 1, languageCode: language }
+    body = { textQuery: text.to_s, regionCode: 'ET', locationRestriction: ETHIOPIA, pageSize: 1, languageCode: language }
     place = post(PLACES_URL, body, 'places.formattedAddress,places.location').fetch('places', []).first
     return unless place
 
@@ -32,9 +32,9 @@ class GoogleMapsClient
   end
 
   # Several matches for what someone typed, nearest to `near` ([lat, lng]) first when given.
-  def search(text, limit: 6, near: nil)
-    body = { textQuery: text.to_s, regionCode: 'ET', pageSize: limit.clamp(1, 10), languageCode: language }
-    body[:locationBias] = near ? { circle: { center: { latitude: near[0], longitude: near[1] }, radius: 30_000.0 } } : ETHIOPIA
+  def search(text, limit: 6, near: nil) # rubocop:disable Lint/UnusedMethodArgument
+    # Only places inside Ethiopia; when the map centre is known, the nearest ones come first.
+    body = { textQuery: text.to_s, regionCode: 'ET', pageSize: limit.clamp(1, 10), languageCode: language, locationRestriction: ETHIOPIA }
     post(PLACES_URL, body, 'places.displayName,places.formattedAddress,places.location').fetch('places', []).map do |place|
       { name: place.dig('displayName', 'text'), address: place['formattedAddress'], lat: place.dig('location', 'latitude'), lng: place.dig('location', 'longitude') }
     end

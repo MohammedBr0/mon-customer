@@ -17,7 +17,7 @@ import '../widgets/map_style.dart';
 import '../widgets/route_map.dart';
 import 'trip_screen.dart';
 
-const _addis = LatLng(9.0300, 38.7400);
+const _addis = addisAbaba;
 
 /// Searches places by name as the person types. Shared by the map screens.
 class _PlaceSearchBox extends StatefulWidget {
@@ -213,6 +213,8 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
     return Scaffold(
       body: Stack(children: [
         GoogleMap(
+          cameraTargetBounds: ethiopiaCamera,
+          minMaxZoomPreference: ethiopiaZoom,
           initialCameraPosition: CameraPosition(target: _center, zoom: widget.initial != null ? 15 : 12),
           onMapCreated: (c) => _map = c,
           onCameraMove: (p) {
@@ -307,6 +309,8 @@ class _TripMapScreenState extends State<TripMapScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.trip.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
       body: GoogleMap(
+        cameraTargetBounds: ethiopiaCamera,
+        minMaxZoomPreference: ethiopiaZoom,
         initialCameraPosition: framing(points),
         markers: endMarkers(points),
         polylines: {routeLine(points)},
@@ -612,6 +616,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     return Scaffold(
       body: Stack(children: [
         GoogleMap(
+          cameraTargetBounds: ethiopiaCamera,
+          minMaxZoomPreference: ethiopiaZoom,
           initialCameraPosition: CameraPosition(target: _center, zoom: 11.5),
           onMapCreated: (c) => _map = c,
           markers: _markers,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// The look of every map in the app: a plain road map like ride-hailing apps use. Shops and other
 /// points of interest are hidden so cars, routes and your own position stand out.
@@ -27,3 +28,11 @@ const _darkStyle = '''
 
 /// The map style for the current light or dark theme.
 String mapStyle(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? _darkStyle : _lightStyle;
+
+/// The app serves Ethiopia: maps cannot be dragged outside the country or zoomed out past it.
+final ethiopiaBounds = LatLngBounds(southwest: const LatLng(3.3, 32.9), northeast: const LatLng(15.0, 48.1));
+final ethiopiaCamera = CameraTargetBounds(ethiopiaBounds);
+const ethiopiaZoom = MinMaxZoomPreference(5.6, 20);
+
+/// Where maps open when there is nothing more specific to show.
+const addisAbaba = LatLng(9.0300, 38.7400);

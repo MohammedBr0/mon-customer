@@ -6,7 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
+import 'package:icare/core/device_location.dart';
 import 'package:icare/core/format.dart';
+import 'package:icare/widgets/map_style.dart';
 import 'package:icare/core/phone.dart';
 import 'package:icare/core/polyline.dart';
 import 'package:icare/widgets/common.dart';
@@ -170,6 +172,15 @@ void main() {
     test('posting sends a Google place by name and coordinates, a listed town by key', () {
       expect(Api.placeRef(Place.pin(9.01, 38.74, 'Mexico Square')), {'name': 'Mexico Square', 'lat': 9.01, 'lng': 38.74});
       expect(Api.placeRef(const Place(key: 'adama', name: 'Adama', lat: 8.54, lng: 39.27)), {'key': 'adama'});
+    });
+
+    test('only positions inside Ethiopia count; maps are held to the country', () {
+      expect(inEthiopia(9.03, 38.74), isTrue); // Addis Ababa
+      expect(inEthiopia(13.5, 39.47), isTrue); // Mekelle
+      expect(inEthiopia(-1.29, 36.82), isFalse); // Nairobi
+      expect(inEthiopia(51.5, -0.12), isFalse); // London
+      expect(ethiopiaBounds.contains(addisAbaba), isTrue);
+      expect(ethiopiaBounds.contains(const LatLng(-1.29, 36.82)), isFalse);
     });
 
     test('a pin on the map is not a listed town', () {

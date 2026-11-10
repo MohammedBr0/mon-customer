@@ -177,7 +177,10 @@ window.initMap = function () {
 
     const map = new google.maps.Map($(id)[0], {
       center: new google.maps.LatLng(mapConfig.center[0], mapConfig.center[1]),
-      mapTypeId: google.maps.MapTypeId.HYBRID, // satellite imagery with road and place names
+      mapTypeId: google.maps.MapTypeId.ROADMAP,
+      // The service covers Ethiopia: the map cannot be dragged outside the country or zoomed out past it.
+      restriction: { latLngBounds: { north: 15.0, south: 3.3, west: 32.9, east: 48.1 }, strictBounds: false },
+      minZoom: 6,
       scrollwheel: false,
       styles: styleArray,
       zoom: mapConfig.zoom

@@ -8,8 +8,8 @@ RSpec.describe 'API maps' do
 
   before { allow(GoogleMapsClient).to receive(:key).and_return('k') }
 
-  it 'searches places near the map centre' do
-    stub = stub_request(:post, 'https://places.googleapis.com/v1/places:searchText').with { |req| JSON.parse(req.body).dig('locationBias', 'circle', 'center', 'latitude') == 9.0 }
+  it 'searches places inside Ethiopia only' do
+    stub = stub_request(:post, 'https://places.googleapis.com/v1/places:searchText').with { |req| JSON.parse(req.body).dig('locationRestriction', 'rectangle', 'low', 'latitude') == 3.4 }
            .to_return(body: { places: [{ displayName: { text: 'Bole Medhanialem' }, formattedAddress: 'Bole, Addis Ababa', location: { latitude: 8.99, longitude: 38.78 } }] }.to_json)
     get '/api/v1/maps/search', params: { q: 'Bole', lat: 9.0, lng: 38.7 }, headers: api_headers(user)
     expect(json['places']).to eq [{ 'name' => 'Bole Medhanialem', 'address' => 'Bole, Addis Ababa', 'lat' => 8.99, 'lng' => 38.78 }]

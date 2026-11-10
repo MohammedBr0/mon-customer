@@ -72,6 +72,8 @@ class RouteMap extends StatelessWidget {
         height: height,
         child: Stack(children: [
           GoogleMap(
+            cameraTargetBounds: ethiopiaCamera,
+            minMaxZoomPreference: ethiopiaZoom,
             initialCameraPosition: framing(points),
             markers: endMarkers(points),
             polylines: {routeLine(points)},
