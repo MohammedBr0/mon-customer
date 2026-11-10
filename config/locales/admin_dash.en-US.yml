@@ -1,0 +1,44 @@
+en-US:
+  admin_menu:
+    admin: Admin
+    menu: Menu
+    overview: Overview
+    people: People
+    operations: Operations
+    configuration: Configuration
+    security: Security
+    back_to_site: Back to the site
+    trips: Trips
+  admin_dash:
+    hello: "Hello, %{name}"
+    subtitle: "Here is where things stand on %{date}."
+    attention: Needs your attention
+    at_a_glance: At a glance
+    attention_items:
+      pending_documents: Identity documents to check
+      open_reports: Reports to decide
+      pending_bookings: Seat requests waiting on drivers
+    kpi:
+      users: People
+      drivers: Drivers
+      upcoming_itineraries: Upcoming trips
+      commutes: Weekly commutes
+      average_rating: Average rating
+      ride_alerts: Active ride alerts
+      conversations: Conversations
+      banned_users: Banned
+    this_week:
+      one: "+1 this week"
+      other: "+%{count} this week"
+    verified:
+      one: 1 verified
+      other: "%{count} verified"
+    reviews:
+      one: 1 review
+      other: "%{count} reviews"
+    new_people: Newest people
+    new_trips: Newest trips
+    see_all: See all
+    mode:
+      passenger: Passenger
+      driver: Driver

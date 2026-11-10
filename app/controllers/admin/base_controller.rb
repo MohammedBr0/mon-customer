@@ -3,6 +3,8 @@
 module Admin
   # Staff area: super admins and moderators.
   class BaseController < ::ApplicationController
+    layout 'admin'
+
     before_action :check_staff
 
     private

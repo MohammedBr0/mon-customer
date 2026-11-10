@@ -1,0 +1,48 @@
+doctype html
+html lang=I18n.locale.to_s data-default-locale=I18n.default_locale data-currency=APP_CONFIG.currency data-fuel-currency=APP_CONFIG.fuel_currency
+  head
+    meta charset='utf-8'
+    meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'
+    title = "#{content_for?(:title) ? yield(:title) : t('admin_extra.dashboard')} · #{APP_CONFIG.app_name} #{t('admin_menu.admin')}"
+    meta name='robots' content='noindex, nofollow'
+    = csrf_meta_tags
+    = yield :head
+    = stylesheet_pack_tag 'application', media: 'all', 'data-turbolinks-track': 'reload'
+    meta name='theme-color' content='#1a56db'
+    = javascript_pack_tag 'application', 'data-turbolinks-track': 'reload'
+  body.admin-body
+    / The menu button works without JavaScript: a hidden checkbox opens the side menu on small screens.
+    input.admin-toggle#admin-menu-toggle type='checkbox' aria-hidden='true' tabindex='-1'
+    aside.admin-side aria-label=t('admin_menu.admin')
+      = link_to admin_root_path, class: 'admin-side__brand' do
+        = inline_svg_pack_tag 'static/images/logo.svg', aria: true, title: APP_CONFIG.app_name
+        span = APP_CONFIG.app_name
+        small = t('admin_menu.admin')
+      nav.admin-side__nav
+        - admin_menu.each do |group, items|
+          .admin-side__group = group
+          - items.each do |key, path, label, icon, badge|
+            = link_to path, class: ['admin-side__link', ('active' if admin_menu_active?(key))], 'aria-current': (admin_menu_active?(key) ? 'page' : nil) do
+              span.fas class="fa-#{icon}" aria-hidden='true'
+              span.admin-side__label = label
+              - if badge.to_i.positive?
+                span.admin-side__badge = badge
+      .admin-side__foot
+        = link_to dashboard_path, class: 'admin-side__link' do
+          span.fas.fa-arrow-left aria-hidden='true'
+          span.admin-side__label = t('admin_menu.back_to_site')
+        = link_to destroy_user_session_path, method: :delete, class: 'admin-side__link' do
+          span.fas.fa-arrow-right-from-bracket aria-hidden='true'
+          span.admin-side__label = t('logout')
+    label.admin-scrim for='admin-menu-toggle' aria-hidden='true'
+    .admin-main
+      header.admin-top
+        label.admin-top__menu for='admin-menu-toggle' aria-label=t('admin_menu.menu') role='button'
+          span.fas.fa-bars aria-hidden='true'
+        .admin-top__title = content_for?(:title) ? yield(:title) : t('admin_extra.dashboard')
+        .admin-top__user
+          span.chip = t("admin_extra.roles.#{current_user.role_name}")
+          span.admin-top__name = current_user.to_s
+          = user_profile_picture current_user, size: 34, options: { class: 'app-bar__avatar' }
+      main.admin-content
+        = yield

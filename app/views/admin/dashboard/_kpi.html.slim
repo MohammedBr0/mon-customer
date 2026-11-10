@@ -1,0 +1,7 @@
+.kpi
+  span.kpi__icon
+    span.fas class="fa-#{icon}" aria-hidden='true'
+  .kpi__value = value.presence || (value.nil? ? '–' : value)
+  .kpi__label = label
+  - if note.present?
+    .kpi__note = note

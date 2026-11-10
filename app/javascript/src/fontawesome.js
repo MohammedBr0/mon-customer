@@ -61,7 +61,20 @@ import {
   faUsers,
   faUserSecret,
   faWandMagicSparkles,
-  faWrench
+  faWrench,
+  faGaugeHigh,
+  faIdCard,
+  faCreditCard,
+  faSliders,
+  faBars,
+  faArrowRightFromBracket,
+  faArrowLeft,
+  faChevronRight,
+  faListCheck,
+  faArrowTrendUp,
+  faCarSide,
+  faUserPlus,
+  faHourglassHalf
 } from '@fortawesome/free-solid-svg-icons'
 
 // Prevents flicker when using Turbolinks
@@ -129,7 +142,20 @@ library.add(
   faUsers,
   faUserSecret,
   faWandMagicSparkles,
-  faWrench
+  faWrench,
+  faGaugeHigh,
+  faIdCard,
+  faCreditCard,
+  faSliders,
+  faBars,
+  faArrowRightFromBracket,
+  faArrowLeft,
+  faChevronRight,
+  faListCheck,
+  faArrowTrendUp,
+  faCarSide,
+  faUserPlus,
+  faHourglassHalf
 )
 
 dom.watch()

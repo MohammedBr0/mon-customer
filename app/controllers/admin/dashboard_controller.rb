@@ -18,8 +18,15 @@ module Admin
         reviews:               Review.count,
         gross_fares:           Booking.confirmed.sum(:fare_total),
         platform_fees:         Booking.confirmed.sum(:fee_amount),
-        average_rating:        Review.visible.average(:rating)&.to_f&.round(2)
+        average_rating:        Review.visible.average(:rating)&.to_f&.round(2),
+        pending_documents:     IdentityDocument.pending.count,
+        pending_bookings:      Booking.pending.count,
+        new_users_week:        User.where(created_at: 7.days.ago..).count,
+        new_trips_week:        Itinerary.where(created_at: 7.days.ago..).count,
+        drivers:               User.where(app_mode: 'driver').count
       }
+      @recent_users = User.order(created_at: :desc).limit(6)
+      @recent_trips = Itinerary.includes(:user).order(created_at: :desc).limit(6)
     end
   end
 end
