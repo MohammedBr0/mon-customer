@@ -7,7 +7,7 @@
 # SET SENSITIVE DATA ONLY IN 'local.rb'
 
 SimpleConfig.for :application do
-  set :app_name, 'icare'
+  set :app_name, 'Arifway'
 
   set :base_url, 'localhost:3000'
   set :single_process_mode, true

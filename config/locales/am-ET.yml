@@ -216,7 +216,7 @@ am-ET:
     errors:
       not_allowed: ይህን ገጽ የማየት ፈቃድ የለዎትም።
   mailers:
-    footer: ይህን ኢሜይል የደረስዎት በicare መለያ ስላለዎት ነው።
+    footer: ይህን ኢሜይል የደረስዎት በArifway መለያ ስላለዎት ነው።
     view_trip: ጉዞውን ይመልከቱ
     find_another: ሌላ ጉዞ ይፈልጉ
     booking:

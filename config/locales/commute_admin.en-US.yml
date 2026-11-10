@@ -20,7 +20,7 @@ en-US:
     skip_confirm: Skip this day? You will not pay for it.
   verification:
     badge: Verified
-    badge_hint: Identity and driving licence checked by the icare team
+    badge_hint: Identity and driving licence checked by the Arifway team
     verified_on: "Verified on %{date}"
     verify: Mark as verified
     unverify: Remove verification

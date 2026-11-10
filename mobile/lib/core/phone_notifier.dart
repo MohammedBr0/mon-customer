@@ -40,7 +40,7 @@ class LocalPhoneNotifier implements PhoneNotifier {
         title: title,
         body: body,
         notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails('icare_updates', 'Trip updates', channelDescription: 'Seat requests, bookings and messages', importance: Importance.high, priority: Priority.high),
+          android: AndroidNotificationDetails('arifway_updates', 'Trip updates', channelDescription: 'Seat requests, bookings and messages', importance: Importance.high, priority: Priority.high),
         ),
       );
     } catch (_) {

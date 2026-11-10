@@ -342,12 +342,16 @@ class Trip {
     this.cityCommute = false,
     this.city,
     this.polyline,
+    this.distanceKm,
+    this.passengers = const [],
     this.startLat,
     this.startLng,
     this.endLat,
     this.endLng,
   });
   final String? polyline;
+  final double? distanceKm;
+  final List<({String firstName, String? image, int seats})> passengers;
   final double? startLat;
   final double? startLng;
   final double? endLat;
@@ -411,6 +415,11 @@ class Trip {
         cityCommute: j['city_commute'] == true,
         city: j['city'] as String?,
         polyline: j['overview_polyline'] as String?,
+        distanceKm: j['distance_km'] is num ? (j['distance_km'] as num).toDouble() : null,
+        passengers: [
+          for (final p in (j['passengers'] as List? ?? const []))
+            (firstName: '${(p as Map)['first_name'] ?? ''}', image: p['image'] as String?, seats: _i(p['seats']) ?? 1),
+        ],
         startLat: _pt(j['start_location'], 'lat'),
         startLng: _pt(j['start_location'], 'lng'),
         endLat: _pt(j['end_location'], 'lat'),

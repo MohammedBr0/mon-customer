@@ -54,7 +54,7 @@ module ApiSerializer
     return data unless detail
 
     data.merge(
-      overview_polyline: itinerary.overview_polyline,
+      overview_polyline: itinerary.overview_polyline, distance_km: distance_km(itinerary), passengers: passengers(itinerary),
       occurrence_dates: itinerary.occurrence_dates.map { |date| { date: date.iso8601, seats_available: itinerary.seats_available(date) } },
       bookable:         viewer.present? && itinerary.bookable_by?(viewer),
       my_booking:       booking && booking(booking, viewer:),
@@ -82,6 +82,19 @@ module ApiSerializer
       },
       reviewed: viewer ? booking.reviewed_by?(viewer) : nil
     }
+  end
+
+  # Length of the drive along its route, in km.
+  def distance_km(itinerary)
+    meters = Itinerary.where(id: itinerary.id).pick(Arel.sql('ST_Length(overview_path)'))
+    meters ? (meters / 1000.0).round(1) : nil
+  end
+
+  # Who already has a confirmed seat: first name, picture and seats only (no contact details).
+  def passengers(itinerary)
+    itinerary.bookings.confirmed.includes(:passenger).order(:created_at).map do |booking|
+      { id: booking.passenger_id, first_name: booking.passenger.first_name.presence || booking.passenger.to_s.split.first, image: booking.passenger.image.presence, seats: booking.seats }
+    end
   end
 
   def itinerary_summary(itinerary)

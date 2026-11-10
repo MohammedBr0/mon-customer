@@ -128,6 +128,14 @@ void main() {
       expect(routePoints(polyline: '_p~iF~ps|U_ulLnnqC').length, 2);
     });
 
+    test('a trip lists its distance and who is riding', () {
+      final trip = Trip.fromJson({'id': 1, 'distance_km': 98.4, 'passengers': [{'first_name': 'Rahel', 'image': null, 'seats': 2}], 'driver': _profile});
+      expect(trip.distanceKm, 98.4);
+      expect(trip.passengers.single.firstName, 'Rahel');
+      expect(trip.passengers.single.seats, 2);
+      expect(Trip.fromJson({'id': 2, 'driver': _profile}).passengers, isEmpty);
+    });
+
     test('a trip carries its route and end points', () {
       final trip = Trip.fromJson({'id': 1, 'overview_polyline': 'abc', 'start_location': {'lat': 9.0, 'lng': 38.7}, 'end_location': {'lat': 9.1, 'lng': 38.8}, 'driver': _profile});
       expect(trip.polyline, 'abc');

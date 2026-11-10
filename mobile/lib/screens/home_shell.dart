@@ -4,9 +4,17 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import '../widgets/paged_trips.dart';
+import 'dart:io' show Platform;
+
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+import '../core/device_location.dart';
+import '../core/format.dart';
 import 'bookings_screen.dart';
+import 'map_screens.dart';
 import 'messages_screen.dart';
 import 'notifications_screen.dart';
 import 'offer_screen.dart';
@@ -57,7 +65,7 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 16,
-        title: const Text('icare', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24)),
+        title: const BrandLogo(),
         actions: [
           ModeSwitchChip(driver: driver),
           IconButton(
@@ -157,6 +165,12 @@ class HomeTab extends StatelessWidget {
       loader: (page) => app.api.trips(page: page),
       onOpen: (trip) => openTrip(context, trip.id),
       header: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(context.t('greeting', {'name': app.user?.firstName ?? app.user?.name.split(' ').first ?? ''}), style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
+        Text(context.t(app.driverMode ? 'home_prompt_driver' : 'home_prompt_passenger'), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, height: 1.2)),
+        const SizedBox(height: 12),
+        HomeMapHero(driver: app.driverMode),
+        const SizedBox(height: 12),
+        NextRideCard(key: ValueKey('next-${app.driverMode}'), driver: app.driverMode),
         if ((config.announcement ?? '').isNotEmpty)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -191,6 +205,195 @@ class HomeTab extends StatelessWidget {
         ],
         SectionTitle(context.t('latest_trips')),
       ]),
+    );
+  }
+}
+
+/// The map at the top of the home screen, with the main action on it: search for passengers, offer for drivers.
+class HomeMapHero extends StatefulWidget {
+  const HomeMapHero({super.key, required this.driver});
+  final bool driver;
+
+  @override
+  State<HomeMapHero> createState() => _HomeMapHeroState();
+}
+
+class _HomeMapHeroState extends State<HomeMapHero> {
+  LatLng _center = const LatLng(9.0300, 38.7400);
+  bool _located = false;
+
+  // Widget tests have no map engine; they get a plain panel instead.
+  static final bool _canShowMap = !Platform.environment.containsKey('FLUTTER_TEST');
+
+  @override
+  void initState() {
+    super.initState();
+    if (_canShowMap) _locate();
+  }
+
+  Future<void> _locate() async {
+    final here = await currentLocation();
+    if (here != null && mounted) {
+      setState(() {
+        _center = LatLng(here.$1, here.$2);
+        _located = true;
+      });
+    }
+  }
+
+  void _openMap() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapSearchScreen()));
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        height: 210,
+        child: Stack(children: [
+          Positioned.fill(
+            child: _canShowMap
+                ? GoogleMap(
+                    key: ValueKey(_located),
+                    initialCameraPosition: CameraPosition(target: _center, zoom: 13),
+                    mapType: MapType.hybrid,
+                    liteModeEnabled: true,
+                    zoomControlsEnabled: false,
+                    mapToolbarEnabled: false,
+                    myLocationButtonEnabled: false,
+                    markers: {if (_located) Marker(markerId: const MarkerId('me'), position: _center, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure))},
+                  )
+                : ColoredBox(color: scheme.primaryContainer),
+          ),
+          Positioned.fill(child: Material(color: Colors.transparent, child: InkWell(onTap: _openMap))),
+          Positioned(
+            left: 12,
+            right: 12,
+            top: 12,
+            child: Material(
+              elevation: 3,
+              color: scheme.surface,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: _openMap,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  child: Row(children: [
+                    Icon(Icons.search, color: scheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(context.t('where_to'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant))),
+                    Icon(Icons.map_outlined, color: scheme.onSurfaceVariant),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: widget.driver
+                ? FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen())),
+                    icon: const Icon(Icons.add),
+                    label: Text(context.t('offer_cta')),
+                  )
+                : FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 44), padding: const EdgeInsets.symmetric(horizontal: 16)),
+                    onPressed: _openMap,
+                    icon: const Icon(Icons.explore_outlined),
+                    label: Text(context.t('explore_map')),
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// The ride that is coming up next: a passenger's confirmed or pending seat, or a driver's next trip.
+class NextRideCard extends StatefulWidget {
+  const NextRideCard({super.key, required this.driver});
+  final bool driver;
+
+  @override
+  State<NextRideCard> createState() => _NextRideCardState();
+}
+
+class _NextRideCardState extends State<NextRideCard> {
+  ({int id, String title, String when, String? status, int pending})? _next;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final app = context.read<AppState>();
+    try {
+      if (widget.driver) {
+        final trips = (await app.api.myTrips()).items.where((t) => !t.cancelled && (t.commute || (t.leaveDate?.isAfter(DateTime.now()) ?? false))).toList()
+          ..sort((a, b) => (a.leaveDate ?? DateTime(2100)).compareTo(b.leaveDate ?? DateTime(2100)));
+        if (trips.isEmpty) return;
+        final pending = (await app.api.bookings()).received.where((b) => b.trip.id == trips.first.id && b.status == 'pending').length;
+        final t = trips.first;
+        _set((id: t.id, title: '${t.startAddress} → ${t.endAddress}', when: t.commute ? (t.scheduleSummary ?? '') : formatDateTime(t.leaveDate!, locale: app.locale), status: null, pending: pending));
+      } else {
+        final mine = (await app.api.bookings()).made.where((b) => b.isActive && !b.completed && !b.trip.cancelled && (b.trip.commute || (b.trip.leaveDate?.isAfter(DateTime.now()) ?? false))).toList()
+          ..sort((a, b) => (a.trip.leaveDate ?? DateTime(2100)).compareTo(b.trip.leaveDate ?? DateTime(2100)));
+        if (mine.isEmpty) return;
+        final b = mine.first;
+        _set((id: b.trip.id, title: '${b.trip.startAddress} → ${b.trip.endAddress}', when: b.trip.commute ? (b.trip.scheduleSummary ?? '') : formatDateTime(b.trip.leaveDate!, locale: app.locale), status: b.status, pending: 0));
+      }
+    } catch (_) {
+      // The home screen works without this card.
+    }
+  }
+
+  void _set(({int id, String title, String when, String? status, int pending}) value) {
+    if (mounted) setState(() => _next = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final next = _next;
+    if (next == null) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: brand,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TripScreen(tripId: next.id))).then((_) => _load()),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(context.t(widget.driver ? 'next_drive' : 'next_ride').toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 11, letterSpacing: 0.6, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text(next.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(next.when, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                  if (next.status != null || next.pending > 0) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                      child: Text(next.status != null ? context.t('status_${next.status}') : '${next.pending} ${context.t('requests').toLowerCase()}', style: TextStyle(color: scheme.brightness == Brightness.dark ? brand : brand, fontWeight: FontWeight.w800, fontSize: 12)),
+                    ),
+                  ],
+                ]),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -64,3 +64,18 @@ RSpec.describe 'API maps' do
     end
   end
 end
+
+RSpec.describe 'API trip details for riders and drivers' do
+  it 'shows the distance and who has a confirmed seat, without their contact details' do
+    driver = create(:user)
+    rider = create(:user, name: 'Rahel Rider', phone: '0922334455')
+    trip = create(:itinerary, user: driver, num_people: 3)
+    create(:booking, itinerary: trip, passenger: rider, seats: 2).confirm!
+
+    get "/api/v1/itineraries/#{trip.id}", headers: api_headers(create(:user))
+
+    expect(json['itinerary']['distance_km']).to be > 0
+    expect(json['itinerary']['passengers']).to eq [{ 'id' => rider.id, 'first_name' => 'Rahel', 'image' => nil, 'seats' => 2 }]
+    expect(response.body).not_to include('922334455')
+  end
+end

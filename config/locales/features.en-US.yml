@@ -144,7 +144,7 @@ en-US:
               trip_not_completed: The trip has not taken place yet
               not_a_participant: Only the driver and the passengers of a confirmed booking can review each other
   mailers:
-    footer: You receive this email because you have an account on icare.
+    footer: You receive this email because you have an account on Arifway.
     view_trip: View the trip
     find_another: Find another trip
     booking:

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/app_state.dart';
 import '../core/phone.dart';
 import '../l10n/strings.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import 'code_screen.dart';
 
@@ -78,7 +79,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 32),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                const Text('icare', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
+                const BrandLogo(fontSize: 24),
                 SegmentedButton<String>(
                   showSelectedIcon: false,
                   style: SegmentedButton.styleFrom(foregroundColor: Colors.white, selectedForegroundColor: brand, selectedBackgroundColor: Colors.white, visualDensity: VisualDensity.compact),

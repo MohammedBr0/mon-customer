@@ -103,32 +103,61 @@ class _TripScreenState extends State<TripScreen> {
       Builder(builder: (context) {
         final points = routePoints(polyline: trip.polyline, startLat: trip.startLat, startLng: trip.startLng, endLat: trip.endLat, endLng: trip.endLng);
         if (points.length < 2) return const SizedBox.shrink();
+        void open() => Navigator.push(context, MaterialPageRoute(builder: (_) => TripMapScreen(trip: trip, points: points)));
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: RouteMap(points: points, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => TripMapScreen(trip: trip, points: points)))),
+          child: Stack(children: [
+            RouteMap(points: points, height: 210, onTap: open),
+            Positioned(
+              right: 10,
+              bottom: 10,
+              child: FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 38), padding: const EdgeInsets.symmetric(horizontal: 14), backgroundColor: Colors.white, foregroundColor: brand),
+                onPressed: open,
+                icon: const Icon(Icons.open_in_full, size: 16),
+                label: Text(context.t('view_route')),
+              ),
+            ),
+            if (trip.distanceKm != null)
+              Positioned(
+                left: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.route, size: 16, color: brand), const SizedBox(width: 6), Text('${trip.distanceKm!.toStringAsFixed(trip.distanceKm! >= 20 ? 0 : 1)} km', style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF16211B)))]),
+                ),
+              ),
+          ]),
         );
       }),
-      Card(child: Padding(padding: const EdgeInsets.all(16), child: RouteLine(from: trip.startAddress, to: trip.endAddress))),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: JourneyTimeline(
+            from: trip.startAddress,
+            to: trip.endAddress,
+            fromNote: trip.pickupPoint,
+            toNote: trip.dropoffPoint,
+            time: trip.commute ? trip.scheduleSummary : (trip.leaveDate == null ? null : formatDateTime(trip.leaveDate!, locale: app.locale)),
+          ),
+        ),
+      ),
       const SizedBox(height: 12),
       Wrap(spacing: 10, runSpacing: 10, children: [
-        _Fact(label: trip.commute ? context.t('schedule') : context.t('date'), value: trip.commute ? (trip.scheduleSummary ?? '') : (trip.leaveDate == null ? '' : formatDateTime(trip.leaveDate!, locale: app.locale)), wide: true),
         _Fact(label: context.t('per_seat'), value: formatMoney(trip.passengerPrice, symbol)),
         _Fact(
           label: context.t('seats'),
           value: trip.cancelled ? context.t('cancelled') : trip.full ? context.t('fully_booked') : trip.seatsAvailable == null ? context.t('seats_unlimited') : context.t('seats_left', {'available': trip.seatsAvailable, 'total': trip.seatsTotal}),
         ),
-        if ((trip.pickupPoint ?? '').isNotEmpty || (trip.dropoffPoint ?? '').isNotEmpty)
-          _Fact(
-            label: context.t('meeting_points'),
-            value: [if ((trip.pickupPoint ?? '').isNotEmpty) '${context.t('pickup_point')}: ${trip.pickupPoint}', if ((trip.dropoffPoint ?? '').isNotEmpty) '${context.t('dropoff_point')}: ${trip.dropoffPoint}'].join('\n'),
-            wide: true,
-          ),
       ]),
       const SizedBox(height: 12),
       Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.t('driver').toUpperCase(), style: TextStyle(fontSize: 11, letterSpacing: 0.6, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
+            const SizedBox(height: 10),
             Row(children: [
               Avatar(trip.driver, size: 48),
               const SizedBox(width: 12),
@@ -146,9 +175,22 @@ class _TripScreenState extends State<TripScreen> {
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: [for (final v in trip.driver.vehicle) Chip2('${v.label}: ${v.value}', tone: ChipTone.muted)]),
             ],
-            if ((trip.driver.phone ?? '').isNotEmpty && !mine) ...[
+            if (!mine) ...[
               const SizedBox(height: 12),
-              OutlinedButton.icon(onPressed: () => launchUrl(Uri.parse('tel:${trip.driver.phone}')), icon: const Icon(Icons.call), label: Text('${context.t('call')} ${trip.driver.phone}')),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(tripId: trip.id, title: trip.driver.firstName ?? trip.driver.name))),
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: Text(context.t('message')),
+                  ),
+                ),
+                if ((trip.driver.phone ?? '').isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Expanded(child: FilledButton.icon(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)), onPressed: () => launchUrl(Uri.parse('tel:${trip.driver.phone}')), icon: const Icon(Icons.call), label: Text(context.t('call')))),
+                ],
+              ]),
+              if ((trip.driver.phone ?? '').isEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(context.t('phone_after_confirm'), style: Theme.of(context).textTheme.bodySmall)),
             ],
             if ((trip.description ?? '').isNotEmpty) ...[const SizedBox(height: 12), Text(trip.description!)],
             const SizedBox(height: 12),
@@ -160,12 +202,24 @@ class _TripScreenState extends State<TripScreen> {
           ]),
         ),
       ),
-      if (!mine) ...[
+      if (trip.passengers.isNotEmpty) ...[
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatScreen(tripId: trip.id, title: trip.driver.firstName ?? trip.driver.name))),
-          icon: const Icon(Icons.chat_bubble_outline),
-          label: Text(context.t('contact_driver')),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.t('riding_together').toUpperCase(), style: TextStyle(fontSize: 11, letterSpacing: 0.6, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
+              const SizedBox(height: 10),
+              Wrap(spacing: 14, runSpacing: 10, children: [
+                for (final p in trip.passengers)
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    CircleAvatar(radius: 16, backgroundColor: scheme.primaryContainer, foregroundImage: (p.image ?? '').isEmpty ? null : NetworkImage(p.image!), child: Text(p.firstName.isEmpty ? '?' : p.firstName.characters.first.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w800, color: scheme.onPrimaryContainer))),
+                    const SizedBox(width: 8),
+                    Text(p.seats > 1 ? '${p.firstName} ×${p.seats}' : p.firstName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ]),
+              ]),
+            ]),
+          ),
         ),
       ],
       if (mine) ..._driverSection(context, app, trip) else ..._passengerSection(context, app, trip),
@@ -209,6 +263,8 @@ class _TripScreenState extends State<TripScreen> {
     if (booking != null && booking.isActive) {
       return [
         SectionTitle(context.t('your_booking')),
+        BookingProgress(confirmed: booking.status == 'confirmed', completed: booking.completed),
+        const SizedBox(height: 10),
         BookingCard(booking: booking, viewerIsDriver: false, onChanged: _load),
         if (booking.status == 'confirmed' && (app.config.paymentInstructions ?? '').isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -226,17 +282,16 @@ class _TripScreenState extends State<TripScreen> {
 }
 
 class _Fact extends StatelessWidget {
-  const _Fact({required this.label, required this.value, this.wide = false});
+  const _Fact({required this.label, required this.value});
   final String label;
   final String value;
-  final bool wide;
 
   @override
   Widget build(BuildContext context) {
     final width = (MediaQuery.of(context).size.width - 42) / 2;
     final scheme = Theme.of(context).colorScheme;
     return SizedBox(
-      width: wide ? double.infinity : width,
+      width: width,
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -456,6 +511,76 @@ class _BookingCardState extends State<BookingCard> {
                 label: Text(context.t(widget.viewerIsDriver ? 'rate_passenger' : 'rate_driver')),
               ),
           ]),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Pickup and drop-off as a vertical line with stops, the way ride apps show a journey.
+class JourneyTimeline extends StatelessWidget {
+  const JourneyTimeline({super.key, required this.from, required this.to, this.fromNote, this.toNote, this.time});
+  final String from;
+  final String to;
+  final String? fromNote;
+  final String? toNote;
+  final String? time;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget stop({required bool end, required String title, String? note, String? extra}) => IntrinsicHeight(
+          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            SizedBox(
+              width: 24,
+              child: Column(children: [
+                Container(width: 14, height: 14, margin: const EdgeInsets.only(top: 3), decoration: BoxDecoration(shape: end ? BoxShape.rectangle : BoxShape.circle, borderRadius: end ? BorderRadius.circular(3) : null, color: end ? scheme.primary : Colors.transparent, border: Border.all(color: scheme.primary, width: 3))),
+                if (!end) Expanded(child: Container(width: 2, margin: const EdgeInsets.symmetric(vertical: 3), color: scheme.outlineVariant)),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: end ? 0 : 16),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (extra != null) Text(extra, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: scheme.primary)),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  if ((note ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 2), child: Row(children: [Icon(Icons.push_pin_outlined, size: 14, color: scheme.onSurfaceVariant), const SizedBox(width: 4), Expanded(child: Text(note!, style: TextStyle(color: scheme.onSurfaceVariant)))])),
+                ]),
+              ),
+            ),
+          ]),
+        );
+    return Column(children: [
+      stop(end: false, title: from, note: fromNote, extra: time),
+      stop(end: true, title: to, note: toNote),
+    ]);
+  }
+}
+
+/// Where a seat request stands: asked, confirmed by the driver, ride done.
+class BookingProgress extends StatelessWidget {
+  const BookingProgress({super.key, required this.confirmed, required this.completed});
+  final bool confirmed;
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final reached = [true, confirmed, completed];
+    final labels = [context.t('step_requested'), context.t('step_confirmed'), context.t('step_done')];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+        child: Row(children: [
+          for (var i = 0; i < 3; i++) ...[
+            if (i > 0) Expanded(child: Container(height: 3, margin: const EdgeInsets.only(bottom: 20), color: reached[i] ? scheme.primary : scheme.outlineVariant)),
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              CircleAvatar(radius: 12, backgroundColor: reached[i] ? scheme.primary : scheme.outlineVariant, child: Icon(reached[i] ? Icons.check : Icons.circle, size: reached[i] ? 14 : 6, color: Colors.white)),
+              const SizedBox(height: 4),
+              Text(labels[i], style: TextStyle(fontSize: 12, fontWeight: reached[i] ? FontWeight.w700 : FontWeight.w400, color: reached[i] ? scheme.onSurface : scheme.onSurfaceVariant)),
+            ]),
+          ],
         ]),
       ),
     );

@@ -27,7 +27,7 @@ class IcareApp extends StatelessWidget {
   Widget build(BuildContext context) => ChangeNotifierProvider<AppState>.value(
         value: state,
         child: MaterialApp(
-          title: 'icare',
+          title: 'Arifway',
           debugShowCheckedModeBanner: false,
           theme: buildTheme(Brightness.light),
           darkTheme: buildTheme(Brightness.dark),

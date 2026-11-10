@@ -25,7 +25,7 @@ am-ET:
     skip_confirm: ይህ ቀን ይዘለል? ለእሱ አይከፍሉም።
   verification:
     badge: የተረጋገጠ
-    badge_hint: ማንነትና የመንጃ ፈቃድ በicare ቡድን ተረጋግጧል
+    badge_hint: ማንነትና የመንጃ ፈቃድ በArifway ቡድን ተረጋግጧል
   alerts:
     title: የጉዞ ማንቂያዎች
     intro: መንገድ ያስቀምጡ፣ በዚያ መንገድ ላይ ጉዞ ሲቀርብ እናሳውቅዎታለን።
