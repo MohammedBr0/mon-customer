@@ -10,6 +10,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import 'chat_screen.dart';
 import 'dialogs.dart';
+import 'live_screens.dart';
 import 'map_screens.dart';
 import '../widgets/route_map.dart';
 
@@ -60,6 +61,7 @@ class _TripScreenState extends State<TripScreen> {
     try {
       await action();
       await _load();
+      if (mounted) context.read<AppState>().syncReminders();
       if (mounted && done != null) showMessage(context, done);
     } catch (e) {
       if (mounted) showMessage(context, errorText(context, e), error: true);
@@ -135,10 +137,10 @@ class _TripScreenState extends State<TripScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: JourneyTimeline(
-            from: trip.startAddress,
-            to: trip.endAddress,
-            fromNote: trip.pickupPoint,
-            toNote: trip.dropoffPoint,
+            from: trip.from,
+            to: trip.to,
+            fromNote: [if (trip.from != trip.startAddress) trip.startAddress, if ((trip.pickupPoint ?? '').isNotEmpty) trip.pickupPoint!].join(' · '),
+            toNote: [if (trip.to != trip.endAddress) trip.endAddress, if ((trip.dropoffPoint ?? '').isNotEmpty) trip.dropoffPoint!].join(' · '),
             time: trip.commute ? trip.scheduleSummary : (trip.leaveDate == null ? null : formatDateTime(trip.leaveDate!, locale: app.locale)),
           ),
         ),
@@ -259,6 +261,32 @@ class _TripScreenState extends State<TripScreen> {
   // ---- driver ----
   List<Widget> _driverSection(BuildContext context, AppState app, Trip trip) {
     return [
+      if (!trip.cancelled) ...[
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: _busy
+              ? null
+              : () async {
+                  if (!trip.live) {
+                    if (!await confirmDialog(context, context.tr('start_trip_q'), action: context.tr('start_trip')) || !context.mounted) return;
+                    setState(() => _busy = true);
+                    try {
+                      await app.api.startTrip(trip.id);
+                    } catch (e) {
+                      if (context.mounted) showMessage(context, errorText(context, e), error: true);
+                      if (mounted) setState(() => _busy = false);
+                      return;
+                    }
+                    if (mounted) setState(() => _busy = false);
+                  }
+                  if (!context.mounted) return;
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => LiveTripScreen(trip: trip, driving: true)));
+                  _load();
+                },
+          icon: Icon(trip.live ? Icons.sensors : Icons.play_arrow),
+          label: Text(context.t(trip.live ? 'continue_trip' : 'start_trip')),
+        ),
+      ],
       SectionTitle(context.t('requests')),
       if (_requests.isEmpty) Card(child: EmptyState(context.t('no_requests'), icon: Icons.confirmation_number_outlined)),
       for (final booking in _requests) ...[
@@ -290,6 +318,14 @@ class _TripScreenState extends State<TripScreen> {
     if (booking != null && booking.isActive) {
       return [
         SectionTitle(context.t('your_booking')),
+        if (trip.live && booking.status == 'confirmed') ...[
+          FilledButton.icon(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveTripScreen(trip: trip, driving: false))).then((_) => _load()),
+            icon: const Icon(Icons.sensors),
+            label: Text(context.t('track_ride')),
+          ),
+          const SizedBox(height: 10),
+        ],
         BookingProgress(confirmed: booking.status == 'confirmed', completed: booking.completed),
         const SizedBox(height: 10),
         BookingCard(booking: booking, viewerIsDriver: false, onChanged: _load),
@@ -347,6 +383,7 @@ class _BookingFormState extends State<BookingForm> {
   int _seats = 1;
   late final Set<String> _days;
   final _note = TextEditingController();
+  Place? _pickup; // where the passenger wants to be picked up; the driver sees it on a map with the request
   bool _busy = false;
 
   @override
@@ -372,7 +409,7 @@ class _BookingFormState extends State<BookingForm> {
     final app = context.read<AppState>();
     setState(() => _busy = true);
     try {
-      await app.api.book(widget.trip.id, seats: _seats.clamp(1, _maxSeats), days: _days.toList()..sort(), note: _note.text.trim());
+      await app.api.book(widget.trip.id, seats: _seats.clamp(1, _maxSeats), days: _days.toList()..sort(), note: _note.text.trim(), pickup: _pickup);
       if (mounted) showMessage(context, context.tr('request_sent'));
       await widget.onBooked();
     } catch (e) {
@@ -417,6 +454,8 @@ class _BookingFormState extends State<BookingForm> {
           const Divider(height: 24),
           PriceBreakdown(perSeat: trip.pricePerSeat, seats: seats, days: days, feePercent: app.config.feePercent, chargedTo: app.config.feeChargedTo),
           const SizedBox(height: 12),
+          PlaceField(label: context.t('your_pickup'), value: _pickup, placeholder: context.t('your_pickup_hint'), icon: Icons.person_pin_circle_outlined, onChanged: (p) => setState(() => _pickup = p)),
+          Padding(padding: const EdgeInsets.only(top: 4, left: 4, bottom: 12), child: Text(context.t('your_pickup_note'), style: Theme.of(context).textTheme.bodySmall)),
           TextField(controller: _note, maxLength: 500, decoration: InputDecoration(labelText: context.t('note_to_driver'))),
           if ((app.config.paymentInstructions ?? '').isNotEmpty)
             Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.account_balance_wallet_outlined, size: 18), const SizedBox(width: 8), Expanded(child: Text(app.config.paymentInstructions!, style: const TextStyle(fontSize: 13)))])),
@@ -472,7 +511,7 @@ class _BookingCardState extends State<BookingCard> {
             const SizedBox(width: 10),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.showTrip ? b.trip.title : other.name, style: const TextStyle(fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
+                Text(widget.showTrip ? '${b.trip.from} → ${b.trip.to}' : other.name, style: const TextStyle(fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis),
                 Text(widget.showTrip ? '${other.name} · ${context.t('seats')}: ${b.seats}' : '${context.t('seats')}: ${b.seats}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ]),
             ),
@@ -482,6 +521,20 @@ class _BookingCardState extends State<BookingCard> {
           if ((b.note ?? '').isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text('“${b.note}”', style: const TextStyle(fontStyle: FontStyle.italic))),
           if (b.status == 'confirmed' && (other.phone ?? '').isNotEmpty)
             Padding(padding: const EdgeInsets.only(top: 8), child: InkWell(onTap: () => launchUrl(Uri.parse('tel:${other.phone}')), child: Row(children: [const Icon(Icons.call, size: 16), const SizedBox(width: 6), Text(other.phone!, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600))]))),
+          if (b.pickup != null) ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              const Icon(Icons.person_pin_circle_outlined, size: 18),
+              const SizedBox(width: 6),
+              Expanded(child: Text(b.pickup!.name.isEmpty ? context.t('pickup_point') : '${context.t('pickup_point')}: ${b.pickup!.name}', maxLines: 2, overflow: TextOverflow.ellipsis)),
+              if (widget.viewerIsDriver)
+                TextButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PickupMapScreen(booking: b))),
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: Text(context.t('see_on_map')),
+                ),
+            ]),
+          ],
           if (showDays && b.rideDates.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(spacing: 6, runSpacing: 6, children: [

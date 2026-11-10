@@ -307,7 +307,7 @@ class _TripMapScreenState extends State<TripMapScreen> {
   Widget build(BuildContext context) {
     final points = widget.points;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.trip.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+      appBar: AppBar(title: Text('${widget.trip.from} → ${widget.trip.to}', maxLines: 1, overflow: TextOverflow.ellipsis)),
       body: GoogleMap(
         cameraTargetBounds: ethiopiaCamera,
         minMaxZoomPreference: ethiopiaZoom,
@@ -822,7 +822,7 @@ class _MapTripCard extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(when, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
-                Text('${trip.startAddress} → ${trip.endAddress}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text('${trip.from} → ${trip.to}', maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
                 Row(children: [
                   Avatar(trip.driver, size: 22),

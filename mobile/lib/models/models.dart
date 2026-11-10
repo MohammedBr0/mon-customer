@@ -93,7 +93,11 @@ class AppConfig {
     this.cities = const [],
     this.phoneVerification = false,
     this.paymentMethods = const [],
+    this.suggestedPricePerKm = 0,
   });
+
+  /// The admins' starting point for a trip's price: fare per km for the whole car (0 = no suggestion).
+  final double suggestedPricePerKm;
 
   /// The payment methods the admins allow; drivers pick from these.
   final List<PaymentOption> paymentMethods;
@@ -142,6 +146,7 @@ class AppConfig {
       places: _list(j['places'], Place.fromJson),
       cities: _list(j['cities'], City.fromJson),
       phoneVerification: j['phone_verification'] == true,
+      suggestedPricePerKm: _d(j['suggested_price_per_km']),
       paymentMethods: _list(j['payment_methods'], PaymentOption.fromJson),
     );
   }
@@ -184,7 +189,9 @@ class Profile {
     this.phoneAccount = false,
     this.payments = const [],
     this.identity = const [],
+    this.reminderMinutes = 15,
   });
+  final int reminderMinutes; // minutes before a ride to be reminded; 0 = no reminder
   final List<DriverPayment> payments; // the payment methods this person accepts as a driver
   final List<IdentityDoc> identity;
   final String appMode; // passenger | driver
@@ -228,6 +235,7 @@ class Profile {
         role: j['role'] as String? ?? 'user',
         appMode: j['app_mode'] == 'driver' ? 'driver' : 'passenger',
         phoneAccount: j['phone_account'] == true,
+        reminderMinutes: _i(j['reminder_minutes']) ?? 15,
         payments: _list(j['payment_methods'], DriverPayment.fromJson),
         identity: _list(j['identity'], IdentityDoc.fromJson),
         vehicle: [
@@ -239,7 +247,10 @@ class Profile {
 }
 
 class TripSummary {
-  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false, this.cityCommute = false});
+  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false, this.cityCommute = false, this.startName, this.endName, this.live = false});
+  final String? startName;
+  final String? endName;
+  final bool live;
   final bool cityCommute;
   final int id;
   final String title;
@@ -260,7 +271,13 @@ class TripSummary {
         scheduleSummary: j['schedule_summary'] as String?,
         cancelled: j['cancelled'] == true,
         cityCommute: j['city_commute'] == true,
+        startName: j['start_name'] as String?,
+        endName: j['end_name'] as String?,
+        live: j['live'] == true,
       );
+
+  String get from => (startName ?? '').isNotEmpty ? startName! : startAddress;
+  String get to => (endName ?? '').isNotEmpty ? endName! : endAddress;
 }
 
 class Price {
@@ -287,7 +304,10 @@ class Price {
 }
 
 class Booking {
-  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed});
+  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed, this.pickup});
+
+  /// Where the passenger asked to be picked up (a pin), when they gave one.
+  final Place? pickup;
   final int id;
   final String status;
   final int seats;
@@ -312,6 +332,9 @@ class Booking {
         price: Price.fromJson(Map<String, dynamic>.from(j['price'] as Map)),
         completed: j['completed'] == true,
         reviewed: j['reviewed'] as bool?,
+        pickup: j['pickup'] is Map && (j['pickup'] as Map)['lat'] is num
+            ? Place.pin(((j['pickup'] as Map)['lat'] as num).toDouble(), ((j['pickup'] as Map)['lng'] as num).toDouble(), '${(j['pickup'] as Map)['label'] ?? ''}')
+            : null,
       );
 
   bool get isActive => status == 'pending' || status == 'confirmed';
@@ -356,6 +379,9 @@ class Trip {
     this.distanceKm,
     this.passengers = const [],
     this.payments = const [],
+    this.startName,
+    this.endName,
+    this.live = false,
     this.startLat,
     this.startLng,
     this.endLat,
@@ -363,6 +389,9 @@ class Trip {
   });
   final String? polyline;
   final double? distanceKm;
+  final String? startName; // short names for display, like "Bole" and "Piassa"
+  final String? endName;
+  final bool live; // the driver has started this ride and is sharing their position
   final List<DriverPayment> payments; // what the driver accepts; account details only once a seat is confirmed
   final List<({String firstName, String? image, int seats})> passengers;
   final double? startLat;
@@ -429,6 +458,9 @@ class Trip {
         city: j['city'] as String?,
         polyline: j['overview_polyline'] as String?,
         distanceKm: j['distance_km'] is num ? (j['distance_km'] as num).toDouble() : null,
+        startName: j['start_name'] as String?,
+        endName: j['end_name'] as String?,
+        live: j['live'] == true,
         payments: _list(j['payment_methods'], DriverPayment.fromJson),
         passengers: [
           for (final p in (j['passengers'] as List? ?? const []))
@@ -440,6 +472,12 @@ class Trip {
         endLng: _pt(j['end_location'], 'lng'),
         myBooking: j['my_booking'] == null ? null : Booking.fromJson(Map<String, dynamic>.from(j['my_booking'] as Map)),
       );
+}
+
+/// Short display names, falling back to the full address on an older server.
+extension TripNames on Trip {
+  String get from => (startName ?? '').isNotEmpty ? startName! : startAddress;
+  String get to => (endName ?? '').isNotEmpty ? endName! : endAddress;
 }
 
 class ResultPage<T> {
@@ -519,13 +557,48 @@ class AppNotification {
 }
 
 class RoutePreview {
-  const RoutePreview({required this.distanceText, required this.durationText, required this.polyline});
+  const RoutePreview({required this.distanceText, required this.durationText, required this.polyline, this.distanceKm = 0});
   final String distanceText;
   final String durationText;
   final String polyline;
+  final double distanceKm;
 
-  factory RoutePreview.fromJson(Map<String, dynamic> j) =>
-      RoutePreview(distanceText: j['distance_text'] as String? ?? '', durationText: j['duration_text'] as String? ?? '', polyline: j['overview_polyline'] as String? ?? '');
+  factory RoutePreview.fromJson(Map<String, dynamic> j) => RoutePreview(
+        distanceText: j['distance_text'] as String? ?? '',
+        durationText: j['duration_text'] as String? ?? '',
+        polyline: j['overview_polyline'] as String? ?? '',
+        distanceKm: _d(j['distance_value']) / 1000,
+      );
+}
+
+/// Where the car is while a ride is under way.
+class LiveState {
+  const LiveState({required this.active, this.lat, this.lng, this.heading, this.updatedAt, this.fresh = false, this.ended = false, this.pickups = const []});
+  final bool active;
+  final double? lat;
+  final double? lng;
+  final double? heading;
+  final DateTime? updatedAt;
+  final bool fresh; // a position arrived in the last couple of minutes
+  final bool ended;
+  final List<({String name, double lat, double lng, String? label, int seats})> pickups; // driver only
+
+  factory LiveState.fromJson(Map<String, dynamic> j) {
+    final position = j['position'] is Map ? Map<String, dynamic>.from(j['position'] as Map) : null;
+    return LiveState(
+      active: j['active'] == true,
+      lat: position == null ? null : _d(position['lat']),
+      lng: position == null ? null : _d(position['lng']),
+      heading: position?['heading'] is num ? (position!['heading'] as num).toDouble() : null,
+      updatedAt: _t(j['updated_at']),
+      fresh: j['fresh'] == true,
+      ended: j['ended_at'] != null,
+      pickups: [
+        for (final p in (j['pickups'] as List? ?? const []))
+          (name: '${(p as Map)['name'] ?? ''}', lat: _d(p['lat']), lng: _d(p['lng']), label: p['label'] as String?, seats: _i(p['seats']) ?? 1),
+      ],
+    );
+  }
 }
 
 /// A payment method the admins offer (cash, Telebirr, a bank...).

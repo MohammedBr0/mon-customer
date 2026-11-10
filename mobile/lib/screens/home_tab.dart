@@ -260,7 +260,7 @@ class _HomeTabState extends State<HomeTab> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(context.t('heading_to', {'place': selected.endAddress}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      Text(context.t('heading_to', {'place': selected.to}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
                       Text('${formatMoney(selected.passengerPrice, app.config.currencySymbol)}/${context.t('seat')} · ${selected.driver.firstName ?? selected.driver.name}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: scheme.onSurfaceVariant)),
                     ]),
                   ),
@@ -380,8 +380,8 @@ class RideRow extends StatelessWidget {
           child: Row(children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(context.t('to_place', {'place': trip.endAddress}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                Text('${context.t('from')} ${trip.startAddress} · $when', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                Text('${trip.from} → ${trip.to}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                Text(when, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 6),
                 Text('${formatMoney(trip.passengerPrice, symbol)}/${context.t('seat')}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
                 const SizedBox(height: 6),

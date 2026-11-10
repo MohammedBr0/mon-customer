@@ -256,7 +256,7 @@ class TripCard extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: RouteLine(from: trip.startAddress, to: trip.endAddress)),
+                Expanded(child: RouteLine(from: trip.from, to: trip.to)),
                 const SizedBox(width: 12),
                 Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                   Text(formatMoney(trip.passengerPrice, symbol), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: scheme.primary)),

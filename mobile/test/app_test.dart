@@ -10,6 +10,8 @@ import 'package:icare/core/device_location.dart';
 import 'package:icare/core/format.dart';
 import 'package:icare/widgets/map_style.dart';
 import 'package:icare/core/phone.dart';
+import 'package:icare/core/pricing.dart';
+import 'package:icare/core/reminders.dart';
 import 'package:icare/core/polyline.dart';
 import 'package:icare/widgets/common.dart';
 import 'package:icare/widgets/map_markers.dart';
@@ -385,7 +387,7 @@ void main() {
   testWidgets('a passenger\'s home lists rides near them with price, seats and one main action', (tester) async {
     final state = await openHome(tester, 'passenger');
     expect(find.text('SHARED RIDES NEAR YOU'), findsOneWidget);
-    expect(find.text('To Mexico Square'), findsOneWidget);
+    expect(find.textContaining('→ Mexico Square'), findsOneWidget);
     expect(find.textContaining('/Seat'), findsNWidgets(2));
     expect(find.text('1 seats left'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Find a ride'), findsOneWidget);
@@ -397,9 +399,9 @@ void main() {
   testWidgets('a driver\'s home shows only their own rides and waiting requests, not other drivers\' trips', (tester) async {
     final state = await openHome(tester, 'driver');
     expect(find.text('YOUR RIDES'), findsOneWidget);
-    expect(find.text('To Adama'), findsOneWidget);
+    expect(find.textContaining('→ Adama'), findsOneWidget);
     expect(find.text('1 requests'), findsOneWidget);
-    expect(find.text('To Mexico Square'), findsNothing);
+    expect(find.textContaining('→ Mexico Square'), findsNothing);
     expect(find.text('Where to?'), findsNothing);
     expect(find.text('Search'), findsNothing);
     expect(find.widgetWithText(FilledButton, 'Post a ride'), findsOneWidget);
@@ -465,6 +467,105 @@ void main() {
       await api.savePaymentMethods(const [DriverPayment(id: 2, name: 'Telebirr', accountName: 'Dawit', accountNumber: '0911223344')]);
       await api.submitIdentity(kind: 'national_id', number: 'ET-1', imageBytes: [1, 2, 3], filename: 'id.jpg');
       expect(seen.keys, containsAll(['/api/v1/me/payment_methods', '/api/v1/me/identity']));
+    });
+  });
+
+  group('pickup, names, price and reminders', () {
+    test('a booking carries the passenger\'s pickup point; a trip its short names and live state', () {
+      final booking = Booking.fromJson({
+        'id': 1, 'status': 'pending', 'seats': 1, 'ride_dates': [], 'passenger': _profile, 'driver': _profile,
+        'itinerary': {'id': 3, 'start_address': 'XQWR+7CV, Unnamed Road', 'end_address': 'Churchill Ave', 'start_name': 'Bole', 'end_name': 'Piassa', 'live': true},
+        'price': {'price_per_seat': 100, 'rides': 1, 'fare_total': 100, 'fee_percent': 10, 'fee_amount': 10, 'passenger_total': 110, 'driver_payout': 100},
+        'pickup': {'lat': 9.01, 'lng': 38.76, 'label': 'Mexico Square'},
+      });
+      expect(booking.pickup!.name, 'Mexico Square');
+      expect(booking.pickup!.lat, 9.01);
+      expect('${booking.trip.from} → ${booking.trip.to}', 'Bole → Piassa');
+      expect(booking.trip.live, isTrue);
+
+      final old = Trip.fromJson({'id': 1, 'start_address': 'A street', 'end_address': 'B street', 'driver': _profile});
+      expect('${old.from} → ${old.to}', 'A street → B street'); // an older server without short names
+      expect(old.live, isFalse);
+    });
+
+    test('booking sends the pickup point', () async {
+      late Map<String, dynamic> sent;
+      final api = Api(client: MockClient((r) async {
+        sent = jsonDecode(r.body) as Map<String, dynamic>;
+        return _json({'booking': {'id': 1, 'status': 'pending', 'seats': 1, 'ride_dates': [], 'passenger': _profile, 'driver': _profile, 'itinerary': {'id': 3},
+          'price': {'price_per_seat': 1, 'rides': 1, 'fare_total': 1, 'fee_percent': 0, 'fee_amount': 0, 'passenger_total': 1, 'driver_payout': 1}}}, 201);
+      }), base: 'https://x.test');
+      await api.book(3, seats: 1, pickup: Place.pin(9.01, 38.76, 'Mexico Square'));
+      expect(sent['booking']['pickup'], {'lat': 9.01, 'lng': 38.76, 'label': 'Mexico Square'});
+    });
+
+    test('a price is suggested from the distance, shared between seats and rounded to 5', () {
+      expect(suggestedSeatPrice(distanceKm: 99, ratePerKm: 6, seats: 3, maxPrice: 2500), 200); // 594 / 3 = 198
+      expect(suggestedSeatPrice(distanceKm: 7, ratePerKm: 6, seats: 3, maxPrice: 2500), 15); // 14 -> 15
+      expect(suggestedSeatPrice(distanceKm: 1, ratePerKm: 6, seats: 4, maxPrice: 2500), 5); // never below 5
+      expect(suggestedSeatPrice(distanceKm: 900, ratePerKm: 20, seats: 1, maxPrice: 2500), 2500); // never above the cap
+      expect(suggestedSeatPrice(distanceKm: 50, ratePerKm: 0, seats: 3, maxPrice: 2500), isNull); // suggestions switched off
+      expect(suggestedSeatPrice(distanceKm: 0, ratePerKm: 6, seats: 3, maxPrice: 2500), isNull);
+    });
+
+    test('the trip total is seats times price, less the fee when drivers pay it', () {
+      expect(tripTotals(seatPrice: 200, seats: 3, feePercent: 10, driverPaysFee: false), (total: 600.0, driverKeeps: 600.0));
+      expect(tripTotals(seatPrice: 200, seats: 3, feePercent: 10, driverPaysFee: true), (total: 600.0, driverKeeps: 540.0));
+    });
+
+    test('a one-off ride starts once; a past one never', () {
+      final now = DateTime.utc(2026, 11, 10, 6);
+      expect(nextStarts(leave: DateTime.utc(2026, 11, 10, 9), commute: false, now: now), [DateTime.utc(2026, 11, 10, 9)]);
+      expect(nextStarts(leave: DateTime.utc(2026, 11, 9, 9), commute: false, now: now), isEmpty);
+      expect(nextStarts(leave: null, commute: false, now: now), isEmpty);
+    });
+
+    test('a commute starts at the same Ethiopian time on each of its days', () {
+      // First ride Monday 2 Nov 2026 at 07:30 in Ethiopia (04:30 UTC); now is Tuesday 10 Nov, 06:00 UTC.
+      final leave = DateTime.utc(2026, 11, 2, 4, 30);
+      final now = DateTime.utc(2026, 11, 10, 6);
+      final driver = nextStarts(leave: leave, commute: true, weekdays: [1, 3], now: now); // Mondays and Wednesdays
+      expect(driver, [DateTime.utc(2026, 11, 11, 4, 30), DateTime.utc(2026, 11, 16, 4, 30)]);
+      final passenger = nextStarts(leave: leave, commute: true, rideDays: ['2026-11-10', '2026-11-12'], now: now);
+      expect(passenger, [DateTime.utc(2026, 11, 12, 4, 30)]); // today's 07:30 has already gone
+    });
+
+    test('reminders are scheduled the chosen minutes before each ride, and cleared when switched off', () async {
+      final notifier = NoopNotifier();
+      final soon = DateTime.now().toUtc().add(const Duration(hours: 5));
+      var minutes = 30;
+      final state = AppState(
+        api: Api(client: MockClient((r) async {
+          if (r.url.path.endsWith('/me')) return _json({'user': {..._profile, 'reminder_minutes': minutes}});
+          if (r.url.path.endsWith('/bookings')) {
+            return _json({'made': [{'id': 1, 'status': 'confirmed', 'seats': 1, 'ride_dates': [], 'passenger': _profile, 'driver': _profile,
+              'itinerary': {'id': 9, 'start_name': 'Bole', 'end_name': 'Piassa', 'leave_date': soon.toIso8601String()},
+              'price': {'price_per_seat': 1, 'rides': 1, 'fare_total': 1, 'fee_percent': 0, 'fee_amount': 0, 'passenger_total': 1, 'driver_payout': 1}}], 'received': []});
+          }
+          return _json({'conversations': [], 'notifications': [], 'unread': 0});
+        }), base: 'https://x.test'),
+        store: MemoryTokenStore()..token = 't',
+        notifier: notifier,
+        pollEvery: const Duration(hours: 1),
+      );
+      await state.start();
+      await state.syncReminders();
+      expect(notifier.scheduled.single.body, contains('Bole → Piassa'));
+      expect(soon.difference(notifier.scheduled.single.at).inMinutes, 30);
+
+      minutes = 0;
+      await state.setReminderMinutes(0);
+      expect(notifier.scheduled, isEmpty);
+      state.dispose();
+    });
+
+    test('live state: where the car is, and the driver\'s pickup pins', () {
+      final live = LiveState.fromJson({'active': true, 'fresh': true, 'position': {'lat': 9.01, 'lng': 38.74, 'heading': 92.5}, 'pickups': [{'name': 'Rahel', 'lat': 9.0, 'lng': 38.7, 'label': 'Mexico', 'seats': 2}]});
+      expect((live.lat, live.lng, live.heading), (9.01, 38.74, 92.5));
+      expect(live.pickups.single.name, 'Rahel');
+      final waiting = LiveState.fromJson({'active': true, 'position': null});
+      expect(waiting.lat, isNull);
+      expect(LiveState.fromJson({'active': false, 'ended_at': '2026-11-10T10:00:00Z'}).ended, isTrue);
     });
   });
 

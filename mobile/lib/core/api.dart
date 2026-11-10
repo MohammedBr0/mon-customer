@@ -150,9 +150,9 @@ class Api {
     return (made: parse(data['made']), received: parse(data['received']));
   }
 
-  Future<Booking> book(int tripId, {required int seats, List<String> days = const [], String? note}) async {
+  Future<Booking> book(int tripId, {required int seats, List<String> days = const [], String? note, Place? pickup}) async {
     final data = await _send('POST', '/itineraries/$tripId/bookings', body: {
-      'booking': {'seats': seats, if (days.isNotEmpty) 'ride_dates': days, if (note != null && note.isNotEmpty) 'note': note}
+      'booking': {'seats': seats, if (days.isNotEmpty) 'ride_dates': days, if (note != null && note.isNotEmpty) 'note': note, if (pickup != null) 'pickup': {'lat': pickup.lat, 'lng': pickup.lng, 'label': pickup.name}}
     });
     return Booking.fromJson(Map<String, dynamic>.from(data['booking'] as Map));
   }
@@ -258,4 +258,13 @@ class Api {
     final data = await _run(request, const Duration(seconds: 90));
     return Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map));
   }
+
+  // ---- live tracking ----
+  LiveState _live(Map<String, dynamic> data) => LiveState.fromJson(Map<String, dynamic>.from(data['live'] as Map));
+
+  /// The driver sets off: confirmed passengers are told and can follow the car.
+  Future<LiveState> startTrip(int id) async => _live(await _send('POST', '/itineraries/$id/start'));
+  Future<void> sendLocation(int id, double lat, double lng, {double? heading}) => _send('POST', '/itineraries/$id/location', body: {'lat': lat, 'lng': lng, 'heading': ?heading});
+  Future<LiveState> finishTrip(int id) async => _live(await _send('POST', '/itineraries/$id/finish'));
+  Future<LiveState> liveTrip(int id) async => _live(await _send('GET', '/itineraries/$id/live'));
 }

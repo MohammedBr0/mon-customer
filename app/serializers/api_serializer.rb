@@ -163,6 +163,7 @@ module ApiSerializer
   def itinerary_summary(itinerary)
     {
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title, start_address: itinerary.start_address, end_address: itinerary.end_address,
+      start_name: short_name(itinerary.start_location, itinerary.start_address), end_name: short_name(itinerary.end_location, itinerary.end_address), live: itinerary.live?,
       leave_date: itinerary.leave_date&.iso8601, city_commute: itinerary.city_commute?, commute: itinerary.commute?, schedule_summary: itinerary.schedule_summary, cancelled: itinerary.cancelled?
     }
   end

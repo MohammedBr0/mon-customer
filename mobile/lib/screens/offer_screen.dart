@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/api.dart';
 import '../core/app_state.dart';
 import '../core/format.dart';
+import '../core/pricing.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
@@ -53,7 +54,10 @@ class _OfferScreenState extends State<OfferScreen> {
     setState(() => _previewing = true);
     try {
       final preview = await context.read<AppState>().api.routePreview(from, to);
-      if (mounted && mine == _previewSerial) setState(() => _preview = preview);
+      if (mounted && mine == _previewSerial) {
+        setState(() => _preview = preview);
+        _suggestPrice();
+      }
     } catch (_) {
       if (mounted && mine == _previewSerial) setState(() => _preview = null);
     } finally {
@@ -68,6 +72,26 @@ class _OfferScreenState extends State<OfferScreen> {
     _dropoff.dispose();
     _description.dispose();
     super.dispose();
+  }
+
+  bool _priceTouched = false; // once the driver types or adjusts a price, suggestions stop overwriting it
+
+  /// Fills in a starting price from the route's distance and the admins' rate, unless the driver set their own.
+  void _suggestPrice() {
+    final config = context.read<AppState>().config;
+    final preview = _preview;
+    if (_priceTouched || preview == null) return;
+    final suggested = suggestedSeatPrice(distanceKm: preview.distanceKm, ratePerKm: config.suggestedPricePerKm, seats: _seats, maxPrice: config.maxPrice);
+    if (suggested != null) setState(() => _price.text = suggested.round().toString());
+  }
+
+  void _nudgePrice(double by) {
+    final config = context.read<AppState>().config;
+    final current = double.tryParse(_price.text.trim()) ?? 0;
+    setState(() {
+      _priceTouched = true;
+      _price.text = (current + by).clamp(0, config.maxPrice).round().toString();
+    });
   }
 
   /// The chosen date and time as the moment it happens in Ethiopia, expressed in UTC.
@@ -115,6 +139,7 @@ class _OfferScreenState extends State<OfferScreen> {
         if (_womenOnly) 'pink': true,
       });
       if (!mounted) return;
+      app.syncReminders();
       showMessage(context, context.tr('trip_posted'));
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => TripScreen(tripId: trip.id)));
     } catch (e) {
@@ -181,17 +206,50 @@ class _OfferScreenState extends State<OfferScreen> {
             Expanded(child: _PickerField(label: context.t('time'), value: '${_time.hour.toString().padLeft(2, '0')}:${_time.minute.toString().padLeft(2, '0')}', icon: Icons.schedule, onTap: _pickTime)),
           ]),
           const SizedBox(height: 12),
-          TextFormField(
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(padding: const EdgeInsets.only(top: 4), child: IconButton.outlined(tooltip: '-5', onPressed: () => _nudgePrice(-5), icon: const Icon(Icons.remove))),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
             controller: _price,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(labelText: context.t('your_price'), prefixText: '$symbol '),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => setState(() => _priceTouched = true),
             validator: (v) {
               final n = double.tryParse((v ?? '').trim());
               if (n == null || n < 0 || n > config.maxPrice) return context.tr('price_limit', {'max': config.maxPrice.round()});
               return null;
             },
-          ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(padding: const EdgeInsets.only(top: 4), child: IconButton.outlined(tooltip: '+5', onPressed: () => _nudgePrice(5), icon: const Icon(Icons.add))),
+          ]),
+          if (_preview != null && !_priceTouched && suggestedSeatPrice(distanceKm: _preview!.distanceKm, ratePerKm: config.suggestedPricePerKm, seats: _seats, maxPrice: config.maxPrice) != null)
+            Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(context.t('price_suggested', {'distance': _preview!.distanceText}), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: scheme.primary))),
+          if (price != null && price > 0) ...[
+            const SizedBox(height: 10),
+            Builder(builder: (context) {
+              final totals = tripTotals(seatPrice: price, seats: _seats, feePercent: config.feePercent, driverPaysFee: config.feeChargedTo != 'passenger');
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(14)),
+                child: Column(children: [
+                  Row(children: [
+                    Expanded(child: Text(context.t('trip_total'), style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onPrimaryContainer))),
+                    Text(formatMoney(totals.total, symbol), style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: scheme.onPrimaryContainer)),
+                  ]),
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    Expanded(child: Text(context.t('trip_total_math', {'seats': _seats, 'price': formatMoney(price, symbol)}), style: TextStyle(fontSize: 12, color: scheme.onPrimaryContainer))),
+                    if (totals.driverKeeps != totals.total) Text(context.t('you_keep', {'amount': formatMoney(totals.driverKeeps, symbol)}), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: scheme.onPrimaryContainer)),
+                  ]),
+                ]),
+              );
+            }),
+          ],
           if (price != null && config.feePercent > 0)
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),
@@ -206,9 +264,19 @@ class _OfferScreenState extends State<OfferScreen> {
           InputDecorator(
             decoration: InputDecoration(labelText: context.t('free_seats')),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              IconButton.outlined(onPressed: _seats > 1 ? () => setState(() => _seats--) : null, icon: const Icon(Icons.remove)),
+              IconButton.outlined(onPressed: _seats > 1
+                      ? () {
+                          setState(() => _seats--);
+                          _suggestPrice();
+                        }
+                      : null, icon: const Icon(Icons.remove)),
               Text('$_seats', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-              IconButton.outlined(onPressed: _seats < 8 ? () => setState(() => _seats++) : null, icon: const Icon(Icons.add)),
+              IconButton.outlined(onPressed: _seats < 8
+                      ? () {
+                          setState(() => _seats++);
+                          _suggestPrice();
+                        }
+                      : null, icon: const Icon(Icons.add)),
             ]),
           ),
           if (config.commutesEnabled) ...[

@@ -6,6 +6,7 @@ import 'core/api.dart';
 import 'core/app_state.dart';
 import 'core/phone_notifier.dart';
 import 'core/token_store.dart';
+import 'l10n/strings.dart';
 import 'screens/home_shell.dart';
 import 'screens/welcome_screen.dart';
 import 'widgets/common.dart';
@@ -29,6 +30,11 @@ class IcareApp extends StatelessWidget {
         child: Builder(
           builder: (context) {
             final mode = context.select<AppState, String>((s) => s.themeMode);
+            final locale = context.select<AppState, String>((s) => s.locale);
+            state.reminderText = (
+              title: Strings.of(locale, 'reminder_title'),
+              body: (trip, minutes, driving) => Strings.of(locale, driving ? 'reminder_body_driver' : 'reminder_body_passenger', {'trip': trip, 'minutes': minutes}),
+            );
             return MaterialApp(
               title: 'Arifway',
               debugShowCheckedModeBanner: false,

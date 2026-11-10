@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import 'api.dart';
 import 'phone_notifier.dart';
+import 'reminders.dart';
 import 'token_store.dart';
 
 enum AuthStatus { starting, signedOut, signedIn, offline }
@@ -117,6 +118,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _clear() async {
     _timer?.cancel();
+    notifier.scheduleReminders(const []);
     unreadNotifications = 0;
     api.token = null;
     user = null;
@@ -155,7 +157,7 @@ class AppState extends ChangeNotifier {
 
   void _startPolling() {
     _timer?.cancel();
-    notifier.init();
+    notifier.init().then((_) => syncReminders());
     checkNotifications();
     _timer = Timer.periodic(pollEvery, (_) => checkNotifications());
   }
@@ -203,6 +205,38 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Texts shown in a ride reminder; set by the app so they follow the chosen language.
+  ({String title, String Function(String trip, int minutes, bool driving) body}) reminderText = (title: 'Ride reminder', body: _defaultReminderBody);
+  static String _defaultReminderBody(String trip, int minutes, bool driving) => '$trip starts in $minutes minutes';
+
+  /// Schedules a phone reminder before each ride in the coming week (15 or 30 minutes ahead, as chosen).
+  /// Call it after anything that changes someone's rides: signing in, booking, cancelling, posting a trip.
+  Future<void> syncReminders() async {
+    final minutes = user?.reminderMinutes ?? 0;
+    if (status != AuthStatus.signedIn || minutes <= 0) {
+      await notifier.scheduleReminders(const []);
+      return;
+    }
+    try {
+      final made = (await api.bookings()).made;
+      final mine = driverMode ? (await api.myTrips()).items : const <Trip>[];
+      final now = DateTime.now();
+      await notifier.scheduleReminders([
+        for (final ride in upcomingRides(made: made, mine: mine, now: now))
+          if (ride.start.subtract(Duration(minutes: minutes)).isAfter(now))
+            (id: ride.tripId, at: ride.start.subtract(Duration(minutes: minutes)), title: reminderText.title, body: reminderText.body(ride.title, minutes, ride.driving)),
+      ]);
+    } on ApiException {
+      // Keep whatever was scheduled before; it is retried on the next change.
+    }
+  }
+
+  Future<void> setReminderMinutes(int minutes) async {
+    user = await api.updateMe({'reminder_minutes': minutes});
+    notifyListeners();
+    await syncReminders();
+  }
+
   Future<void> setThemeMode(String mode) async {
     themeMode = mode;
     await store.saveThemeMode(mode);
@@ -226,6 +260,7 @@ class AppState extends ChangeNotifier {
   Future<void> setMode(String mode) async {
     user = await api.updateMe({'app_mode': mode});
     notifyListeners();
+    syncReminders();
   }
 
   void updateUser(Profile profile) {

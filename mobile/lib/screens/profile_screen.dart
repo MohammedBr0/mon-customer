@@ -73,6 +73,37 @@ class ProfileTab extends StatelessWidget {
       ],
       _Tile(Icons.notifications_outlined, context.t('alerts_title'), () => push(const AlertsScreen())),
       Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.t('ride_reminder'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<int>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 0, label: Text(context.t('reminder_off'))),
+                  ButtonSegment(value: 15, label: Text(context.t('reminder_minutes', {'minutes': 15}))),
+                  ButtonSegment(value: 30, label: Text(context.t('reminder_minutes', {'minutes': 30}))),
+                ],
+                selected: {user.reminderMinutes},
+                onSelectionChanged: (s) async {
+                  try {
+                    await app.setReminderMinutes(s.first);
+                  } catch (e) {
+                    if (context.mounted) showMessage(context, errorText(context, e), error: true);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(context.t('ride_reminder_hint'), style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Card(
         child: SwitchListTile(
           title: Text(context.t('phone_alerts'), style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(context.t('phone_alerts_hint')),
