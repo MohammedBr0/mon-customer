@@ -10,6 +10,18 @@ class RouteBuilder
     new(from, to).call
   end
 
+  # The route to store for a trip between two [lat, lng] points: Google's driving route when maps are set up,
+  # otherwise (or if Google cannot be reached) the straight line.
+  def self.road(from:, to:)
+    if GoogleMapsClient.enabled?
+      found = GoogleMapsClient.new.route(origin: from.join(','), destination: to.join(','))
+      return { start_location: [from[1], from[0]], end_location: [to[1], to[0]], via_waypoints: [], overview_path: found[:overview_path], overview_polyline: found[:overview_polyline] }.to_json
+    end
+    call(from:, to:)
+  rescue GoogleMapsClient::Error
+    call(from:, to:)
+  end
+
   def initialize(from, to)
     @from = from # [lat, lng]
     @to = to

@@ -9,7 +9,7 @@ import 'common.dart';
 /// A rounded "Br 120" bubble with a pointer, drawn to a bitmap for use as a map pin.
 Future<BitmapDescriptor> priceTag(String text, {required bool selected, required double pixelRatio}) async {
   final painter = TextPainter(
-    text: TextSpan(text: text, style: TextStyle(color: selected ? Colors.white : const Color(0xFF16211B), fontSize: selected ? 16 : 14, fontWeight: FontWeight.w800)),
+    text: TextSpan(text: text, style: TextStyle(color: selected ? Colors.white : const Color(0xFF151E30), fontSize: selected ? 16 : 14, fontWeight: FontWeight.w800)),
     textDirection: TextDirection.ltr,
   )..layout();
   const padX = 12.0, padY = 7.0, pointer = 7.0;

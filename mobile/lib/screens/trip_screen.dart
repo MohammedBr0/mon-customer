@@ -125,7 +125,7 @@ class _TripScreenState extends State<TripScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.route, size: 16, color: brand), const SizedBox(width: 6), Text('${trip.distanceKm!.toStringAsFixed(trip.distanceKm! >= 20 ? 0 : 1)} km', style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF16211B)))]),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.route, size: 16, color: brand), const SizedBox(width: 6), Text('${trip.distanceKm!.toStringAsFixed(trip.distanceKm! >= 20 ? 0 : 1)} km', style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF151E30)))]),
                 ),
               ),
           ]),

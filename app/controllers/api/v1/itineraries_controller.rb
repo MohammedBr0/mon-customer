@@ -28,7 +28,7 @@ module Api
         if params.dig(:itinerary, :city).present?
           itinerary.use_city_areas(city: params[:itinerary][:city], from: place_param(:start)[:key], to: place_param(:end)[:key])
         else
-          itinerary.route = road_route(coordinates(:start), coordinates(:end))
+          itinerary.route = RouteBuilder.road(from: coordinates(:start), to: coordinates(:end))
         end
         if itinerary.save
           RideAlertMatchJob.perform_later(itinerary)
@@ -118,17 +118,6 @@ module Api
       # A place is either a known place key, or explicit coordinates.
       def place_param(side)
         params.require(:itinerary).fetch(side, {}).permit(:key, :name, :lat, :lng)
-      end
-
-      # A real road route when Google is available, else a straight line between the points.
-      def road_route(from, to)
-        if GoogleMapsClient.enabled?
-          found = GoogleMapsClient.new.route(origin: from.join(','), destination: to.join(','))
-          return { start_location: found[:start_location], end_location: found[:end_location], via_waypoints: [], overview_path: found[:overview_path], overview_polyline: found[:overview_polyline] }.to_json
-        end
-        RouteBuilder.call(from:, to:)
-      rescue GoogleMapsClient::Error
-        RouteBuilder.call(from:, to:)
       end
 
       def coordinates(side)

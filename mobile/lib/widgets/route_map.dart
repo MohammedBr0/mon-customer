@@ -37,7 +37,7 @@ CameraPosition framing(Iterable<LatLng> points) {
 }
 
 Set<Marker> endMarkers(List<LatLng> points) => {
-      Marker(markerId: const MarkerId('a'), position: points.first, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen), infoWindow: const InfoWindow(title: 'A')),
+      Marker(markerId: const MarkerId('a'), position: points.first, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), infoWindow: const InfoWindow(title: 'A')),
       Marker(markerId: const MarkerId('b'), position: points.last, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: const InfoWindow(title: 'B')),
     };
 

@@ -9,7 +9,9 @@ import 'package:icare/core/app_state.dart';
 import 'package:icare/core/format.dart';
 import 'package:icare/core/phone.dart';
 import 'package:icare/core/polyline.dart';
+import 'package:icare/widgets/common.dart';
 import 'package:icare/widgets/map_markers.dart';
+import 'package:provider/provider.dart';
 import 'package:icare/widgets/route_map.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:icare/core/phone_notifier.dart';
@@ -300,6 +302,35 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pumpAndSettle();
     expect(find.text('Enter an Ethiopian mobile number, like 0911 22 33 44'), findsOneWidget);
+  });
+
+  testWidgets('place search shows Google results as you type and returns the chosen place', (tester) async {
+    final state = _state((r) async {
+      if (r.url.path.endsWith('/maps/search')) {
+        expect(r.url.queryParameters['q'], 'Bole');
+        return _json({'places': [{'name': 'Bole Medhanialem', 'address': 'Bole, Addis Ababa', 'lat': 8.99, 'lng': 38.78}]});
+      }
+      return _json({'places': [{'key': 'adama', 'name': 'Adama', 'lat': 8.54, 'lng': 39.27}]});
+    });
+    await state.loadConfig();
+    Place? picked;
+    await tester.pumpWidget(ChangeNotifierProvider<AppState>.value(
+      value: state,
+      child: MaterialApp(home: Builder(builder: (context) => TextButton(onPressed: () async => picked = await pickPlace(context), child: const Text('open')))),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Adama'), findsOneWidget); // listed towns before typing
+    expect(find.text('Choose on map'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Bole');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(find.text('Bole Medhanialem'), findsOneWidget);
+    await tester.tap(find.text('Bole Medhanialem'));
+    await tester.pumpAndSettle();
+    expect(picked?.isPin, isTrue);
+    expect(picked?.lat, 8.99);
   });
 
   group('Api', () {

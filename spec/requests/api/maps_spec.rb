@@ -79,3 +79,25 @@ RSpec.describe 'API trip details for riders and drivers' do
     expect(response.body).not_to include('922334455')
   end
 end
+
+RSpec.describe RouteBuilder, '.road' do
+  let(:routes_url) { 'https://routes.googleapis.com/directions/v2:computeRoutes' }
+
+  it 'stores Google\'s driving route for a city commute too' do
+    allow(GoogleMapsClient).to receive(:key).and_return('k')
+    stub_request(:post, routes_url).to_return(body: { routes: [{ distanceMeters: 5000, duration: '600s', polyline: { encodedPolyline: '_p~iF~ps|U_ulLnnqC' } }] }.to_json)
+    trip = create(:user).itineraries.new
+    trip.use_city_areas(city: 'addis-ababa', from: 'addis-ababa:bole', to: 'addis-ababa:piassa')
+    expect(trip.overview_polyline).to eq '_p~iF~ps|U_ulLnnqC'
+    expect(trip.start_location.lat).to be_within(0.001).of(8.9967)
+  end
+
+  it 'falls back to a straight line when Google fails or is not set up' do
+    allow(GoogleMapsClient).to receive(:key).and_return('k')
+    stub_request(:post, routes_url).to_return(status: 500, body: 'x')
+    expect(JSON.parse(described_class.road(from: [9.0, 38.7], to: [9.1, 38.8]))['overview_path'].size).to eq RouteBuilder::STEPS + 1
+
+    allow(GoogleMapsClient).to receive(:key).and_return(nil)
+    expect(JSON.parse(described_class.road(from: [9.0, 38.7], to: [9.1, 38.8]))['overview_polyline']).to be_present
+  end
+end

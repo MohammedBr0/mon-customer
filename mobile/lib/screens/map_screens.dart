@@ -612,7 +612,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
             Marker(
               markerId: MarkerId('trip-${_trips[i].id}'),
               position: LatLng(_trips[i].startLat!, _trips[i].startLng!),
-              icon: _icons['${_price(_trips[i])}|${_selected == i}'] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+              icon: _icons['${_price(_trips[i])}|${_selected == i}'] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
               zIndexInt: _selected == i ? 10 : 1,
               onTap: () => _select(i),
             ),

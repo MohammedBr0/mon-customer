@@ -118,7 +118,7 @@ class Itinerary < ApplicationRecord
     city_name = city_place&.name
     self.start_address = "#{start.name}, #{city_name}"
     self.end_address = "#{finish.name}, #{city_name}"
-    self.route = RouteBuilder.call(from: [start.lat, start.lng], to: [finish.lat, finish.lng])
+    self.route = RouteBuilder.road(from: [start.lat, start.lng], to: [finish.lat, finish.lng])
   end
 
   # A trip that stays inside one city, between neighbourhoods.
