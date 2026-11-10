@@ -22,6 +22,7 @@ class AppState extends ChangeNotifier {
   Timer? _timer;
   int unreadNotifications = 0;
   bool phoneAlerts = true;
+  String themeMode = 'system'; // system | light | dark
   bool _checking = false;
 
   AuthStatus status = AuthStatus.starting;
@@ -34,6 +35,7 @@ class AppState extends ChangeNotifier {
   /// Opens the app: restores the language and token, loads settings, and checks the token still works.
   Future<void> start() async {
     phoneAlerts = await store.readPhoneAlerts();
+    themeMode = await store.readThemeMode() ?? 'system';
     locale = await store.readLocale() ?? 'en';
     api.locale = locale;
     await loadConfig();
@@ -199,6 +201,12 @@ class AppState extends ChangeNotifier {
     } finally {
       _checking = false;
     }
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    themeMode = mode;
+    await store.saveThemeMode(mode);
+    notifyListeners();
   }
 
   Future<void> setPhoneAlerts(bool on) async {

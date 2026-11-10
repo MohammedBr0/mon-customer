@@ -11,6 +11,8 @@ import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
 import '../widgets/map_markers.dart';
+import '../widgets/map_style.dart';
+import '../widgets/route_map.dart';
 import 'home_shell.dart';
 import 'map_screens.dart';
 import 'messages_screen.dart';
@@ -33,7 +35,14 @@ class _HomeTabState extends State<HomeTab> {
   static final bool _canShowMap = !Platform.environment.containsKey('FLUTTER_TEST');
 
   GoogleMapController? _map;
-  final Map<String, BitmapDescriptor> _icons = {};
+  final _sheet = DraggableScrollableController();
+  BitmapDescriptor? _car;
+  BitmapDescriptor? _carSelected;
+  final Map<int, List<LatLng>> _routes = {};
+  int? _selected; // the ride whose route is highlighted on the map
+  double _sheetSize = _mid;
+
+  static const _min = 0.13, _mid = 0.5, _max = 0.9;
   LatLng _center = _addis;
   bool _located = false;
   List<Trip> _trips = [];
@@ -74,13 +83,15 @@ class _HomeTabState extends State<HomeTab> {
       if (!mounted) return;
       if (_canShowMap) {
         final ratio = MediaQuery.of(context).devicePixelRatio;
-        for (final t in page.items) {
-          final label = _price(app, t);
-          _icons[label] ??= await priceTag(label, selected: false, pixelRatio: ratio);
-        }
+        _car ??= await carMarker(selected: false, pixelRatio: ratio);
+        _carSelected ??= await carMarker(selected: true, pixelRatio: ratio);
+      }
+      for (final t in page.items) {
+        _routes[t.id] = routePoints(polyline: t.polyline, startLat: t.startLat, startLng: t.startLng, endLat: t.endLat, endLng: t.endLng);
       }
       if (!mounted) return;
       setState(() {
+        _selected = null;
         _trips = page.items;
         _nearby = nearby;
         _loading = false;
@@ -95,7 +106,29 @@ class _HomeTabState extends State<HomeTab> {
     }
   }
 
-  String _price(AppState app, Trip t) => '${app.config.currencySymbol} ${t.passengerPrice.round()}';
+  @override
+  void dispose() {
+    _sheet.dispose();
+    super.dispose();
+  }
+
+  /// Highlights a ride on the map: its car, its Google route and where it is heading. The list steps aside.
+  void _focus(int index) {
+    final points = _routes[_trips[index].id] ?? const <LatLng>[];
+    setState(() => _selected = index);
+    if (_sheet.isAttached) _sheet.animateTo(_min, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    if (points.length >= 2) _map?.animateCamera(CameraUpdate.newLatLngBounds(boundsOf(points), 70));
+  }
+
+  void _toggleSheet() {
+    if (!_sheet.isAttached) return;
+    _sheet.animateTo(_sheetSize > _min + 0.05 ? _min : _mid, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+  }
+
+  double _heading(Trip t) {
+    final points = _routes[t.id];
+    return points != null && points.length >= 2 ? bearing(points[0], points[1]) : 0;
+  }
 
   void _openMap() => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapSearchScreen()));
 
@@ -111,35 +144,46 @@ class _HomeTabState extends State<HomeTab> {
     final scheme = Theme.of(context).colorScheme;
     final user = app.user;
     final top = MediaQuery.of(context).padding.top;
-    final mapHeight = MediaQuery.of(context).size.height * 0.36;
+    final height = MediaQuery.of(context).size.height;
+    final selected = _selected == null ? null : _trips[_selected!];
     return Stack(children: [
-      // ---- the map, edge to edge
-      Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        height: mapHeight + 28,
+      // ---- the map fills the screen; the list slides over it
+      Positioned.fill(
         child: _canShowMap
             ? GoogleMap(
                 initialCameraPosition: CameraPosition(target: _center, zoom: 12.5),
                 onMapCreated: (c) => _map = c,
+                style: mapStyle(context),
                 myLocationEnabled: _located,
                 myLocationButtonEnabled: false,
                 zoomControlsEnabled: false,
                 mapToolbarEnabled: false,
                 compassEnabled: false,
-                padding: EdgeInsets.only(top: top + 64, bottom: 28),
+                padding: EdgeInsets.only(top: top + 64, bottom: height * _min + 70),
                 markers: {
-                  for (final t in _trips)
-                    if (t.startLat != null && t.startLng != null)
+                  // Each ride is a car at its starting point, turned to face the way it will drive.
+                  for (var i = 0; i < _trips.length; i++)
+                    if (_trips[i].startLat != null && _trips[i].startLng != null)
                       Marker(
-                        markerId: MarkerId('trip-${t.id}'),
-                        position: LatLng(t.startLat!, t.startLng!),
-                        icon: _icons[_price(app, t)] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-                        onTap: () => openTrip(context, t.id),
+                        markerId: MarkerId('trip-${_trips[i].id}'),
+                        position: LatLng(_trips[i].startLat!, _trips[i].startLng!),
+                        icon: (_selected == i ? _carSelected : _car) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+                        anchor: const Offset(0.5, 0.5),
+                        flat: true,
+                        rotation: _heading(_trips[i]),
+                        zIndexInt: _selected == i ? 10 : 2,
+                        onTap: () => _focus(i),
                       ),
+                  if (selected != null && (_routes[selected.id]?.length ?? 0) >= 2)
+                    Marker(markerId: const MarkerId('heading'), position: _routes[selected.id]!.last, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: InfoWindow(title: selected.endAddress)),
                 },
-                onTap: (_) => _openMap(),
+                polylines: {
+                  for (var i = 0; i < _trips.length; i++)
+                    if ((_routes[_trips[i].id]?.length ?? 0) >= 2) routeLine(_routes[_trips[i].id]!, id: 'route-${_trips[i].id}', faint: _selected != i, onTap: () => _focus(i)),
+                },
+                onTap: (_) {
+                  if (_selected != null) setState(() => _selected = null);
+                },
               )
             : ColoredBox(color: scheme.primaryContainer),
       ),
@@ -150,17 +194,17 @@ class _HomeTabState extends State<HomeTab> {
         right: 14,
         child: Row(children: [
           if (user != null) ...[
-            Container(decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white), padding: const EdgeInsets.all(2), child: Avatar(user, size: 44)),
+            Container(decoration: BoxDecoration(shape: BoxShape.circle, color: scheme.surface), padding: const EdgeInsets.all(2), child: Avatar(user, size: 44)),
             const SizedBox(width: 10),
             Expanded(
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                  decoration: BoxDecoration(color: scheme.surface, borderRadius: BorderRadius.circular(20)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Flexible(child: Text(user.firstName ?? user.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF151E30)))),
-                    if (user.verified) ...[const SizedBox(width: 6), const Icon(Icons.verified, size: 16, color: brand)],
+                    Flexible(child: Text(user.firstName ?? user.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w800, color: scheme.onSurface))),
+                    if (user.verified) ...[const SizedBox(width: 6), Icon(Icons.verified, size: 16, color: scheme.primary)],
                   ]),
                 ),
               ),
@@ -182,62 +226,113 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ]),
       ),
-      // ---- the rides, on a sheet over the bottom of the map
-      Positioned(
-        top: mapHeight,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        child: Material(
-          color: scheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          clipBehavior: Clip.antiAlias,
-          child: Column(children: [
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _load,
-                child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), children: [
-                  // Search first: most people open the app to go somewhere.
-                  InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: _openMap,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                      decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(14)),
-                      child: Row(children: [
-                        Icon(Icons.search, color: scheme.primary),
-                        const SizedBox(width: 10),
-                        Text(context.t('where_to'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
-                      ]),
-                    ),
+      // ---- the selected ride, shown over the map while the list is tucked away
+      if (selected != null)
+        Positioned(
+          left: 14,
+          right: 14,
+          bottom: height * _min + 78,
+          child: Material(
+            elevation: 4,
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => openTrip(context, selected.id),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(children: [
+                  CircleAvatar(radius: 18, backgroundColor: scheme.primary, child: Icon(Icons.directions_car, size: 18, color: scheme.onPrimary)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(context.t('heading_to', {'place': selected.endAddress}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      Text('${formatMoney(selected.passengerPrice, app.config.currencySymbol)}/${context.t('seat')} · ${selected.driver.firstName ?? selected.driver.name}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: scheme.onSurfaceVariant)),
+                    ]),
                   ),
-                  const SizedBox(height: 12),
-                  NextRideCard(key: ValueKey('next-${app.driverMode}'), driver: app.driverMode),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10, left: 2),
-                    child: Text(context.t(_nearby ? 'rides_near_you' : 'latest_trips').toUpperCase(), style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: scheme.primary)),
-                  ),
-                  if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-                  if (_error != null && _trips.isEmpty) ErrorState(_error!, onRetry: _load),
-                  if (!_loading && _error == null && _trips.isEmpty) EmptyState(context.t('no_trips')),
-                  for (final trip in _trips)
-                    Padding(padding: const EdgeInsets.only(bottom: 10), child: RideRow(trip: trip, away: _away(trip), symbol: app.config.currencySymbol, locale: app.locale, onTap: () => openTrip(context, trip.id))),
+                  const Icon(Icons.chevron_right),
                 ]),
               ),
             ),
-            // ---- the one main action
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-                child: FilledButton(
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                  onPressed: app.driverMode ? widget.onOffer : _openMap,
-                  child: Text(context.t(app.driverMode ? 'post_a_ride' : 'find_a_ride')),
+          ),
+        ),
+      // ---- the rides: a sheet you can drag down to a handle or up to nearly full screen
+      DraggableScrollableSheet(
+        controller: _sheet,
+        initialChildSize: _mid,
+        minChildSize: _min,
+        maxChildSize: _max,
+        snap: true,
+        snapSizes: const [_min, _mid, _max],
+        builder: (context, scroll) => NotificationListener<DraggableScrollableNotification>(
+          onNotification: (n) {
+            _sheetSize = n.extent;
+            return false;
+          },
+          child: Material(
+            elevation: 8,
+            color: scheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            clipBehavior: Clip.antiAlias,
+            child: ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 0, 16, 90), children: [
+              // The handle: tap or drag to minimise and restore the list.
+              Semantics(
+                button: true,
+                label: context.t('show_rides'),
+                child: InkWell(
+                  onTap: _toggleSheet,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 12),
+                    child: Column(children: [
+                      Container(width: 44, height: 5, decoration: BoxDecoration(color: scheme.outlineVariant, borderRadius: BorderRadius.circular(3))),
+                      const SizedBox(height: 10),
+                      Row(children: [
+                        Expanded(child: Text(context.t(_nearby ? 'rides_near_you' : 'latest_trips').toUpperCase(), style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: scheme.primary))),
+                        if (!_loading) Text('${_trips.length}', style: TextStyle(fontWeight: FontWeight.w800, color: scheme.onSurfaceVariant)),
+                      ]),
+                    ]),
+                  ),
                 ),
               ),
-            ),
-          ]),
+              InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: _openMap,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(color: scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: [
+                    Icon(Icons.search, color: scheme.primary),
+                    const SizedBox(width: 10),
+                    Text(context.t('where_to'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 12),
+              NextRideCard(key: ValueKey('next-${app.driverMode}'), driver: app.driverMode),
+              if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
+              if (_error != null && _trips.isEmpty) ErrorState(_error!, onRetry: _load),
+              if (!_loading && _error == null && _trips.isEmpty) EmptyState(context.t('no_trips')),
+              for (var i = 0; i < _trips.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: RideRow(trip: _trips[i], away: _away(_trips[i]), symbol: app.config.currencySymbol, locale: app.locale, onTap: () => openTrip(context, _trips[i].id), onShowOnMap: _canShowMap ? () => _focus(i) : null),
+                ),
+            ]),
+          ),
+        ),
+      ),
+      // ---- the one main action, always within reach
+      Positioned(
+        left: 16,
+        right: 16,
+        bottom: 10,
+        child: SafeArea(
+          top: false,
+          child: FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54), elevation: 3, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+            onPressed: app.driverMode ? widget.onOffer : _openMap,
+            child: Text(context.t(app.driverMode ? 'post_a_ride' : 'find_a_ride')),
+          ),
         ),
       ),
     ]);
@@ -246,7 +341,8 @@ class _HomeTabState extends State<HomeTab> {
 
 /// One ride in the home list: where it goes, the price per seat, how far away it starts and seats left.
 class RideRow extends StatelessWidget {
-  const RideRow({super.key, required this.trip, required this.symbol, required this.locale, required this.onTap, this.away});
+  const RideRow({super.key, required this.trip, required this.symbol, required this.locale, required this.onTap, this.away, this.onShowOnMap});
+  final VoidCallback? onShowOnMap;
   final Trip trip;
   final String symbol;
   final String locale;
@@ -296,7 +392,12 @@ class RideRow extends StatelessWidget {
               ]),
             ),
             const SizedBox(width: 12),
-            CircleAvatar(radius: 18, backgroundColor: const Color(0xFF151E30), child: Icon(trip.commute ? Icons.repeat : Icons.directions_car, size: 18, color: Colors.white)),
+            IconButton.filled(
+              tooltip: context.t('view_route'),
+              style: IconButton.styleFrom(backgroundColor: scheme.primary, foregroundColor: scheme.onPrimary),
+              onPressed: onShowOnMap ?? onTap,
+              icon: Icon(trip.commute ? Icons.repeat : Icons.directions_car, size: 20),
+            ),
           ]),
         ),
       ),
@@ -313,13 +414,13 @@ class _RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         shape: const CircleBorder(),
         elevation: 2,
         child: IconButton(
           tooltip: tooltip,
           onPressed: onTap,
-          icon: Badge(isLabelVisible: badge > 0, label: Text('$badge'), child: Icon(icon, color: const Color(0xFF151E30))),
+          icon: Badge(isLabelVisible: badge > 0, label: Text('$badge'), child: Icon(icon, color: Theme.of(context).colorScheme.onSurface)),
         ),
       );
 }

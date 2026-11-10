@@ -13,6 +13,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import '../core/format.dart';
 import '../widgets/map_markers.dart';
+import '../widgets/map_style.dart';
 import '../widgets/route_map.dart';
 import 'trip_screen.dart';
 
@@ -156,7 +157,6 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
   bool _looking = false;
   bool _moved = false;
   bool _dragging = false;
-  bool _satellite = true;
   int _serial = 0;
 
   @override
@@ -224,7 +224,7 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
             if (_dragging) setState(() => _dragging = false);
             if (_moved || widget.initial == null) _lookup();
           },
-          mapType: _satellite ? MapType.hybrid : MapType.normal,
+          style: mapStyle(context),
           zoomControlsEnabled: false,
           myLocationButtonEnabled: false,
           mapToolbarEnabled: false,
@@ -257,11 +257,7 @@ class _PlacePickerScreenState extends State<PlacePickerScreen> {
         Positioned(
           right: 12,
           bottom: 190,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            FloatingActionButton.small(heroTag: 'pickerLayers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
-            const SizedBox(height: 10),
-            FloatingActionButton.small(heroTag: 'loc', onPressed: _myLocation, child: const Icon(Icons.my_location)),
-          ]),
+          child: FloatingActionButton.small(heroTag: 'loc', onPressed: _myLocation, child: const Icon(Icons.my_location)),
         ),
         Positioned(
           left: 0,
@@ -299,8 +295,6 @@ class TripMapScreen extends StatefulWidget {
 }
 
 class _TripMapScreenState extends State<TripMapScreen> {
-  bool _satellite = true;
-
   Future<void> _navigate() async {
     final a = widget.points.first, b = widget.points.last;
     final uri = Uri.parse('https://www.google.com/maps/dir/?api=1&origin=${a.latitude},${a.longitude}&destination=${b.latitude},${b.longitude}&travelmode=driving');
@@ -315,17 +309,13 @@ class _TripMapScreenState extends State<TripMapScreen> {
       body: GoogleMap(
         initialCameraPosition: framing(points),
         markers: endMarkers(points),
-        polylines: {routeLine(points, satellite: _satellite)},
-        mapType: _satellite ? MapType.hybrid : MapType.normal,
+        polylines: {routeLine(points)},
+        style: mapStyle(context),
         onMapCreated: (c) => Future.delayed(const Duration(milliseconds: 350), () => c.animateCamera(CameraUpdate.newLatLngBounds(boundsOf(points), 64))),
         mapToolbarEnabled: false,
         myLocationButtonEnabled: false,
       ),
-      floatingActionButton: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
-        FloatingActionButton.small(heroTag: 'tripLayers', tooltip: context.t('map_type'), onPressed: () => setState(() => _satellite = !_satellite), child: Icon(_satellite ? Icons.map_outlined : Icons.layers_outlined)),
-        const SizedBox(height: 10),
-        FloatingActionButton.extended(onPressed: _navigate, icon: const Icon(Icons.navigation_outlined), label: Text(context.t('open_in_maps'))),
-      ]),
+      floatingActionButton: FloatingActionButton.extended(onPressed: _navigate, icon: const Icon(Icons.navigation_outlined), label: Text(context.t('open_in_maps'))),
     );
   }
 }
@@ -344,7 +334,8 @@ class MapSearchScreen extends StatefulWidget {
 class _MapSearchScreenState extends State<MapSearchScreen> {
   GoogleMapController? _map;
   final _cards = PageController(viewportFraction: 0.9);
-  final Map<String, BitmapDescriptor> _icons = {};
+  BitmapDescriptor? _car;
+  BitmapDescriptor? _carSelected;
   final Map<int, List<LatLng>> _routes = {};
 
   Place? _from;
@@ -356,7 +347,6 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   Object? _error;
   bool _dirty = false; // the map moved since the last search
   bool _programmatic = false;
-  static const _satellite = true; // satellite imagery is the map's look
   bool _located = false;
   String _sort = 'date';
   static const _seats = 1;
@@ -444,16 +434,13 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     }
   }
 
-  String _price(Trip t) => '${context.read<AppState>().config.currencySymbol} ${t.passengerPrice.round()}';
-
+  /// Draws the two car pictures once, and reads each ride's route from the list.
   Future<void> _makeIcons(List<Trip> trips) async {
     final ratio = MediaQuery.of(context).devicePixelRatio;
+    _car ??= await carMarker(selected: false, pixelRatio: ratio);
+    _carSelected ??= await carMarker(selected: true, pixelRatio: ratio);
     for (final t in trips) {
-      final label = _price(t);
-      for (final selected in [false, true]) {
-        final key = '$label|$selected';
-        if (!_icons.containsKey(key)) _icons[key] = await priceTag(label, selected: selected, pixelRatio: ratio);
-      }
+      _routes[t.id] = routePoints(polyline: t.polyline, startLat: t.startLat, startLng: t.startLng, endLat: t.endLat, endLng: t.endLng);
     }
   }
 
@@ -476,21 +463,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
     setState(() => _selected = index);
     if (animateCards && _cards.hasClients) _cards.animateToPage(index, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
     if (trip.startLat != null && trip.startLng != null) _move(CameraUpdate.newLatLng(LatLng(trip.startLat!, trip.startLng!)));
-    if (_routes.containsKey(trip.id)) {
-      _fitRoute(_routes[trip.id]!);
-      return;
-    }
-    try {
-      final detail = await context.read<AppState>().api.trip(trip.id);
-      final points = routePoints(polyline: detail.polyline, startLat: detail.startLat, startLng: detail.startLng, endLat: detail.endLat, endLng: detail.endLng);
-      _routes[trip.id] = points;
-      if (mounted && _selected == index) {
-        setState(() {});
-        _fitRoute(points);
-      }
-    } catch (_) {
-      // The pin still works; only the line is missing.
-    }
+    _fitRoute(_routes[trip.id] ?? const []);
   }
 
   void _fitRoute(List<LatLng> points) {
@@ -606,25 +579,36 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
   }
 
   // ---- map objects ----
+  // Each ride is a car at its starting point, turned to face the way it will drive.
   Set<Marker> get _markers => {
         for (var i = 0; i < _trips.length; i++)
           if (_trips[i].startLat != null && _trips[i].startLng != null)
             Marker(
               markerId: MarkerId('trip-${_trips[i].id}'),
               position: LatLng(_trips[i].startLat!, _trips[i].startLng!),
-              icon: _icons['${_price(_trips[i])}|${_selected == i}'] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-              zIndexInt: _selected == i ? 10 : 1,
+              icon: (_selected == i ? _carSelected : _car) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+              anchor: const Offset(0.5, 0.5),
+              flat: true,
+              rotation: _heading(_trips[i]),
+              zIndexInt: _selected == i ? 10 : 2,
               onTap: () => _select(i),
             ),
+        if (_selected != null && (_routes[_trips[_selected!].id]?.length ?? 0) >= 2)
+          Marker(markerId: const MarkerId('heading'), position: _routes[_trips[_selected!].id]!.last, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: InfoWindow(title: _trips[_selected!].endAddress)),
         if (_from != null) Marker(markerId: const MarkerId('from'), position: LatLng(_from!.lat, _from!.lng), icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), infoWindow: InfoWindow(title: context.t('from'), snippet: _from!.name)),
-        if (_to != null) Marker(markerId: const MarkerId('to'), position: LatLng(_to!.lat, _to!.lng), icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: InfoWindow(title: context.t('to'), snippet: _to!.name)),
+        if (_to != null && _selected == null) Marker(markerId: const MarkerId('to'), position: LatLng(_to!.lat, _to!.lng), icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: InfoWindow(title: context.t('to'), snippet: _to!.name)),
       };
 
-  Set<Polyline> get _lines {
-    final id = _selected == null ? null : _trips[_selected!].id;
-    final points = id == null ? null : _routes[id];
-    return {if (points != null && points.length >= 2) routeLine(points, satellite: _satellite)};
+  double _heading(Trip t) {
+    final points = _routes[t.id];
+    return points != null && points.length >= 2 ? bearing(points[0], points[1]) : 0;
   }
+
+  // Every ride's route is on the map; the selected one is drawn strong, the rest faint.
+  Set<Polyline> get _lines => {
+        for (var i = 0; i < _trips.length; i++)
+          if ((_routes[_trips[i].id]?.length ?? 0) >= 2) routeLine(_routes[_trips[i].id]!, id: 'route-${_trips[i].id}', faint: _selected != i, onTap: () => _select(i)),
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -637,7 +621,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
           onMapCreated: (c) => _map = c,
           markers: _markers,
           polylines: _lines,
-          mapType: _satellite ? MapType.hybrid : MapType.normal,
+          style: mapStyle(context),
           myLocationEnabled: _located,
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,

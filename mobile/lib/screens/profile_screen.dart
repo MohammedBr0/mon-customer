@@ -82,6 +82,29 @@ class ProfileTab extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.t('appearance'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'system', icon: const Icon(Icons.phone_android), label: Text(context.t('theme_system'))),
+                  ButtonSegment(value: 'light', icon: const Icon(Icons.light_mode_outlined), label: Text(context.t('theme_light'))),
+                  ButtonSegment(value: 'dark', icon: const Icon(Icons.dark_mode_outlined), label: Text(context.t('theme_dark'))),
+                ],
+                selected: {app.themeMode},
+                onSelectionChanged: (s) => app.setThemeMode(s.first),
+              ),
+            ),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 12),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.t('language'), style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             SegmentedButton<String>(

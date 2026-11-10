@@ -29,10 +29,6 @@
         span.chip.chip--pink
           span.fas.fa-lock<> aria-hidden='true'
           = Itinerary.human_attribute_name(:pink)
-      - if itinerary.city_commute?
-        span.chip
-          span.fas.fa-city<> aria-hidden='true'
-          = t('city.chip')
       - if itinerary.commute?
         span.chip
           span.fas.fa-rotate<> aria-hidden='true'

@@ -9,6 +9,8 @@ abstract class TokenStore {
   Future<void> saveLocale(String locale);
   Future<int?> readLastNotified();
   Future<void> saveLastNotified(int id);
+  Future<String?> readThemeMode();
+  Future<void> saveThemeMode(String mode);
   Future<bool> readPhoneAlerts();
   Future<void> savePhoneAlerts(bool on);
 }
@@ -31,6 +33,10 @@ class SecureTokenStore implements TokenStore {
   Future<int?> readLastNotified() async => int.tryParse(await _storage.read(key: 'last_notified') ?? '');
   @override
   Future<void> saveLastNotified(int id) => _storage.write(key: 'last_notified', value: '$id');
+  @override
+  Future<String?> readThemeMode() => _storage.read(key: 'theme_mode');
+  @override
+  Future<void> saveThemeMode(String mode) => _storage.write(key: 'theme_mode', value: mode);
   @override
   Future<bool> readPhoneAlerts() async => (await _storage.read(key: 'phone_alerts')) != 'off';
   @override
@@ -58,6 +64,11 @@ class MemoryTokenStore implements TokenStore {
   Future<int?> readLastNotified() async => lastNotified;
   @override
   Future<void> saveLastNotified(int id) async => lastNotified = id;
+  String? themeMode;
+  @override
+  Future<String?> readThemeMode() async => themeMode;
+  @override
+  Future<void> saveThemeMode(String mode) async => themeMode = mode;
   @override
   Future<bool> readPhoneAlerts() async => phoneAlerts;
   @override

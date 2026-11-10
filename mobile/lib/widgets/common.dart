@@ -241,7 +241,6 @@ class TripCard extends StatelessWidget {
                   Chip2(context.t('seats_left', {'available': trip.seatsAvailable, 'total': trip.seatsTotal}))
                 else
                   Chip2(context.t('seats_unlimited')),
-                if (trip.cityCommute) Chip2(context.t('city_chip'), icon: Icons.location_city),
                 if (trip.commute) Chip2(context.t('commute'), icon: Icons.repeat),
                 if (trip.pink) Chip2(context.t('women_only'), icon: Icons.lock_outline, tone: ChipTone.warn),
               ]),

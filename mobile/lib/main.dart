@@ -26,12 +26,18 @@ class IcareApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ChangeNotifierProvider<AppState>.value(
         value: state,
-        child: MaterialApp(
-          title: 'Arifway',
-          debugShowCheckedModeBanner: false,
-          theme: buildTheme(Brightness.light),
-          darkTheme: buildTheme(Brightness.dark),
-          home: const _Root(),
+        child: Builder(
+          builder: (context) {
+            final mode = context.select<AppState, String>((s) => s.themeMode);
+            return MaterialApp(
+              title: 'Arifway',
+              debugShowCheckedModeBanner: false,
+              theme: buildTheme(Brightness.light),
+              darkTheme: buildTheme(Brightness.dark),
+              themeMode: switch (mode) { 'light' => ThemeMode.light, 'dark' => ThemeMode.dark, _ => ThemeMode.system },
+              home: const _Root(),
+            );
+          },
         ),
       );
 }

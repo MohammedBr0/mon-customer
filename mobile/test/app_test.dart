@@ -145,6 +145,12 @@ void main() {
       expect(trip.endLng, 38.8);
     });
 
+    test('a car faces the way its ride is heading', () {
+      expect(bearing(const LatLng(9.0, 38.7), const LatLng(9.1, 38.7)), closeTo(0, 0.5)); // north
+      expect(bearing(const LatLng(9.0, 38.7), const LatLng(9.0, 38.8)), closeTo(90, 0.5)); // east
+      expect(bearing(const LatLng(9.0, 38.7), const LatLng(8.9, 38.7)), closeTo(180, 0.5)); // south
+    });
+
     test('distance between points, for sizing a search area', () {
       expect(distanceKm(const LatLng(9.03, 38.74), const LatLng(9.03, 38.74)), 0);
       expect(distanceKm(const LatLng(9.03, 38.74), const LatLng(9.03, 38.83)), closeTo(9.9, 0.3));
@@ -359,6 +365,25 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Post a ride'), findsOneWidget);
     expect(find.text('Where to?'), findsOneWidget);
     state.dispose();
+  });
+
+  testWidgets('light, dark or automatic appearance is remembered', (tester) async {
+    final store = MemoryTokenStore();
+    final state = _state((_) async => _json({}), store: store);
+    await tester.pumpWidget(IcareApp(state: state));
+    await state.start();
+    await tester.pumpAndSettle();
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+
+    await state.setThemeMode('dark');
+    await tester.pumpAndSettle();
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.dark);
+    expect(Theme.of(tester.element(find.byType(Scaffold).first)).brightness, Brightness.dark);
+    expect(store.themeMode, 'dark');
+
+    final again = _state((_) async => _json({}), store: store);
+    await again.start();
+    expect(again.themeMode, 'dark');
   });
 
   group('Api', () {

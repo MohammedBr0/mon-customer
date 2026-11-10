@@ -40,7 +40,7 @@ module ApiSerializer
     data = {
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title,
       start_address: itinerary.start_address, end_address: itinerary.end_address,
-      start_location: point(itinerary.start_location), end_location: point(itinerary.end_location),
+      start_location: point(itinerary.start_location), end_location: point(itinerary.end_location), overview_polyline: itinerary.overview_polyline,
       leave_date: itinerary.leave_date&.iso8601, return_date: itinerary.return_date&.iso8601,
       city: itinerary.city, city_commute: itinerary.city_commute?,
       commute: itinerary.commute?, commute_days: itinerary.commute_days, commute_until: itinerary.commute_until&.iso8601,
@@ -54,7 +54,7 @@ module ApiSerializer
     return data unless detail
 
     data.merge(
-      overview_polyline: itinerary.overview_polyline, distance_km: distance_km(itinerary), passengers: passengers(itinerary),
+      distance_km: distance_km(itinerary), passengers: passengers(itinerary),
       occurrence_dates: itinerary.occurrence_dates.map { |date| { date: date.iso8601, seats_available: itinerary.seats_available(date) } },
       bookable:         viewer.present? && itinerary.bookable_by?(viewer),
       my_booking:       booking && booking(booking, viewer:),

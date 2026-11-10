@@ -26,7 +26,6 @@ class _OfferScreenState extends State<OfferScreen> {
   final _description = TextEditingController();
   Place? _from;
   Place? _to;
-  String? _city; // set when the trip stays inside one city
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _time = const TimeOfDay(hour: 7, minute: 0);
   int _seats = 3;
@@ -46,7 +45,7 @@ class _OfferScreenState extends State<OfferScreen> {
   Future<void> _loadPreview() async {
     final from = _from, to = _to;
     final mine = ++_previewSerial;
-    if (_city != null || from == null || to == null || from.key == to.key) {
+    if (from == null || to == null || from.key == to.key) {
       setState(() => _preview = null);
       return;
     }
@@ -100,7 +99,6 @@ class _OfferScreenState extends State<OfferScreen> {
     setState(() => _busy = true);
     try {
       final trip = await app.api.createTrip({
-        if (_city != null) 'city': _city,
         'start': {'key': _from!.key},
         'end': {'key': _to!.key},
         'leave_date': _leaveUtc.toIso8601String(),
@@ -154,39 +152,6 @@ class _OfferScreenState extends State<OfferScreen> {
                 ),
               ]),
             ),
-          if (config.cities.isNotEmpty) ...[
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              segments: [ButtonSegment(value: false, label: Text(context.t('mode_towns'))), ButtonSegment(value: true, label: Text(context.t('mode_city')))],
-              selected: {_city != null},
-              onSelectionChanged: (s) => setState(() {
-                _from = null;
-                _to = null;
-                _preview = null;
-                _city = s.first ? config.cities.first.key : null;
-              }),
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (_city != null) ...[
-            if (config.cities.length > 1) ...[
-              DropdownButtonFormField<String>(
-                initialValue: _city,
-                decoration: InputDecoration(labelText: context.t('city')),
-                items: [for (final c in config.cities) DropdownMenuItem(value: c.key, child: Text(c.place.label(locale)))],
-                onChanged: (v) => setState(() {
-                  _city = v;
-                  _from = null;
-                  _to = null;
-                }),
-              ),
-              const SizedBox(height: 12),
-            ],
-            PlaceField(label: context.t('from_area'), value: _from, places: config.cities.firstWhere((c) => c.key == _city).areas, placeholder: context.t('pick_area'), onChanged: (p) => setState(() => _from = p)),
-            const SizedBox(height: 12),
-            PlaceField(label: context.t('to_area'), value: _to, places: config.cities.firstWhere((c) => c.key == _city).areas, placeholder: context.t('pick_area'), icon: Icons.place_outlined, onChanged: (p) => setState(() => _to = p)),
-            Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(context.t('area_note'), style: Theme.of(context).textTheme.bodySmall)),
-          ] else ...[
             PlaceField(label: context.t('from'), value: _from, onChanged: (p) {
               setState(() => _from = p);
               _loadPreview();
@@ -207,7 +172,6 @@ class _OfferScreenState extends State<OfferScreen> {
                 ]);
               }),
             ],
-          ],
           if (_placeError != null) Padding(padding: const EdgeInsets.only(top: 6, left: 4), child: Text(_placeError!, style: TextStyle(color: scheme.error, fontSize: 12))),
           const SizedBox(height: 12),
           Row(children: [

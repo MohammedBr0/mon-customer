@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../core/polyline.dart';
 import 'common.dart';
+import 'map_style.dart';
 
 /// The line a trip drives, as map points. Falls back to a straight line between the two ends.
 List<LatLng> routePoints({String? polyline, double? startLat, double? startLng, double? endLat, double? endLng}) {
@@ -41,10 +42,19 @@ Set<Marker> endMarkers(List<LatLng> points) => {
       Marker(markerId: const MarkerId('b'), position: points.last, icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed), infoWindow: const InfoWindow(title: 'B')),
     };
 
-/// Satellite is the default map look, so the route is drawn in a bright yellow that stands out on imagery.
-const satelliteRouteColor = Color(0xFFFFD54F);
-
-Polyline routeLine(List<LatLng> points, {bool satellite = true}) => Polyline(polylineId: const PolylineId('route'), points: points, color: satellite ? satelliteRouteColor : brand, width: satellite ? 6 : 5, jointType: JointType.round, startCap: Cap.roundCap, endCap: Cap.roundCap);
+/// The line a ride drives. Rides that are not the selected one are drawn fainter.
+Polyline routeLine(List<LatLng> points, {String id = 'route', bool faint = false, VoidCallback? onTap}) => Polyline(
+      polylineId: PolylineId(id),
+      points: points,
+      color: faint ? brand.withValues(alpha: 0.35) : brand,
+      width: faint ? 4 : 6,
+      zIndex: faint ? 1 : 5,
+      jointType: JointType.round,
+      startCap: Cap.roundCap,
+      endCap: Cap.roundCap,
+      consumeTapEvents: onTap != null,
+      onTap: onTap,
+    );
 
 /// A small, non-interactive map of a route (lite mode), for cards. Tap it to open something bigger.
 class RouteMap extends StatelessWidget {
@@ -66,7 +76,7 @@ class RouteMap extends StatelessWidget {
             markers: endMarkers(points),
             polylines: {routeLine(points)},
             liteModeEnabled: true,
-            mapType: MapType.hybrid,
+            style: mapStyle(context),
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             myLocationButtonEnabled: false,
