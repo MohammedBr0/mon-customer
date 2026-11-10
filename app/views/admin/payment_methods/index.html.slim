@@ -1,0 +1,30 @@
+- title t('payments.admin_title')
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  .d-flex.justify-content-between.align-items-center.flex-wrap.gap-2
+    h1.page-title.mb-0 = yield :title
+    = link_to new_admin_payment_method_path, class: 'btn btn-primary' do
+      span.fas.fa-plus aria-hidden='true'
+      = t('payments.add')
+  p.text-body-secondary.mt-2 = t('payments.admin_intro')
+  - if @methods.empty?
+    .surface.empty = t('payments.none')
+  - else
+    .stack
+      - @methods.each do |method|
+        .surface class=('opacity-50' unless method.active?)
+          .row-card
+            .row-card__main
+              span.row-card__title
+                = method.name
+                - if method.name_am.present?
+                  small.text-body-secondary< = method.name_am
+              .d-flex.flex-wrap.gap-2.mt-1
+                span.chip.chip--muted = method.needs_account? ? method.account_label : t('payments.no_account')
+                span.chip.chip--muted = t('payments.drivers_count', count: method.driver_payment_methods.count)
+                - unless method.active?
+                  span.chip.chip--danger = t('admin_extra.inactive')
+            .row-card__actions
+              = link_to t('helpers.links.edit'), edit_admin_payment_method_path(method), class: 'btn btn-outline-primary btn-sm'
+              = button_to t('helpers.links.destroy'), admin_payment_method_path(method), method: :delete, class: 'btn btn-outline-danger btn-sm', data: { confirm: t('payments.delete_confirm') }

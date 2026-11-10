@@ -1,0 +1,22 @@
+am-ET:
+  payments:
+    admin_title: የክፍያ መንገዶች
+  identity:
+    admin_title: የማንነት ማረጋገጫ
+    kinds:
+      driver_license: መንጃ ፈቃድ
+      national_id: ብሔራዊ መታወቂያ
+    statuses:
+      pending: በመጠባበቅ ላይ
+      approved: ጸድቋል
+      rejected: ተቀባይነት አላገኘም
+      missing: አልተላከም
+  api:
+    identity_image: የሰነዱን ፎቶ ያያይዙ
+  notifications:
+    identity_approved:
+      title: ሰነድ ጸድቋል
+      body: "የእርስዎ %{document} ጸድቋል"
+    identity_rejected:
+      title: ሰነድ ተቀባይነት አላገኘም
+      body: "የእርስዎ %{document} ተቀባይነት አላገኘም፦ %{reason}"

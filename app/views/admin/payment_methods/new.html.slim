@@ -1,0 +1,5 @@
+- title t('payments.new')
+.container
+  == render 'admin/nav'
+  h1.page-title = yield :title
+  == render 'form', method: @method

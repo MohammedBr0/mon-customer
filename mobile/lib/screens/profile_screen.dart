@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import '../widgets/paged_trips.dart';
 import 'alerts_screen.dart';
+import 'driver_setup_screens.dart';
 import 'home_shell.dart';
 import 'trip_screen.dart';
 
@@ -66,6 +67,8 @@ class ProfileTab extends StatelessWidget {
       _Tile(Icons.edit_outlined, context.t('profile'), () => push(const ProfileFormScreen())),
       if (user.appMode == 'driver') ...[
         _Tile(Icons.directions_car_outlined, context.t('vehicle_details'), () => push(const VehicleScreen()), warn: !user.vehicleComplete),
+        _Tile(Icons.account_balance_wallet_outlined, context.t('payment_methods'), () => push(const PaymentMethodsScreen()), warn: user.payments.isEmpty),
+        _Tile(Icons.verified_user_outlined, context.t('identity_title'), () => push(const IdentityScreen()), warn: !user.verified),
         _Tile(Icons.route_outlined, context.t('my_trips'), () => push(const MyTripsScreen())),
       ],
       _Tile(Icons.notifications_outlined, context.t('alerts_title'), () => push(const AlertsScreen())),

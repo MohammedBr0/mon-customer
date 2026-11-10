@@ -425,6 +425,49 @@ void main() {
     expect(again.themeMode, 'dark');
   });
 
+  group('payments and identity', () {
+    test('config lists the admins\' payment methods; a profile carries the driver\'s choices and document status', () {
+      final config = AppConfig.fromJson({'payment_methods': [{'id': 1, 'name': 'Cash', 'needs_account': false}, {'id': 2, 'name': 'Telebirr', 'account_label': 'Telebirr number', 'needs_account': true}]});
+      expect(config.paymentMethods.map((m) => m.name), ['Cash', 'Telebirr']);
+      expect(config.paymentMethods.last.needsAccount, isTrue);
+
+      final profile = Profile.fromJson({..._profile, 'payment_methods': [{'id': 2, 'name': 'Telebirr', 'account_number': '0911223344'}],
+        'identity': [{'kind': 'driver_license', 'status': 'rejected', 'rejection_reason': 'Blurred'}, {'kind': 'national_id', 'status': 'missing'}]});
+      expect(profile.payments.single.accountNumber, '0911223344');
+      expect(profile.identity.first.rejectionReason, 'Blurred');
+      expect(Profile.fromJson(_profile).identity, isEmpty);
+    });
+
+    test('a trip shows what the driver accepts, with or without the account', () {
+      final trip = Trip.fromJson({'id': 1, 'driver': _profile, 'payment_methods': [{'id': 1, 'name': 'Cash'}, {'id': 2, 'name': 'Telebirr'}]});
+      expect(trip.payments.map((p) => p.name), ['Cash', 'Telebirr']);
+      expect(trip.payments.last.accountNumber, isNull);
+    });
+
+    test('saving payment methods and sending a document call the server', () async {
+      final seen = <String, http.BaseRequest>{};
+      final api = Api(client: MockClient.streaming((request, body) async {
+        seen[request.url.path] = request;
+        final bytes = await body.toBytes();
+        if (request.url.path.endsWith('/me/payment_methods')) {
+          expect(jsonDecode(utf8.decode(bytes))['methods'], [{'id': 2, 'account_name': 'Dawit', 'account_number': '0911223344'}]);
+        } else {
+          final text = String.fromCharCodes(bytes);
+          expect(text, contains('name="kind"'));
+          expect(text, contains('national_id'));
+          expect(text, contains('filename="id.jpg"'));
+          expect(request.headers['content-type'], startsWith('multipart/form-data'));
+          expect(request.headers['Authorization'], 'Bearer tok');
+        }
+        return http.StreamedResponse(Stream.value(utf8.encode(jsonEncode({'user': _profile}))), 200, headers: {'content-type': 'application/json'});
+      }), base: 'https://x.test')
+        ..token = 'tok';
+      await api.savePaymentMethods(const [DriverPayment(id: 2, name: 'Telebirr', accountName: 'Dawit', accountNumber: '0911223344')]);
+      await api.submitIdentity(kind: 'national_id', number: 'ET-1', imageBytes: [1, 2, 3], filename: 'id.jpg');
+      expect(seen.keys, containsAll(['/api/v1/me/payment_methods', '/api/v1/me/identity']));
+    });
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;

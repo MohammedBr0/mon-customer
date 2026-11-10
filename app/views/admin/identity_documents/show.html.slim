@@ -1,0 +1,40 @@
+- title t("identity.kinds.#{@document.kind}")
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  .row.g-3
+    .col-md-7
+      .surface
+        = link_to image_admin_identity_document_path(@document), target: '_blank', rel: 'noopener' do
+          = image_tag image_admin_identity_document_path(@document), class: 'img-fluid rounded', alt: t("identity.kinds.#{@document.kind}")
+    .col-md-5
+      .surface.stack
+        dl.facts.mb-0
+          .fact.fact--wide
+            dt = t('identity.person')
+            dd = link_to @document.user, admin_user_path(@document.user)
+          .fact.fact--wide
+            dt = t('identity.number')
+            dd = @document.number
+          .fact
+            dt = t('identity.status')
+            dd = t("identity.statuses.#{@document.status}")
+          .fact
+            dt = t('identity.sent')
+            dd = l(@document.updated_at.in_time_zone, format: :short)
+          - if @document.user.phone.present?
+            .fact.fact--wide
+              dt = User.human_attribute_name(:phone)
+              dd = @document.user.phone
+        - unless @document.approved?
+          = button_to approve_admin_identity_document_path(@document), method: :patch, class: 'btn btn-primary btn-lg w-100' do
+            span.fas.fa-check<> aria-hidden='true'
+            = t('identity.approve')
+        = form_with url: reject_admin_identity_document_path(@document), method: :patch, local: true, class: 'stack' do
+          = label_tag :reason, t('identity.reason'), class: 'form-label'
+          = text_field_tag :reason, @document.rejection_reason, class: 'form-control', maxlength: 200, required: true, placeholder: t('identity.reason_hint')
+          = button_tag type: 'submit', class: 'btn btn-outline-danger w-100' do
+            span.fas.fa-xmark<> aria-hidden='true'
+            = t('identity.reject')
+        = link_to t('helpers.links.back'), admin_identity_documents_path, class: 'btn btn-outline-secondary w-100'

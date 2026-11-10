@@ -202,6 +202,33 @@ class _TripScreenState extends State<TripScreen> {
           ]),
         ),
       ),
+      if (trip.payments.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.t('pay_with').toUpperCase(), style: TextStyle(fontSize: 11, letterSpacing: 0.6, fontWeight: FontWeight.w700, color: scheme.onSurfaceVariant)),
+              const SizedBox(height: 10),
+              for (final p in trip.payments)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Icon(Icons.account_balance_wallet_outlined, size: 20, color: scheme.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(p.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        if ((p.accountNumber ?? '').isNotEmpty) SelectableText([p.accountNumber!, if ((p.accountName ?? '').isNotEmpty) p.accountName!].join(' · '), style: TextStyle(color: scheme.onSurfaceVariant)),
+                      ]),
+                    ),
+                  ]),
+                ),
+              if (!mine && trip.payments.every((p) => (p.accountNumber ?? '').isEmpty) && trip.myBooking?.status != 'confirmed') Text(context.t('pay_details_after_confirm'), style: Theme.of(context).textTheme.bodySmall),
+            ]),
+          ),
+        ),
+      ],
       if (trip.passengers.isNotEmpty) ...[
         const SizedBox(height: 12),
         Card(

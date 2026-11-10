@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../models/models.dart';
 import 'config.dart';
@@ -48,9 +49,13 @@ class Api {
   Future<Map<String, dynamic>> _send(String method, String path, {Map<String, dynamic>? query, Object? body}) async {
     final request = http.Request(method, _uri(path, query))..headers.addAll(_headers);
     if (body != null) request.body = jsonEncode(body);
+    return _run(request, const Duration(seconds: 25));
+  }
+
+  Future<Map<String, dynamic>> _run(http.BaseRequest request, Duration limit) async {
     http.Response response;
     try {
-      response = await http.Response.fromStream(await _client.send(request).timeout(const Duration(seconds: 25)));
+      response = await http.Response.fromStream(await _client.send(request).timeout(limit));
     } on TimeoutException {
       throw ApiException('timeout', code: 'timeout');
     } on http.ClientException {
@@ -229,5 +234,28 @@ class Api {
   Future<RoutePreview> routePreview(Place from, Place to) async {
     final data = await _send('GET', '/maps/route', query: {'from': '${from.lat},${from.lng}', 'to': '${to.lat},${to.lng}'});
     return RoutePreview.fromJson(Map<String, dynamic>.from(data['route'] as Map));
+  }
+
+  // ---- payment methods and identity ----
+  /// Replaces the payment methods this driver accepts.
+  Future<Profile> savePaymentMethods(List<DriverPayment> methods) async {
+    final data = await _send('PUT', '/me/payment_methods', body: {
+      'methods': [for (final m in methods) {'id': m.id, 'account_name': m.accountName, 'account_number': m.accountNumber}],
+    });
+    return Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map));
+  }
+
+  /// Sends a photo of a driving licence or national ID to be checked by staff.
+  Future<Profile> submitIdentity({required String kind, required String number, required List<int> imageBytes, required String filename}) async {
+    final lower = filename.toLowerCase();
+    final type = lower.endsWith('.png') ? 'png' : (lower.endsWith('.webp') ? 'webp' : 'jpeg');
+    final headers = Map<String, String>.from(_headers)..remove('Content-Type');
+    final request = http.MultipartRequest('POST', _uri('/me/identity', null))
+      ..headers.addAll(headers)
+      ..fields['kind'] = kind
+      ..fields['number'] = number
+      ..files.add(http.MultipartFile.fromBytes('image', imageBytes, filename: filename, contentType: MediaType('image', type)));
+    final data = await _run(request, const Duration(seconds: 90));
+    return Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map));
   }
 }

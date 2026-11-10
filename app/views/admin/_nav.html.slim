@@ -1,8 +1,8 @@
 / Tab strip shared by the staff pages. Super-admin-only areas are hidden from moderators.
-- items = [[:dashboard, admin_root_path, 'admin_extra.dashboard', false], [:users, admin_users_path, 'admin_extra.users', false], [:reports, admin_reports_path, 'admin_extra.reports', false],
+- items = [[:dashboard, admin_root_path, 'admin_extra.dashboard', false], [:users, admin_users_path, 'admin_extra.users', false], [:reports, admin_reports_path, 'admin_extra.reports', false], [:identity_documents, admin_identity_documents_path, 'identity.admin_title', false],
            [:bookings, admin_bookings_path, 'admin_extra.bookings', false], [:itineraries, admin_itineraries_path, 'admin_extra.itineraries', false], [:reviews, admin_reviews_path, 'admin_extra.reviews', false],
            [:settings, admin_settings_path, 'admin_extra.platform_settings', true], [:vehicle_fields, admin_vehicle_fields_path, 'admin_extra.vehicle_fields', true],
-           [:popular_routes, admin_popular_routes_path, 'admin_extra.popular_routes', true], [:audit_logs, admin_audit_logs_path, 'admin_extra.audit_log', true]]
+           [:payment_methods, admin_payment_methods_path, 'payments.admin_title', true], [:popular_routes, admin_popular_routes_path, 'admin_extra.popular_routes', true], [:audit_logs, admin_audit_logs_path, 'admin_extra.audit_log', true]]
 nav.admin-tabs aria-label=t('admin_extra.dashboard')
   - items.each do |key, path, label, super_only|
     - next if super_only && !current_user.super_admin?

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -80,6 +80,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
     t.index ["sender_id"], name: "index_conversations_on_sender_id"
   end
 
+  create_table "driver_payment_methods", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "payment_method_id", null: false
+    t.string "account_name"
+    t.string "account_number"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_method_id"], name: "index_driver_payment_methods_on_payment_method_id"
+    t.index ["user_id", "payment_method_id"], name: "index_driver_payment_methods_on_user_id_and_payment_method_id", unique: true
+    t.index ["user_id"], name: "index_driver_payment_methods_on_user_id"
+  end
+
   create_table "feedbacks", force: :cascade do |t|
     t.string "category", default: "bug"
     t.text "message"
@@ -89,6 +101,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
     t.datetime "created_at", precision: nil, null: false
     t.datetime "updated_at", precision: nil, null: false
     t.index ["user_id"], name: "index_feedbacks_on_user_id"
+  end
+
+  create_table "identity_documents", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "kind", null: false
+    t.string "number"
+    t.binary "image", null: false
+    t.string "content_type", null: false
+    t.string "status", default: "pending", null: false
+    t.string "rejection_reason"
+    t.bigint "reviewed_by_id"
+    t.datetime "reviewed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reviewed_by_id"], name: "index_identity_documents_on_reviewed_by_id"
+    t.index ["status"], name: "index_identity_documents_on_status"
+    t.index ["user_id", "kind"], name: "index_identity_documents_on_user_id_and_kind", unique: true
+    t.index ["user_id"], name: "index_identity_documents_on_user_id"
   end
 
   create_table "itineraries", force: :cascade do |t|
@@ -152,6 +182,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
     t.index ["user_id", "id"], name: "index_notifications_on_user_id_and_id"
     t.index ["user_id", "read_at"], name: "index_notifications_on_user_id_and_read_at"
     t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "payment_methods", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "name_am"
+    t.string "account_label"
+    t.boolean "active", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "phone_verifications", force: :cascade do |t|
@@ -297,7 +337,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
   add_foreign_key "bookings", "itineraries"
   add_foreign_key "bookings", "users", column: "cancelled_by_id"
   add_foreign_key "bookings", "users", column: "passenger_id"
+  add_foreign_key "driver_payment_methods", "payment_methods", on_delete: :cascade
+  add_foreign_key "driver_payment_methods", "users", on_delete: :cascade
   add_foreign_key "feedbacks", "users"
+  add_foreign_key "identity_documents", "users", column: "reviewed_by_id", on_delete: :nullify
+  add_foreign_key "identity_documents", "users", on_delete: :cascade
   add_foreign_key "itineraries", "users"
   add_foreign_key "notifications", "users", on_delete: :cascade
   add_foreign_key "reports", "users", column: "reporter_id"

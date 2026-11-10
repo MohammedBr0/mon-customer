@@ -55,7 +55,10 @@ Rails.application.routes.draw do
       post 'auth/sign_up', to: 'auth#sign_up'
       post 'auth/send_code', to: 'auth#send_code'
       delete 'auth/sign_out', to: 'auth#sign_out'
-      resource :me, only: %i[show update destroy], controller: :me
+      resource :me, only: %i[show update destroy], controller: :me do
+        put :payment_methods
+        post :identity
+      end
       resources :itineraries, only: %i[index show create update] do
         get :mine, on: :collection
         patch :cancel, on: :member
@@ -91,6 +94,12 @@ Rails.application.routes.draw do
     resource :settings, only: %i[show update]
     resources :vehicle_fields, except: :show do
       patch :move, on: :member
+    end
+    resources :payment_methods, except: :show
+    resources :identity_documents, only: %i[index show] do
+      get :image, on: :member
+      patch :approve, on: :member
+      patch :reject, on: :member
     end
     resources :popular_routes, except: :show do
       patch :move, on: :member

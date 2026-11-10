@@ -92,7 +92,11 @@ class AppConfig {
     this.places = const [],
     this.cities = const [],
     this.phoneVerification = false,
+    this.paymentMethods = const [],
   });
+
+  /// The payment methods the admins allow; drivers pick from these.
+  final List<PaymentOption> paymentMethods;
 
   /// The server texts a code to confirm a phone number before creating the account.
   final bool phoneVerification;
@@ -138,6 +142,7 @@ class AppConfig {
       places: _list(j['places'], Place.fromJson),
       cities: _list(j['cities'], City.fromJson),
       phoneVerification: j['phone_verification'] == true,
+      paymentMethods: _list(j['payment_methods'], PaymentOption.fromJson),
     );
   }
 
@@ -177,7 +182,11 @@ class Profile {
     this.vehicle = const [],
     this.appMode = 'passenger',
     this.phoneAccount = false,
+    this.payments = const [],
+    this.identity = const [],
   });
+  final List<DriverPayment> payments; // the payment methods this person accepts as a driver
+  final List<IdentityDoc> identity;
   final String appMode; // passenger | driver
   final bool phoneAccount;
   final int id;
@@ -219,6 +228,8 @@ class Profile {
         role: j['role'] as String? ?? 'user',
         appMode: j['app_mode'] == 'driver' ? 'driver' : 'passenger',
         phoneAccount: j['phone_account'] == true,
+        payments: _list(j['payment_methods'], DriverPayment.fromJson),
+        identity: _list(j['identity'], IdentityDoc.fromJson),
         vehicle: [
           for (final v in (j['vehicle'] as List? ?? const [])) (label: '${(v as Map)['label']}', value: '${v['value']}'),
         ],
@@ -344,6 +355,7 @@ class Trip {
     this.polyline,
     this.distanceKm,
     this.passengers = const [],
+    this.payments = const [],
     this.startLat,
     this.startLng,
     this.endLat,
@@ -351,6 +363,7 @@ class Trip {
   });
   final String? polyline;
   final double? distanceKm;
+  final List<DriverPayment> payments; // what the driver accepts; account details only once a seat is confirmed
   final List<({String firstName, String? image, int seats})> passengers;
   final double? startLat;
   final double? startLng;
@@ -416,6 +429,7 @@ class Trip {
         city: j['city'] as String?,
         polyline: j['overview_polyline'] as String?,
         distanceKm: j['distance_km'] is num ? (j['distance_km'] as num).toDouble() : null,
+        payments: _list(j['payment_methods'], DriverPayment.fromJson),
         passengers: [
           for (final p in (j['passengers'] as List? ?? const []))
             (firstName: '${(p as Map)['first_name'] ?? ''}', image: p['image'] as String?, seats: _i(p['seats']) ?? 1),
@@ -512,4 +526,40 @@ class RoutePreview {
 
   factory RoutePreview.fromJson(Map<String, dynamic> j) =>
       RoutePreview(distanceText: j['distance_text'] as String? ?? '', durationText: j['duration_text'] as String? ?? '', polyline: j['overview_polyline'] as String? ?? '');
+}
+
+/// A payment method the admins offer (cash, Telebirr, a bank...).
+class PaymentOption {
+  const PaymentOption({required this.id, required this.name, this.accountLabel, this.needsAccount = false});
+  final int id;
+  final String name;
+  final String? accountLabel;
+  final bool needsAccount;
+
+  factory PaymentOption.fromJson(Map<String, dynamic> j) =>
+      PaymentOption(id: _i(j['id']) ?? 0, name: j['name'] as String? ?? '', accountLabel: j['account_label'] as String?, needsAccount: j['needs_account'] == true);
+}
+
+/// A payment method a driver accepts, with the account to pay into when it is visible to the viewer.
+class DriverPayment {
+  const DriverPayment({required this.id, required this.name, this.accountName, this.accountNumber});
+  final int id;
+  final String name;
+  final String? accountName;
+  final String? accountNumber;
+
+  factory DriverPayment.fromJson(Map<String, dynamic> j) =>
+      DriverPayment(id: _i(j['id']) ?? 0, name: j['name'] as String? ?? '', accountName: j['account_name'] as String?, accountNumber: j['account_number'] as String?);
+}
+
+/// Where one identity document stands: missing, pending, approved or rejected.
+class IdentityDoc {
+  const IdentityDoc({required this.kind, required this.status, this.number, this.rejectionReason});
+  final String kind; // driver_license | national_id
+  final String status;
+  final String? number;
+  final String? rejectionReason;
+
+  factory IdentityDoc.fromJson(Map<String, dynamic> j) =>
+      IdentityDoc(kind: j['kind'] as String? ?? '', status: j['status'] as String? ?? 'missing', number: j['number'] as String?, rejectionReason: j['rejection_reason'] as String?);
 }

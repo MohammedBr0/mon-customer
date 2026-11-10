@@ -4,7 +4,7 @@
 # the ids and names involved; the wording is built when it is read, so it follows the reader's language.
 class Notification < ApplicationRecord
   KINDS = %w[booking_requested booking_confirmed booking_declined booking_cancelled date_skipped itinerary_cancelled
-             new_message review_received alert_match].freeze
+             new_message review_received alert_match identity_approved identity_rejected].freeze
 
   belongs_to :user
 
@@ -32,6 +32,8 @@ class Notification < ApplicationRecord
   end
 
   def body
-    I18n.t("notifications.#{kind}.body", **data.symbolize_keys.transform_values(&:to_s), default: '')
+    values = data.symbolize_keys.transform_values(&:to_s)
+    values[:document] = I18n.t("identity.kinds.#{values[:document]}", default: values[:document]) if values[:document]
+    I18n.t("notifications.#{kind}.body", **values, default: '')
   end
 end

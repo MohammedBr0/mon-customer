@@ -1,0 +1,23 @@
+= form_with model: method, url: (method.persisted? ? admin_payment_method_path(method) : admin_payment_methods_path), scope: :payment_method, class: 'surface stack' do |f|
+  - if method.errors.any?
+    .alert.alert-danger
+      ul.mb-0
+        - method.errors.full_messages.each do |message|
+          li = message
+  div
+    = f.label :name, t('payments.name'), class: 'form-label'
+    = f.text_field :name, class: 'form-control', maxlength: 40, required: true
+  div
+    = f.label :name_am, t('payments.name_am'), class: 'form-label'
+    = f.text_field :name_am, class: 'form-control', maxlength: 60
+  div
+    = f.label :account_label, t('payments.account_label'), class: 'form-label'
+    = f.text_field :account_label, class: 'form-control', maxlength: 60
+    p.form-text = t('payments.account_label_hint')
+  .form-check
+    = f.check_box :active, class: 'form-check-input'
+    = f.label :active, t('admin_extra.active_field'), class: 'form-check-label'
+  .d-flex.gap-2
+    = f.button class: 'btn btn-primary btn-lg flex-grow-1' do
+      = t('save')
+    = link_to t('helpers.links.back'), admin_payment_methods_path, class: 'btn btn-outline-secondary btn-lg'

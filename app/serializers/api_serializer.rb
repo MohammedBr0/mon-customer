@@ -27,7 +27,7 @@ module ApiSerializer
 
   def me(user)
     user(user).merge(
-      email: (user.email unless user.phone_account?), phone_account: user.phone_account?, app_mode: user.app_mode, phone_verified: user.phone_verified_at.present?, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
+      email: (user.email unless user.phone_account?), phone_account: user.phone_account?, app_mode: user.app_mode, identity: identity(user), payment_methods: driver_payment_methods(user, confirmed: true), phone_verified: user.phone_verified_at.present?, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
       vehicle_avg_consumption: user.vehicle_avg_consumption.to_f, vehicle_data: user.vehicle_data, vehicle_complete: user.vehicle_complete?,
       missing_vehicle_fields: user.missing_vehicle_fields.map(&:key), gender: user.gender, role: user.role_name, staff: user.staff?
     )
@@ -54,7 +54,7 @@ module ApiSerializer
     return data unless detail
 
     data.merge(
-      distance_km: distance_km(itinerary), passengers: passengers(itinerary),
+      distance_km: distance_km(itinerary), passengers: passengers(itinerary), payment_methods: driver_payment_methods(driver, confirmed:),
       occurrence_dates: itinerary.occurrence_dates.map { |date| { date: date.iso8601, seats_available: itinerary.seats_available(date) } },
       bookable:         viewer.present? && itinerary.bookable_by?(viewer),
       my_booking:       booking && booking(booking, viewer:),
@@ -82,6 +82,27 @@ module ApiSerializer
       },
       reviewed: viewer ? booking.reviewed_by?(viewer) : nil
     }
+  end
+
+  def payment_method(method)
+    { id: method.id, name: method.label, account_label: method.account_label, needs_account: method.needs_account? }
+  end
+
+  # What a driver accepts. The account to pay into is only shown to the driver and to passengers with a confirmed seat.
+  def driver_payment_methods(driver, confirmed:)
+    driver.driver_payment_methods.includes(:payment_method).select { |entry| entry.payment_method.active? }.sort_by { |entry| entry.payment_method.position }.map do |entry|
+      data = { id: entry.payment_method_id, name: entry.payment_method.label }
+      data.merge!(account_name: entry.account_name, account_number: entry.account_number) if confirmed
+      data
+    end
+  end
+
+  def identity(user)
+    documents = user.identity_documents.without_image.index_by(&:kind)
+    IdentityDocument::KINDS.map do |kind|
+      document = documents[kind]
+      { kind:, status: document&.status || 'missing', number: document&.number, rejection_reason: document&.rejection_reason, submitted_at: document&.updated_at&.iso8601 }
+    end
   end
 
   # Length of the drive along its route, in km.

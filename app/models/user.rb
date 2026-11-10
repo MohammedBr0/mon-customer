@@ -21,6 +21,8 @@ class User < ApplicationRecord
   has_many :ride_alerts, dependent: :destroy
   has_many :api_tokens, dependent: :destroy
   has_many :notifications, dependent: :delete_all
+  has_many :driver_payment_methods, dependent: :destroy
+  has_many :identity_documents, dependent: :destroy
   has_many :reports_made, class_name: 'Report', foreign_key: :reporter_id, inverse_of: :reporter, dependent: :destroy
   belongs_to :verified_by, class_name: 'User', optional: true
   has_many :bookings, foreign_key: :passenger_id, inverse_of: :passenger, dependent: :destroy

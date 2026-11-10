@@ -1,0 +1,31 @@
+- title t('identity.admin_title')
+.container
+  == render 'admin/nav'
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  p.text-body-secondary = t('identity.admin_intro')
+  .d-flex.flex-wrap.gap-2.mb-3
+    - IdentityDocument::STATUSES.each do |status|
+      = link_to admin_identity_documents_path(status: status), class: ['btn', 'btn-sm', (@status == status ? 'btn-primary' : 'btn-outline-secondary')] do
+        = t("identity.statuses.#{status}")
+        - if status == 'pending' && @pending_count.positive?
+          span.badge.text-bg-light.ms-1 = @pending_count
+  - if @documents.empty?
+    .surface.empty = t('identity.none')
+  - else
+    .stack
+      - @documents.each do |document|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title
+                = link_to document.user, admin_user_path(document.user)
+              .d-flex.flex-wrap.gap-2.mt-1
+                span.chip = t("identity.kinds.#{document.kind}")
+                span.chip.chip--muted = document.number
+                span.chip.chip--muted = l(document.updated_at.in_time_zone, format: :short)
+                - if document.rejected? && document.rejection_reason.present?
+                  span.chip.chip--danger = document.rejection_reason
+            .row-card__actions
+              = link_to t('identity.review'), admin_identity_document_path(document), class: 'btn btn-primary btn-sm'
+    == paginate @documents
