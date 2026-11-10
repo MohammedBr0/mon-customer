@@ -334,8 +334,7 @@ class MapSearchScreen extends StatefulWidget {
 class _MapSearchScreenState extends State<MapSearchScreen> {
   GoogleMapController? _map;
   final _cards = PageController(viewportFraction: 0.9);
-  BitmapDescriptor? _car;
-  BitmapDescriptor? _carSelected;
+  CarIcons? _cars;
   final Map<int, List<LatLng>> _routes = {};
 
   Place? _from;
@@ -436,9 +435,7 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
 
   /// Draws the two car pictures once, and reads each ride's route from the list.
   Future<void> _makeIcons(List<Trip> trips) async {
-    final ratio = MediaQuery.of(context).devicePixelRatio;
-    _car ??= await carMarker(selected: false, pixelRatio: ratio);
-    _carSelected ??= await carMarker(selected: true, pixelRatio: ratio);
+    _cars ??= await CarIcons.load(context);
     for (final t in trips) {
       _routes[t.id] = routePoints(polyline: t.polyline, startLat: t.startLat, startLng: t.startLng, endLat: t.endLat, endLng: t.endLng);
     }
@@ -586,10 +583,8 @@ class _MapSearchScreenState extends State<MapSearchScreen> {
             Marker(
               markerId: MarkerId('trip-${_trips[i].id}'),
               position: LatLng(_trips[i].startLat!, _trips[i].startLng!),
-              icon: (_selected == i ? _carSelected : _car) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-              anchor: const Offset(0.5, 0.5),
-              flat: true,
-              rotation: _heading(_trips[i]),
+              icon: _cars?.icon(_heading(_trips[i]), selected: _selected == i) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+              anchor: const Offset(0.5, 0.85),
               zIndexInt: _selected == i ? 10 : 2,
               onTap: () => _select(i),
             ),

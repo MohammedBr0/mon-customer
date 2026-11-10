@@ -45,27 +45,24 @@ double distanceKm(LatLng a, LatLng b) {
   return 2 * r * math.asin(math.sqrt(h.toDouble()));
 }
 
-/// A car seen from above, pointing up (north). Rotate the marker by [bearing] to face its direction of travel.
-Future<BitmapDescriptor> carMarker({required bool selected, required double pixelRatio}) async {
-  const w = 30.0, h = 54.0, pad = 6.0;
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder)..scale(pixelRatio);
-  canvas.translate(pad, pad);
-  final body = RRect.fromRectAndCorners(const Rect.fromLTWH(0, 0, w, h), topLeft: const Radius.circular(13), topRight: const Radius.circular(13), bottomLeft: const Radius.circular(9), bottomRight: const Radius.circular(9));
-  canvas.drawShadow(Path()..addRRect(body), Colors.black, 3, true);
-  canvas.drawRRect(body, Paint()..color = selected ? brand : Colors.white);
-  canvas.drawRRect(body, Paint()..color = selected ? Colors.white : brand..style = PaintingStyle.stroke..strokeWidth = 2);
-  final glass = Paint()..color = selected ? Colors.white : brand;
-  // windscreen, rear window
-  canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(5, 11, w - 10, 11), const Radius.circular(4)), glass);
-  canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(6, 37, w - 12, 7), const Radius.circular(3)), glass);
-  // headlights
-  final lamp = Paint()..color = const Color(0xFFFFD54F);
-  canvas.drawCircle(const Offset(7, 4.5), 2.2, lamp);
-  canvas.drawCircle(const Offset(w - 7, 4.5), 2.2, lamp);
-  final image = await recorder.endRecording().toImage(((w + pad * 2) * pixelRatio).ceil(), ((h + pad * 2) * pixelRatio).ceil());
-  final data = await image.toByteData(format: ui.ImageByteFormat.png);
-  return BitmapDescriptor.bytes(data!.buffer.asUint8List(), imagePixelRatio: pixelRatio);
+/// The car pictures used for rides on the map. The car is drawn from the side, so instead of turning it
+/// to an exact compass angle it faces right for rides heading east and left for rides heading west.
+class CarIcons {
+  CarIcons._(this._right, this._left, this._rightSelected, this._leftSelected);
+  final BitmapDescriptor _right, _left, _rightSelected, _leftSelected;
+
+  static Future<CarIcons> load(BuildContext context) async {
+    final config = createLocalImageConfiguration(context);
+    Future<BitmapDescriptor> car(String side, double width) => BitmapDescriptor.asset(config, 'assets/car_$side.png', width: width);
+    return CarIcons._(await car('right', 46), await car('left', 46), await car('right', 62), await car('left', 62));
+  }
+
+  /// [heading] is the ride's direction of travel in degrees clockwise from north.
+  BitmapDescriptor icon(double heading, {required bool selected}) {
+    final west = heading > 180 && heading < 360;
+    if (selected) return west ? _leftSelected : _rightSelected;
+    return west ? _left : _right;
+  }
 }
 
 /// Compass direction of travel from [a] to [b], in degrees clockwise from north.

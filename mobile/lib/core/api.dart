@@ -184,10 +184,11 @@ class Api {
   Future<List<RideAlert>> alerts() async =>
       [for (final a in ((await _send('GET', '/ride_alerts'))['ride_alerts'] as List? ?? const [])) RideAlert.fromJson(Map<String, dynamic>.from(a as Map))];
 
-  Map<String, dynamic> _placeRef(Place p) => p.isPin ? {'name': p.name, 'lat': p.lat, 'lng': p.lng} : {'key': p.key};
+  /// How a chosen place is sent to the server: a listed town by its key, any other spot by name and coordinates.
+  static Map<String, dynamic> placeRef(Place p) => p.isPin ? {'name': p.name, 'lat': p.lat, 'lng': p.lng} : {'key': p.key};
 
   Future<void> createAlert(Place from, Place to) =>
-      _send('POST', '/ride_alerts', body: {'ride_alert': {'start': _placeRef(from), 'end': _placeRef(to)}});
+      _send('POST', '/ride_alerts', body: {'ride_alert': {'start': placeRef(from), 'end': placeRef(to)}});
 
   Future<void> deleteAlert(int id) => _send('DELETE', '/ride_alerts/$id');
 

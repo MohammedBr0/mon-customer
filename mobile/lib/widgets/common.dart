@@ -14,30 +14,67 @@ const brand = Color(0xFF1A56DB);
 const accent = Color(0xFFF2B705);
 
 ThemeData buildTheme(Brightness brightness) {
-  final scheme = ColorScheme.fromSeed(seedColor: brand, brightness: brightness, primary: brightness == Brightness.light ? brand : const Color(0xFF6EA8FE));
+  final light = brightness == Brightness.light;
+  // Light: white cards on a soft grey-blue page, dark ink, one blue. Dark: deep navy surfaces.
+  final scheme = ColorScheme.fromSeed(seedColor: brand, brightness: brightness).copyWith(
+    primary: light ? brand : const Color(0xFF6EA8FE),
+    onPrimary: light ? Colors.white : const Color(0xFF0D1422),
+    primaryContainer: light ? const Color(0xFFE8F0FE) : const Color(0xFF1C2E52),
+    onPrimaryContainer: light ? const Color(0xFF1647B8) : const Color(0xFFD6E4FF),
+    surface: light ? Colors.white : const Color(0xFF151E30),
+    onSurface: light ? const Color(0xFF0F172A) : const Color(0xFFE6EBF5),
+    onSurfaceVariant: light ? const Color(0xFF5B6577) : const Color(0xFF9AA7BD),
+    surfaceContainerLowest: light ? Colors.white : const Color(0xFF0D1422),
+    surfaceContainerLow: light ? const Color(0xFFF5F7FB) : const Color(0xFF182338),
+    surfaceContainer: light ? const Color(0xFFF1F4F9) : const Color(0xFF1B2740),
+    surfaceContainerHigh: light ? const Color(0xFFECF0F6) : const Color(0xFF1F2D49),
+    surfaceContainerHighest: light ? const Color(0xFFE9EEF5) : const Color(0xFF243352),
+    outline: light ? const Color(0xFFB6C0CF) : const Color(0xFF44536F),
+    outlineVariant: light ? const Color(0xFFE1E7EF) : const Color(0xFF2A3854),
+    surfaceTint: Colors.transparent,
+  );
+  final page = light ? const Color(0xFFF5F7FB) : const Color(0xFF0D1422);
+  final field = OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: scheme.outlineVariant));
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: brightness == Brightness.light ? Colors.white : const Color(0xFF0D1422),
+    scaffoldBackgroundColor: page,
     fontFamilyFallback: const ['Noto Sans Ethiopic', 'Abyssinica SIL', 'Roboto'],
+    textTheme: Typography.material2021(platform: TargetPlatform.android).black.apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface),
+    dividerTheme: DividerThemeData(color: scheme.outlineVariant, thickness: 1, space: 1),
     cardTheme: CardThemeData(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: brightness == Brightness.light ? Colors.white : const Color(0xFF151E30),
+      color: scheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: scheme.outlineVariant)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: brightness == Brightness.light ? Colors.white : const Color(0xFF151E30),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: scheme.outlineVariant)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: scheme.outlineVariant)),
+      fillColor: scheme.surface,
+      border: field,
+      enabledBorder: field,
+      focusedBorder: field.copyWith(borderSide: BorderSide(color: scheme.primary, width: 2)),
+      labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+      hintStyle: TextStyle(color: scheme.onSurfaceVariant),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     ),
     filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))),
-    // The brand: white on solid blue, everywhere the app shows its name or a screen title.
-    appBarTheme: const AppBarTheme(backgroundColor: brand, foregroundColor: Colors.white, surfaceTintColor: Colors.transparent, elevation: 0, scrolledUnderElevation: 0),
-    navigationBarTheme: NavigationBarThemeData(indicatorColor: scheme.primaryContainer),
+    outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), side: BorderSide(color: scheme.outline), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))),
+    listTileTheme: ListTileThemeData(iconColor: scheme.onSurfaceVariant),
+    // The brand: white on solid blue, everywhere the app shows a screen title.
+    appBarTheme: AppBarTheme(backgroundColor: light ? brand : scheme.surface, foregroundColor: Colors.white, surfaceTintColor: Colors.transparent, elevation: 0, scrolledUnderElevation: 0),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 8,
+      shadowColor: const Color(0x33000000),
+      indicatorColor: scheme.primaryContainer,
+      iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(color: states.contains(WidgetState.selected) ? scheme.primary : scheme.onSurfaceVariant)),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(fontSize: 12, fontWeight: states.contains(WidgetState.selected) ? FontWeight.w800 : FontWeight.w600, color: states.contains(WidgetState.selected) ? scheme.primary : scheme.onSurfaceVariant)),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(backgroundColor: scheme.surface, surfaceTintColor: Colors.transparent),
+    dialogTheme: DialogThemeData(backgroundColor: scheme.surface, surfaceTintColor: Colors.transparent),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }
 

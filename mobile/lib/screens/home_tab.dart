@@ -36,8 +36,7 @@ class _HomeTabState extends State<HomeTab> {
 
   GoogleMapController? _map;
   final _sheet = DraggableScrollableController();
-  BitmapDescriptor? _car;
-  BitmapDescriptor? _carSelected;
+  CarIcons? _cars;
   final Map<int, List<LatLng>> _routes = {};
   int? _selected; // the ride whose route is highlighted on the map
   double _sheetSize = _mid;
@@ -49,6 +48,8 @@ class _HomeTabState extends State<HomeTab> {
   bool _loading = true;
   bool _nearby = false; // false when the list had to fall back to the latest trips anywhere
   Object? _error;
+  bool _driver = false; // drivers see their own rides here, not other drivers'
+  Map<int, int> _pending = {}; // seat requests waiting, per ride
 
   @override
   void initState() {
@@ -74,17 +75,28 @@ class _HomeTabState extends State<HomeTab> {
     final app = context.read<AppState>();
     if (mounted) setState(() => _error = null);
     try {
-      var page = await app.api.trips(nearLat: _center.latitude, nearLng: _center.longitude, radiusKm: 15);
+      final driver = app.driverMode;
+      ResultPage<Trip> page;
       var nearby = true;
-      if (page.items.isEmpty) {
-        page = await app.api.trips();
-        nearby = false;
+      var pending = <int, int>{};
+      if (driver) {
+        // A driver's home is about their own rides and who is asking for a seat.
+        final mine = await app.api.myTrips();
+        final now = DateTime.now();
+        page = ResultPage([for (final t in mine.items) if (!t.cancelled && (t.commute || (t.leaveDate?.isAfter(now) ?? false))) t], 1, true);
+        for (final b in (await app.api.bookings()).received) {
+          if (b.status == 'pending') pending[b.trip.id] = (pending[b.trip.id] ?? 0) + 1;
+        }
+      } else {
+        page = await app.api.trips(nearLat: _center.latitude, nearLng: _center.longitude, radiusKm: 15);
+        if (page.items.isEmpty) {
+          page = await app.api.trips();
+          nearby = false;
+        }
       }
       if (!mounted) return;
       if (_canShowMap) {
-        final ratio = MediaQuery.of(context).devicePixelRatio;
-        _car ??= await carMarker(selected: false, pixelRatio: ratio);
-        _carSelected ??= await carMarker(selected: true, pixelRatio: ratio);
+        _cars ??= await CarIcons.load(context);
       }
       for (final t in page.items) {
         _routes[t.id] = routePoints(polyline: t.polyline, startLat: t.startLat, startLng: t.startLng, endLat: t.endLat, endLng: t.endLng);
@@ -92,6 +104,8 @@ class _HomeTabState extends State<HomeTab> {
       if (!mounted) return;
       setState(() {
         _selected = null;
+        _driver = driver;
+        _pending = pending;
         _trips = page.items;
         _nearby = nearby;
         _loading = false;
@@ -167,10 +181,8 @@ class _HomeTabState extends State<HomeTab> {
                       Marker(
                         markerId: MarkerId('trip-${_trips[i].id}'),
                         position: LatLng(_trips[i].startLat!, _trips[i].startLng!),
-                        icon: (_selected == i ? _carSelected : _car) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-                        anchor: const Offset(0.5, 0.5),
-                        flat: true,
-                        rotation: _heading(_trips[i]),
+                        icon: _cars?.icon(_heading(_trips[i]), selected: _selected == i) ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+                        anchor: const Offset(0.5, 0.85),
                         zIndexInt: _selected == i ? 10 : 2,
                         onTap: () => _focus(i),
                       ),
@@ -287,14 +299,14 @@ class _HomeTabState extends State<HomeTab> {
                       Container(width: 44, height: 5, decoration: BoxDecoration(color: scheme.outlineVariant, borderRadius: BorderRadius.circular(3))),
                       const SizedBox(height: 10),
                       Row(children: [
-                        Expanded(child: Text(context.t(_nearby ? 'rides_near_you' : 'latest_trips').toUpperCase(), style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: scheme.primary))),
+                        Expanded(child: Text(context.t(_driver ? 'your_rides' : (_nearby ? 'rides_near_you' : 'latest_trips')).toUpperCase(), style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: scheme.primary))),
                         if (!_loading) Text('${_trips.length}', style: TextStyle(fontWeight: FontWeight.w800, color: scheme.onSurfaceVariant)),
                       ]),
                     ]),
                   ),
                 ),
               ),
-              InkWell(
+              if (!_driver) InkWell(
                 borderRadius: BorderRadius.circular(14),
                 onTap: _openMap,
                 child: Container(
@@ -307,15 +319,14 @@ class _HomeTabState extends State<HomeTab> {
                   ]),
                 ),
               ),
-              const SizedBox(height: 12),
-              NextRideCard(key: ValueKey('next-${app.driverMode}'), driver: app.driverMode),
+              if (!_driver) ...[const SizedBox(height: 12), const NextRideCard(driver: false)],
               if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
               if (_error != null && _trips.isEmpty) ErrorState(_error!, onRetry: _load),
-              if (!_loading && _error == null && _trips.isEmpty) EmptyState(context.t('no_trips')),
+              if (!_loading && _error == null && _trips.isEmpty) EmptyState(context.t(_driver ? 'no_rides_posted' : 'no_trips')),
               for (var i = 0; i < _trips.length; i++)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: RideRow(trip: _trips[i], away: _away(_trips[i]), symbol: app.config.currencySymbol, locale: app.locale, onTap: () => openTrip(context, _trips[i].id), onShowOnMap: _canShowMap ? () => _focus(i) : null),
+                  child: RideRow(trip: _trips[i], requests: _pending[_trips[i].id] ?? 0, away: _driver ? null : _away(_trips[i]), symbol: app.config.currencySymbol, locale: app.locale, onTap: () => openTrip(context, _trips[i].id), onShowOnMap: _canShowMap ? () => _focus(i) : null),
                 ),
             ]),
           ),
@@ -341,8 +352,9 @@ class _HomeTabState extends State<HomeTab> {
 
 /// One ride in the home list: where it goes, the price per seat, how far away it starts and seats left.
 class RideRow extends StatelessWidget {
-  const RideRow({super.key, required this.trip, required this.symbol, required this.locale, required this.onTap, this.away, this.onShowOnMap});
+  const RideRow({super.key, required this.trip, required this.symbol, required this.locale, required this.onTap, this.away, this.onShowOnMap, this.requests = 0});
   final VoidCallback? onShowOnMap;
+  final int requests; // seat requests waiting for the driver's answer
   final Trip trip;
   final String symbol;
   final String locale;
@@ -356,8 +368,8 @@ class RideRow extends StatelessWidget {
     final few = seats != null && seats <= 1;
     final when = trip.commute ? (trip.scheduleSummary ?? '') : (trip.leaveDate == null ? '' : formatDateTime(trip.leaveDate!, locale: locale));
     return Material(
-      color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(18),
+      color: scheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: scheme.outlineVariant)),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onTap,
@@ -369,17 +381,17 @@ class RideRow extends StatelessWidget {
                 Text(context.t('to_place', {'place': trip.endAddress}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                 Text('${context.t('from')} ${trip.startAddress} · $when', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                 const SizedBox(height: 6),
-                Row(children: [
-                  // The price takes what room is left and shrinks before anything overflows on a narrow phone.
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text('${formatMoney(trip.passengerPrice, symbol)}/${context.t('seat')}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                Text('${formatMoney(trip.passengerPrice, symbol)}/${context.t('seat')}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                const SizedBox(height: 6),
+                // Badges wrap onto a second line on narrow phones instead of being cut off.
+                Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                  if (requests > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(10)),
+                      child: Text(context.t('requests_waiting', {'count': requests}), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: scheme.onPrimary)),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (away != null) Padding(padding: const EdgeInsets.only(right: 8), child: Text(context.t('away', {'distance': away}), style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant))),
+                  if (away != null) Text(context.t('away', {'distance': away}), style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: trip.full ? scheme.surfaceContainerHighest : (few ? const Color(0xFFFFF3D6) : scheme.primaryContainer), borderRadius: BorderRadius.circular(10)),

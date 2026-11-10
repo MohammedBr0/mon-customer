@@ -47,7 +47,8 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final driver = app.driverMode;
-    const ids = ['home', 'search', 'bookings', 'profile'];
+    // Drivers manage their own rides, so they have no search tab; switching to passenger mode brings it back.
+    final ids = driver ? const ['home', 'bookings', 'profile'] : const ['home', 'search', 'bookings', 'profile'];
     const pages = ['home', 'search', 'bookings', 'profile'];
     final current = ids.contains(_tab) ? _tab : 'home';
     return Scaffold(
@@ -71,7 +72,7 @@ class _HomeShellState extends State<HomeShell> {
         ],
       ),
       body: IndexedStack(index: pages.indexOf(current), children: [
-        HomeTab(onOffer: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen()))),
+        HomeTab(key: ValueKey('home-$driver'), onOffer: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferScreen()))),
         SearchTab(request: _search),
         BookingsTab(key: ValueKey('bookings-$driver')),
         const ProfileTab(),

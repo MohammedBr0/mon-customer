@@ -167,6 +167,11 @@ void main() {
       expect(seen.queryParameters, containsPair('radius_km', '6.5'));
     });
 
+    test('posting sends a Google place by name and coordinates, a listed town by key', () {
+      expect(Api.placeRef(Place.pin(9.01, 38.74, 'Mexico Square')), {'name': 'Mexico Square', 'lat': 9.01, 'lng': 38.74});
+      expect(Api.placeRef(const Place(key: 'adama', name: 'Adama', lat: 8.54, lng: 39.27)), {'key': 'adama'});
+    });
+
     test('a pin on the map is not a listed town', () {
       final pin = Place.pin(9.01, 38.74, 'Mexico');
       expect(pin.isPin, isTrue);
@@ -339,31 +344,54 @@ void main() {
     expect(picked?.lat, 8.99);
   });
 
-  testWidgets('home lists nearby rides with price, seats and one main action, on a small phone', (tester) async {
-    tester.view.physicalSize = const Size(720, 1480); // 360 x 740 dp
+  Map<String, dynamic> homeTrip(int id, String to, int seats) => {
+        'id': id, 'start_address': 'Bole Medhanialem, Addis Ababa', 'end_address': to, 'leave_date': '2030-12-01T05:00:00Z',
+        'price_per_seat': 120, 'passenger_price_per_seat': 135, 'seats_total': 3, 'seats_available': seats,
+        'start_location': {'lat': 9.0, 'lng': 38.78}, 'driver': _profile,
+      };
+
+  Future<AppState> openHome(WidgetTester tester, String mode) async {
+    tester.view.physicalSize = const Size(720, 1480); // a small phone: 360 x 740 dp
     tester.view.devicePixelRatio = 2;
     addTearDown(tester.view.reset);
-    final store = MemoryTokenStore()..token = 't';
-    Map<String, dynamic> trip(int id, String to, int seats) => {
-          'id': id, 'start_address': 'Bole Medhanialem, Addis Ababa', 'end_address': to, 'leave_date': '2026-12-01T05:00:00Z',
-          'price_per_seat': 120, 'passenger_price_per_seat': 135, 'seats_total': 3, 'seats_available': seats,
-          'start_location': {'lat': 9.0, 'lng': 38.78}, 'driver': _profile,
-        };
+    final booking = {
+      'id': 5, 'status': 'pending', 'seats': 1, 'ride_dates': [], 'itinerary': homeTrip(7, 'Adama', 3), 'passenger': _profile, 'driver': _profile,
+      'price': {'price_per_seat': 120, 'rides': 1, 'fare_total': 120, 'fee_percent': 10, 'fee_amount': 12, 'passenger_total': 132, 'driver_payout': 120},
+    };
     final state = _state((r) async {
-      if (r.url.path.endsWith('/me')) return _json({'user': {..._profile, 'app_mode': 'driver', 'verified': true}});
-      if (r.url.path.endsWith('/itineraries')) return _json({'itineraries': [trip(1, 'Megenagna taxi station with a very long name indeed', 1), trip(2, 'Mexico Square', 3)], 'meta': {'page': 1, 'last': true}});
-      return _json({'conversations': [], 'notifications': [], 'made': [], 'received': [], 'itineraries': [], 'unread': 0, 'meta': {'last': true}});
-    }, store: store);
+      if (r.url.path.endsWith('/me')) return _json({'user': {..._profile, 'app_mode': mode, 'verified': true}});
+      if (r.url.path.endsWith('/itineraries/mine')) return _json({'itineraries': [homeTrip(7, 'Adama', 3)], 'meta': {'page': 1, 'last': true}});
+      if (r.url.path.endsWith('/itineraries')) return _json({'itineraries': [homeTrip(1, 'Megenagna taxi station with a very long name indeed', 1), homeTrip(2, 'Mexico Square', 3)], 'meta': {'page': 1, 'last': true}});
+      if (r.url.path.endsWith('/bookings')) return _json({'made': [], 'received': [booking]});
+      return _json({'conversations': [], 'notifications': [], 'unread': 0, 'meta': {'last': true}});
+    }, store: MemoryTokenStore()..token = 't');
     await tester.pumpWidget(IcareApp(state: state));
     await state.start();
     await tester.pumpAndSettle();
+    return state;
+  }
+
+  testWidgets('a passenger\'s home lists rides near them with price, seats and one main action', (tester) async {
+    final state = await openHome(tester, 'passenger');
     expect(find.text('SHARED RIDES NEAR YOU'), findsOneWidget);
     expect(find.text('To Mexico Square'), findsOneWidget);
-    expect(find.textContaining('135'), findsNWidgets(2));
     expect(find.textContaining('/Seat'), findsNWidgets(2));
     expect(find.text('1 seats left'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Post a ride'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Find a ride'), findsOneWidget);
     expect(find.text('Where to?'), findsOneWidget);
+    expect(find.text('Search'), findsOneWidget); // the search tab
+    state.dispose();
+  });
+
+  testWidgets('a driver\'s home shows only their own rides and waiting requests, not other drivers\' trips', (tester) async {
+    final state = await openHome(tester, 'driver');
+    expect(find.text('YOUR RIDES'), findsOneWidget);
+    expect(find.text('To Adama'), findsOneWidget);
+    expect(find.text('1 requests'), findsOneWidget);
+    expect(find.text('To Mexico Square'), findsNothing);
+    expect(find.text('Where to?'), findsNothing);
+    expect(find.text('Search'), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Post a ride'), findsOneWidget);
     state.dispose();
   });
 

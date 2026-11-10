@@ -5,16 +5,10 @@ import 'package:flutter/material.dart';
 const _lightStyle = '''
 [
   {"featureType":"poi","stylers":[{"visibility":"off"}]},
-  {"featureType":"poi.park","elementType":"geometry","stylers":[{"visibility":"on"},{"color":"#e3f1e1"}]},
+  {"featureType":"poi.park","stylers":[{"visibility":"on"}]},
+  {"featureType":"poi.park","elementType":"labels","stylers":[{"visibility":"off"}]},
   {"featureType":"transit","stylers":[{"visibility":"off"}]},
-  {"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#f3f4f6"}]},
-  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
-  {"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
-  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#dfe6f3"}]},
-  {"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]},
-  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#c9dcf7"}]},
-  {"elementType":"labels.text.fill","stylers":[{"color":"#5b6577"}]},
-  {"elementType":"labels.text.stroke","stylers":[{"color":"#ffffff"}]}
+  {"featureType":"road","elementType":"labels.icon","stylers":[{"visibility":"off"}]}
 ]''';
 
 const _darkStyle = '''

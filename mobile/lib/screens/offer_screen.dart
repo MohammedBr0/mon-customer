@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../core/api.dart';
 import '../core/app_state.dart';
 import '../core/format.dart';
 import '../l10n/strings.dart';
@@ -99,8 +100,8 @@ class _OfferScreenState extends State<OfferScreen> {
     setState(() => _busy = true);
     try {
       final trip = await app.api.createTrip({
-        'start': {'key': _from!.key},
-        'end': {'key': _to!.key},
+        'start': Api.placeRef(_from!),
+        'end': Api.placeRef(_to!),
         'leave_date': _leaveUtc.toIso8601String(),
         'price_per_seat': _price.text.trim(),
         'num_people': _seats,
