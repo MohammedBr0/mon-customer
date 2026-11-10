@@ -112,16 +112,19 @@ textarea.form-control { min-height: 96px; }
 
 .app-bar {
   position: sticky; top: 0; z-index: 100;
-  background: var(--surface); border-bottom: 1px solid var(--line);
+  // The brand: white on solid green.
+  background: #0b7a4b; color: #fff;
 
   &__inner { display: flex; align-items: center; gap: 12px; min-height: 56px; }
-  &__brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.25rem; color: var(--brand); letter-spacing: -.02em; }
+  &__brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.25rem; color: #fff; letter-spacing: -.02em; &:hover { color: #fff; } }
   &__brand svg { height: 28px; width: auto; }
   &__links { display: none; margin-inline: 12px auto; gap: 4px; }
-  &__link { padding: 8px 12px; border-radius: 10px; color: var(--ink); font-weight: 600; &:hover, &.active { background: var(--brand-50); color: var(--brand); } }
+  &__link { padding: 8px 12px; border-radius: 10px; color: #fff; font-weight: 600; &:hover, &.active { background: #fff; color: #0b7a4b; } }
   &__actions { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
   &__avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--line); }
-  .navbar-notifications { margin: 0; padding: 0; }
+  .navbar-notifications { margin: 0; padding: 0; a, .nav-link { color: #fff; } }
+  // On the green bar the main button turns white so it stays visible.
+  .btn-primary { --bs-btn-bg: #fff; --bs-btn-border-color: #fff; --bs-btn-color: #0b7a4b; --bs-btn-hover-bg: #e8f5ee; --bs-btn-hover-border-color: #e8f5ee; --bs-btn-hover-color: #0b7a4b; --bs-btn-active-bg: #e8f5ee; --bs-btn-active-color: #0b7a4b; }
 
   @media (min-width: 768px) {
     &__links { display: flex; }
@@ -168,7 +171,7 @@ textarea.form-control { min-height: 96px; }
 
 .landing { background: var(--surface); }
 .hero {
-  background: linear-gradient(160deg, #0b7a4b 0%, #0a5c3a 70%);
+  background: #0b7a4b;
   color: #fff; padding: 28px 0 40px; border-radius: 0 0 28px 28px;
 
   &__top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; }

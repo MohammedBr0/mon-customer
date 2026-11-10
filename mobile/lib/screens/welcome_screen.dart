@@ -72,7 +72,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0B7A4B), Color(0xFF0A5C3A)]),
+              color: brand,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
             padding: EdgeInsets.fromLTRB(24, MediaQuery.of(context).padding.top + 16, 24, 32),

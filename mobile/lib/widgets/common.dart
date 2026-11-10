@@ -18,7 +18,7 @@ ThemeData buildTheme(Brightness brightness) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: scheme,
-    scaffoldBackgroundColor: brightness == Brightness.light ? const Color(0xFFF4F7F5) : const Color(0xFF0E1612),
+    scaffoldBackgroundColor: brightness == Brightness.light ? Colors.white : const Color(0xFF0E1612),
     fontFamilyFallback: const ['Noto Sans Ethiopic', 'Abyssinica SIL', 'Roboto'],
     cardTheme: CardThemeData(
       elevation: 0,
@@ -35,7 +35,8 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
     outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)))),
-    appBarTheme: AppBarTheme(backgroundColor: scheme.surface, foregroundColor: scheme.onSurface, elevation: 0, scrolledUnderElevation: 1),
+    // The brand: white on solid green, everywhere the app shows its name or a screen title.
+    appBarTheme: const AppBarTheme(backgroundColor: brand, foregroundColor: Colors.white, surfaceTintColor: Colors.transparent, elevation: 0, scrolledUnderElevation: 0),
     navigationBarTheme: NavigationBarThemeData(indicatorColor: scheme.primaryContainer),
   );
 }

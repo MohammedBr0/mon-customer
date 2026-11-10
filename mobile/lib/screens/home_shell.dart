@@ -122,16 +122,16 @@ class ModeSwitchChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(right: 2),
       child: Tooltip(
         message: context.t(driver ? 'switch_to_passenger' : 'switch_to_driver'),
         child: ActionChip(
           visualDensity: VisualDensity.compact,
-          backgroundColor: driver ? scheme.primaryContainer : null,
-          avatar: Icon(driver ? Icons.directions_car : Icons.airline_seat_recline_normal, size: 18),
-          label: Text(context.t(driver ? 'role_driver' : 'role_passenger'), style: const TextStyle(fontWeight: FontWeight.w700)),
+          backgroundColor: Colors.white,
+          side: BorderSide.none,
+          avatar: Icon(driver ? Icons.directions_car : Icons.airline_seat_recline_normal, size: 18, color: brand),
+          label: Text(context.t(driver ? 'role_driver' : 'role_passenger'), style: const TextStyle(fontWeight: FontWeight.w700, color: brand)),
           onPressed: () async {
             final target = driver ? 'passenger' : 'driver';
             if (await confirmDialog(context, context.tr(driver ? 'switch_to_passenger_q' : 'switch_to_driver_q'), action: context.tr(driver ? 'switch_to_passenger' : 'switch_to_driver')) && context.mounted) {

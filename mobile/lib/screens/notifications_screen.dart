@@ -102,7 +102,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         title: Text(context.t('notifications')),
         actions: [
-          if (app.unreadNotifications > 0) TextButton(onPressed: _markAll, child: Text(context.t('mark_all_read'))),
+          if (app.unreadNotifications > 0) TextButton(style: TextButton.styleFrom(foregroundColor: Colors.white), onPressed: _markAll, child: Text(context.t('mark_all_read'))),
         ],
       ),
       body: _items.isEmpty && _loading

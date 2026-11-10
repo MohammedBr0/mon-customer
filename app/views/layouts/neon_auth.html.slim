@@ -11,11 +11,11 @@ html lang=I18n.locale.to_s
       :root { --brand: #0b7a4b; --brand-dark: #096440; }
       body.neon-auth {
         min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center;
-        padding: 1.5rem 1rem; background: linear-gradient(160deg, #e8f5ee 0%, #f8fafc 60%);
+        padding: 1.5rem 1rem; background: var(--brand);
       }
       .na-wrap { width: 100%; max-width: 400px; }
       .na-brand { text-align: center; margin-bottom: 1.5rem; }
-      .na-brand a { color: var(--brand); font-weight: 800; letter-spacing: -.02em; font-size: 2rem; text-decoration: none; }
+      .na-brand a { color: #fff; font-weight: 800; letter-spacing: -.02em; font-size: 2rem; text-decoration: none; }
       .na-card {
         background: #fff; border-radius: 14px; padding: 2rem 1.75rem;
         box-shadow: 0 10px 30px rgba(20, 60, 40, .12);
@@ -37,8 +37,8 @@ html lang=I18n.locale.to_s
       .na-switch button { border: 0; background: none; padding: 0; color: var(--brand); font-weight: 600; }
       .na-switch button:hover { text-decoration: underline; }
       .na-back { text-align: center; margin-top: 1.25rem; font-size: .85rem; }
-      .na-back a { color: #6b7a88; text-decoration: none; }
-      .na-back a:hover { color: var(--brand); }
+      .na-back a { color: #fff; text-decoration: none; }
+      .na-back a:hover { color: #fff; text-decoration: underline; }
   body.neon-auth
     .na-wrap
       .na-brand = link_to APP_CONFIG.app_name, root_path
