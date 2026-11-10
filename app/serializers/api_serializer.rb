@@ -27,7 +27,7 @@ module ApiSerializer
 
   def me(user)
     user(user).merge(
-      email: (user.email unless user.phone_account?), phone_account: user.phone_account?, app_mode: user.app_mode, identity: identity(user), payment_methods: driver_payment_methods(user, confirmed: true), phone_verified: user.phone_verified_at.present?, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
+      email: (user.email unless user.phone_account?), phone_account: user.phone_account?, app_mode: user.app_mode, reminder_minutes: user.reminder_minutes, identity: identity(user), payment_methods: driver_payment_methods(user, confirmed: true), phone_verified: user.phone_verified_at.present?, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
       vehicle_avg_consumption: user.vehicle_avg_consumption.to_f, vehicle_data: user.vehicle_data, vehicle_complete: user.vehicle_complete?,
       missing_vehicle_fields: user.missing_vehicle_fields.map(&:key), gender: user.gender, role: user.role_name, staff: user.staff?
     )
@@ -40,6 +40,8 @@ module ApiSerializer
     data = {
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title,
       start_address: itinerary.start_address, end_address: itinerary.end_address,
+      start_name: short_name(itinerary.start_location, itinerary.start_address), end_name: short_name(itinerary.end_location, itinerary.end_address),
+      live: itinerary.live?,
       start_location: point(itinerary.start_location), end_location: point(itinerary.end_location), overview_polyline: itinerary.overview_polyline,
       leave_date: itinerary.leave_date&.iso8601, return_date: itinerary.return_date&.iso8601,
       city: itinerary.city, city_commute: itinerary.city_commute?,
@@ -80,8 +82,48 @@ module ApiSerializer
         fee_percent: money(booking.fee_percent), fee_charged_to: booking.fee_charged_to, fee_amount: money(booking.fee_amount),
         passenger_total: money(booking.passenger_total), driver_payout: money(booking.driver_payout)
       },
-      reviewed: viewer ? booking.reviewed_by?(viewer) : nil
+      reviewed: viewer ? booking.reviewed_by?(viewer) : nil,
+      # Only the two people in the booking ever get this serializer, so the pickup point stays between them.
+      pickup: (booking.pickup? ? { lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label } : nil)
     }
+  end
+
+  # A short, readable name for a point: the neighbourhood it is in, else the nearest town, else the first part of
+  # its address. Search results show these ("Bole → Piassa") instead of long street addresses.
+  def short_name(location, address)
+    fallback = address.to_s.split(',').first.to_s.strip
+    return fallback unless location
+
+    area = nearest(EthiopianPlace::AREA_PLACES, location, 0.03)
+    return area.label if area
+
+    town = nearest(EthiopianPlace.all, location, 0.12)
+    # Inside a big city the typed address is more telling than the city's name.
+    return town.label if town && !EthiopianPlace::AREAS.key?(town.key)
+
+    fallback.presence || town&.label
+  end
+
+  # The closest place within [limit] degrees (about 111 km per degree), or nil.
+  def nearest(places, location, limit)
+    best = places.min_by { |place| ((place.lat - location.lat)**2) + ((place.lng - location.lon)**2) }
+    best if best && Math.sqrt(((best.lat - location.lat)**2) + ((best.lng - location.lon)**2)) <= limit
+  end
+
+  # The car's position while a ride is under way. Passengers' pickup points go to the driver only.
+  def live(itinerary, viewer:)
+    fresh = itinerary.live_updated_at.present? && itinerary.live_updated_at > Itinerary::LIVE_STALE_AFTER.ago
+    data = {
+      active: itinerary.live?, started_at: itinerary.live_started_at&.iso8601, ended_at: itinerary.live_ended_at&.iso8601,
+      position: (itinerary.live? && itinerary.live_lat ? { lat: itinerary.live_lat.to_f, lng: itinerary.live_lng.to_f, heading: itinerary.live_heading&.to_f } : nil),
+      updated_at: itinerary.live_updated_at&.iso8601, fresh:
+    }
+    if viewer.id == itinerary.user_id
+      data[:pickups] = itinerary.bookings.confirmed.includes(:passenger).select(&:pickup?).map do |booking|
+        { name: booking.passenger.first_name.presence || booking.passenger.to_s, lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label, seats: booking.seats }
+      end
+    end
+    data
   end
 
   def payment_method(method)

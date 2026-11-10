@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_11_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -60,6 +60,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
     t.decimal "passenger_total", precision: 10, scale: 2, default: "0.0", null: false
     t.decimal "driver_payout", precision: 10, scale: 2, default: "0.0", null: false
     t.date "ride_dates", default: [], null: false, array: true
+    t.decimal "pickup_lat", precision: 9, scale: 6
+    t.decimal "pickup_lng", precision: 9, scale: 6
+    t.string "pickup_label"
     t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
     t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
     t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
@@ -155,6 +158,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
     t.string "pickup_point"
     t.string "dropoff_point"
     t.string "city"
+    t.datetime "live_started_at"
+    t.datetime "live_ended_at"
+    t.decimal "live_lat", precision: 9, scale: 6
+    t.decimal "live_lng", precision: 9, scale: 6
+    t.decimal "live_heading", precision: 5, scale: 1
+    t.datetime "live_updated_at"
     t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
     t.index ["city", "leave_date"], name: "index_itineraries_on_city_and_leave_date", where: "(city IS NOT NULL)"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
@@ -220,6 +229,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
     t.boolean "announcement_active", default: false, null: false
     t.boolean "commutes_enabled", default: true, null: false
     t.integer "commute_horizon_days", default: 14, null: false
+    t.decimal "suggested_price_per_km", precision: 8, scale: 2, default: "6.0", null: false
   end
 
   create_table "popular_routes", force: :cascade do |t|
@@ -309,6 +319,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_090000) do
     t.bigint "verified_by_id"
     t.string "app_mode", default: "passenger", null: false
     t.datetime "phone_verified_at"
+    t.integer "reminder_minutes", default: 15, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
     t.index ["verified_by_id"], name: "index_users_on_verified_by_id"

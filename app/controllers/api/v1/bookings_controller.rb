@@ -19,7 +19,7 @@ module Api
         itinerary = Itinerary.friendly.find(params[:itinerary_id])
         return render_error('not_bookable', I18n.t('flash.errors.not_allowed'), :forbidden) unless itinerary.bookable_by?(current_user)
 
-        booking = itinerary.bookings.new(booking_params.merge(passenger: current_user))
+        booking = itinerary.bookings.new(booking_params.merge(passenger: current_user).merge(pickup_params))
         if booking.save
           BookingMailer.with(booking:).requested.deliver_later
           render json: { booking: serializer.booking(booking, viewer: current_user) }, status: :created
@@ -74,6 +74,14 @@ module Api
       rescue Booking::InvalidTransition => e
         key = e.message == 'not_enough_seats' ? 'flash.bookings.not_enough_seats' : 'flash.bookings.invalid'
         render_error e.message, I18n.t(key), :unprocessable_entity
+      end
+
+      # Where the passenger would like to be picked up (optional): shown to the driver with the request.
+      def pickup_params
+        pickup = params.dig(:booking, :pickup)
+        return {} unless pickup.respond_to?(:permit) && pickup[:lat].present? && pickup[:lng].present?
+
+        { pickup_lat: pickup[:lat], pickup_lng: pickup[:lng], pickup_label: pickup[:label].to_s.strip.presence }
       end
 
       def booking_params

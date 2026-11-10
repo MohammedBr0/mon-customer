@@ -39,6 +39,12 @@
           span.input-group-text = @setting.currency_symbol
         p.form-text = t('admin_extra.max_price_hint')
       .mt-3
+        = f.label :suggested_price_per_km, t('admin_pricing.per_km'), class: 'form-label'
+        .input-group
+          = f.number_field :suggested_price_per_km, step: 0.5, min: 0, class: 'form-control text-end', inputmode: 'decimal'
+          span.input-group-text = "#{@setting.currency_symbol} / km"
+        p.form-text = t('admin_pricing.per_km_hint')
+      .mt-3
         = f.label :payment_instructions, t('admin_extra.payment_instructions'), class: 'form-label'
         = f.text_area :payment_instructions, rows: 3, maxlength: 500, class: 'form-control'
         p.form-text = t('admin_extra.payment_instructions_hint')

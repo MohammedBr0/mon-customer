@@ -10,6 +10,8 @@ am-ET:
     sms_unavailable: የጽሑፍ መልእክቱን መላክ አልቻልንም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።
     invalid_code: ኮዱ የተሳሳተ ነው ወይም ጊዜው አልፏል። አዲስ ይጠይቁ።
     otp_sms: "የ%{app} ኮድዎ"
+    trip_cancelled: ይህ ጉዞ ተሰርዟል
+    trip_not_live: መጀመሪያ ጉዞውን ይጀምሩ
     maps_unavailable: ካርታዎች አሁን አይገኙም
     no_route: በእነዚህ ቦታዎች መካከል የመኪና መንገድ አልተገኘም
   notifications:
@@ -37,6 +39,9 @@ am-ET:
     review_received:
       title: አዲስ አስተያየት
       body: "%{person} %{rating}/5 ሰጥተዎታል"
+    trip_started:
+      title: ጉዞዎ ተጀምሯል
+      body: "%{person} ለ%{trip} በመንገድ ላይ ናቸው። መኪናውን ለመከታተል ጉዞውን ይክፈቱ።"
     alert_match:
       title: አንድ ጉዞ ከማንቂያዎ ጋር ይስማማል
       body: "%{route}: %{trip}"

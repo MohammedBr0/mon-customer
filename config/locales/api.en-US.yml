@@ -10,6 +10,8 @@ en-US:
     sms_unavailable: We could not send the text message. Try again in a moment.
     invalid_code: That code is wrong or has expired. Ask for a new one.
     otp_sms: "Your %{app} code is"
+    trip_cancelled: This trip was cancelled
+    trip_not_live: Start the trip first
     maps_unavailable: Maps are not available right now
     no_route: No driving route found between those places
   notifications:
@@ -37,6 +39,9 @@ en-US:
     review_received:
       title: New review
       body: "%{person} rated you %{rating}/5"
+    trip_started:
+      title: Your ride has started
+      body: "%{person} is on the way for %{trip}. Open the trip to follow the car."
     alert_match:
       title: A trip matches your alert
       body: "%{route}: %{trip}"

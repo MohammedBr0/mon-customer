@@ -62,6 +62,10 @@ Rails.application.routes.draw do
       resources :itineraries, only: %i[index show create update] do
         get :mine, on: :collection
         patch :cancel, on: :member
+        post :start, on: :member
+        post :location, on: :member
+        post :finish, on: :member
+        get :live, on: :member
         resources :bookings, only: :create
       end
       resources :bookings, only: :index do

@@ -212,6 +212,35 @@ class Itinerary < ApplicationRecord
     user.present? && user != self.user && !cancelled? && !past? && !full? && (!pink? || user.female?)
   end
 
+  LIVE_STALE_AFTER = 2.minutes
+
+  # A ride is "live" from the moment the driver starts it until they finish it.
+  def live?
+    live_started_at.present? && live_ended_at.nil?
+  end
+
+  # The driver sets off: confirmed passengers are told and can follow the car.
+  def start_live!
+    update!(live_started_at: Time.current, live_ended_at: nil, live_lat: nil, live_lng: nil, live_heading: nil, live_updated_at: nil)
+    bookings.confirmed.includes(:passenger).find_each do |booking|
+      Notification.notify(booking.passenger, 'trip_started', itinerary_id: id, booking_id: booking.id, trip: title, person: user.to_s)
+    end
+    self
+  end
+
+  def update_live_position!(lat:, lng:, heading: nil)
+    update_columns(live_lat: lat, live_lng: lng, live_heading: heading, live_updated_at: Time.current)
+  end
+
+  def finish_live!
+    update!(live_ended_at: Time.current)
+  end
+
+  # Who may follow the car: the driver and passengers with a confirmed seat.
+  def trackable_by?(person)
+    person.present? && (person.id == user_id || bookings.confirmed.exists?(passenger_id: person.id))
+  end
+
   # Cancelling an itinerary also cancels every live booking on it.
   def cancel!
     transaction do

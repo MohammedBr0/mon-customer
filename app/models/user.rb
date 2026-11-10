@@ -12,6 +12,7 @@ class User < ApplicationRecord
 
   GENDER = %w[male female].freeze
   APP_MODES = %w[passenger driver].freeze
+  REMINDER_MINUTES = [0, 15, 30].freeze
 
   paginates_per 25
 
@@ -34,6 +35,7 @@ class User < ApplicationRecord
 
   validates :gender, inclusion: GENDER, allow_blank: true
   validates :app_mode, inclusion: APP_MODES
+  validates :reminder_minutes, inclusion: REMINDER_MINUTES
   validates :time_zone, inclusion: ActiveSupport::TimeZone.all.map(&:name)
   validates :vehicle_avg_consumption, numericality: { greater_than: 0, less_than: 1000 }, presence: true
 

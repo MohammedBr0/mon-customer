@@ -12,6 +12,7 @@ module Api
           currency: { code: setting.currency_code, symbol: setting.currency_symbol },
           fee: { percent: serializer.money(setting.fee_percent), charged_to: setting.fee_charged_to },
           max_price_per_seat: serializer.money(setting.max_price_per_seat),
+          suggested_price_per_km: serializer.money(setting.suggested_price_per_km),
           payment_instructions: setting.payment_instructions,
           phone_verification: AfroMessageClient.enabled?,
           commutes_enabled: setting.commutes_enabled, commute_horizon_days: setting.commute_horizon_days,

@@ -27,6 +27,9 @@ class Booking < ApplicationRecord
   validates :status, inclusion: { in: STATUSES }
   validates :seats, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: MAX_SEATS }
   validates :note, length: { maximum: MAX_NOTE_LENGTH }
+  validates :pickup_label, length: { maximum: 200 }
+  validates :pickup_lat, numericality: { greater_than_or_equal_to: -90, less_than_or_equal_to: 90 }, allow_nil: true
+  validates :pickup_lng, numericality: { greater_than_or_equal_to: -180, less_than_or_equal_to: 180 }, allow_nil: true
   validate :passenger_is_not_the_driver, on: :create
   validate :itinerary_accepts_bookings, on: :create
   validate :no_other_active_booking, on: :create
@@ -91,6 +94,10 @@ class Booking < ApplicationRecord
     return false unless confirmed?
 
     itinerary.commute? ? ride_dates.min.present? && ride_dates.min < Itinerary.today : itinerary.past?
+  end
+
+  def pickup?
+    pickup_lat.present? && pickup_lng.present?
   end
 
   def multi_day?

@@ -3,8 +3,8 @@
 module Api
   module V1
     class ItinerariesController < BaseController
-      before_action :set_itinerary, only: %i[show cancel update]
-      before_action :require_owner, only: %i[cancel update]
+      before_action :set_itinerary, only: %i[show cancel update start location finish live]
+      before_action :require_owner, only: %i[cancel update start location finish]
 
       # Search by route (coordinates) or list the latest trips.
       def index
@@ -51,6 +51,36 @@ module Api
         @itinerary.cancel!
         bookings.each { |booking| ItineraryMailer.with(booking:).cancelled.deliver_later }
         render json: { itinerary: serializer.itinerary(@itinerary, viewer: current_user, detail: true) }
+      end
+
+      # ---- live tracking: the driver starts the ride, the app sends positions, passengers follow along ----
+      def start
+        return render_error('invalid_transition', I18n.t('api.trip_cancelled'), :unprocessable_entity) if @itinerary.cancelled?
+
+        @itinerary.start_live!
+        render json: { live: serializer.live(@itinerary, viewer: current_user) }
+      end
+
+      def location
+        return render_error('not_live', I18n.t('api.trip_not_live'), :unprocessable_entity) unless @itinerary.live?
+
+        lat = Float(params.require(:lat), exception: false)
+        lng = Float(params.require(:lng), exception: false)
+        return render_error('invalid_request', I18n.t('api.not_found'), :unprocessable_entity) unless lat&.between?(-90, 90) && lng&.between?(-180, 180)
+
+        @itinerary.update_live_position!(lat:, lng:, heading: Float(params[:heading], exception: false))
+        head :no_content
+      end
+
+      def finish
+        @itinerary.finish_live! if @itinerary.live?
+        render json: { live: serializer.live(@itinerary, viewer: current_user) }
+      end
+
+      def live
+        return render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden) unless @itinerary.trackable_by?(current_user)
+
+        render json: { live: serializer.live(@itinerary, viewer: current_user) }
       end
 
       private
