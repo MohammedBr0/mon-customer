@@ -42,3 +42,24 @@ RSpec.describe 'Admin side menu and dashboard' do
     end
   end
 end
+
+RSpec.describe 'Where people land' do
+  it 'sends a super admin to the admin dashboard, and everyone else to their own' do
+    sign_in create(:user, admin: true)
+    get '/'
+    expect(response).to redirect_to('/admin')
+    get '/dashboard' # "Back to the site" still works
+    expect(response).to have_http_status(:ok)
+    sign_out :user
+
+    sign_in create(:user, moderator: true)
+    get '/'
+    expect(response).to redirect_to('/dashboard')
+    sign_out :user
+
+    sign_in create(:user)
+    get '/'
+    expect(response).to redirect_to('/dashboard')
+  end
+
+end

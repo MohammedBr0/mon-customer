@@ -16,7 +16,12 @@ class ApplicationController < ActionController::Base
   private
 
   def after_sign_in_path_for(_resource_or_scope)
-    session.delete(:redirect_to) || dashboard_path
+    session.delete(:redirect_to) || home_path_for(current_user)
+  end
+
+  # Where someone lands by default: super admins on the admin dashboard, everyone else on their own.
+  def home_path_for(user)
+    user&.super_admin? ? admin_root_path : dashboard_path
   end
 
   def check_banned
