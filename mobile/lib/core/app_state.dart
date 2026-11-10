@@ -78,8 +78,8 @@ class AppState extends ChangeNotifier {
     await _adopt(session);
   }
 
-  Future<void> signUp(String name, String email, String password) async {
-    final session = await api.signUp(name.trim(), email.trim(), password);
+  Future<void> signUp(String name, String phone, String password, {required String mode}) async {
+    final session = await api.signUp(name.trim(), phone.trim(), password, mode: mode);
     await _adopt(session);
   }
 
@@ -158,10 +158,19 @@ class AppState extends ChangeNotifier {
     _timer = Timer.periodic(pollEvery, (_) => checkNotifications());
   }
 
+  bool _disposed = false;
+
   @override
   void dispose() {
+    _disposed = true;
     _timer?.cancel();
     super.dispose();
+  }
+
+  // Background checks can finish after the app state has gone; telling listeners then would throw.
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
   }
 
   /// Fetches anything new from the server, raises phone notifications for it, and updates the badges.
@@ -200,6 +209,14 @@ class AppState extends ChangeNotifier {
 
   void setUnreadNotifications(int count) {
     unreadNotifications = count;
+    notifyListeners();
+  }
+
+  bool get driverMode => user?.appMode == 'driver';
+
+  /// Switches between riding and driving. The choice is saved on the account, so it follows the person.
+  Future<void> setMode(String mode) async {
+    user = await api.updateMe({'app_mode': mode});
     notifyListeners();
   }
 

@@ -13,6 +13,7 @@ module Api
           fee: { percent: serializer.money(setting.fee_percent), charged_to: setting.fee_charged_to },
           max_price_per_seat: serializer.money(setting.max_price_per_seat),
           payment_instructions: setting.payment_instructions,
+          phone_verification: AfroMessageClient.enabled?,
           commutes_enabled: setting.commutes_enabled, commute_horizon_days: setting.commute_horizon_days,
           announcement: (setting.announcement if setting.announcement_active?),
           vehicle_fields: VehicleField.active.map { |field| serializer.vehicle_field(field) },

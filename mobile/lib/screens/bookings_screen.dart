@@ -58,8 +58,12 @@ class _BookingsTabState extends State<BookingsTab> {
         _load();
       });
     }
+    final driver = context.watch<AppState>().driverMode;
+    // Passengers who have never had a seat request just see their own bookings.
+    if (!driver && _received.isEmpty) return _list(_made, context.t('no_bookings'), false);
     return DefaultTabController(
       length: 2,
+      initialIndex: driver ? 1 : 0,
       child: Column(children: [
         TabBar(tabs: [
           Tab(text: context.t('my_bookings')),

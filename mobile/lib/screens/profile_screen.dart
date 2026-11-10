@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import '../widgets/paged_trips.dart';
 import 'alerts_screen.dart';
+import 'home_shell.dart';
 import 'trip_screen.dart';
 
 class ProfileTab extends StatelessWidget {
@@ -30,7 +31,7 @@ class ProfileTab extends StatelessWidget {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(user.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                if ((user.email ?? '').isNotEmpty) Text(user.email!, style: Theme.of(context).textTheme.bodySmall),
+                if ((user.email ?? '').isNotEmpty) Text(user.email!, style: Theme.of(context).textTheme.bodySmall) else if ((user.phone ?? '').isNotEmpty) Text(user.phone!, style: Theme.of(context).textTheme.bodySmall),
                 const SizedBox(height: 4),
                 RatingLine(user),
               ]),
@@ -39,9 +40,34 @@ class ProfileTab extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.t('using_app_as'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                segments: [
+                  ButtonSegment(value: 'passenger', icon: const Icon(Icons.airline_seat_recline_normal), label: Text(context.t('role_passenger'))),
+                  ButtonSegment(value: 'driver', icon: const Icon(Icons.directions_car), label: Text(context.t('role_driver'))),
+                ],
+                selected: {user.appMode},
+                onSelectionChanged: (s) => switchMode(context, s.first),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(context.t(user.appMode == 'driver' ? 'role_driver_hint' : 'role_passenger_hint'), style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 12),
       _Tile(Icons.edit_outlined, context.t('profile'), () => push(const ProfileFormScreen())),
-      _Tile(Icons.directions_car_outlined, context.t('vehicle_details'), () => push(const VehicleScreen()), warn: !user.vehicleComplete),
-      _Tile(Icons.route_outlined, context.t('my_trips'), () => push(const MyTripsScreen())),
+      if (user.appMode == 'driver') ...[
+        _Tile(Icons.directions_car_outlined, context.t('vehicle_details'), () => push(const VehicleScreen()), warn: !user.vehicleComplete),
+        _Tile(Icons.route_outlined, context.t('my_trips'), () => push(const MyTripsScreen())),
+      ],
       _Tile(Icons.notifications_outlined, context.t('alerts_title'), () => push(const AlertsScreen())),
       Card(
         child: SwitchListTile(
@@ -133,6 +159,7 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
   late final _fuel = TextEditingController(text: _fuelText(context.read<AppState>().user?.fuelPerKm ?? 0));
   late bool _email = context.read<AppState>().user?.sendEmail ?? false;
+  late final bool _phoneAccount = context.read<AppState>().user?.phoneAccount ?? false;
   bool _busy = false;
 
   static String _fuelText(double v) => v == 0 ? '' : v.toString();
@@ -149,8 +176,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     setState(() => _busy = true);
     try {
       app.updateUser(await app.api.updateMe({
-        'phone': _phone.text.trim(),
-        'send_email_messages': _email,
+        if (!_phoneAccount) 'phone': _phone.text.trim(),
+        if (!_phoneAccount) 'send_email_messages': _email,
         if (_fuel.text.trim().isNotEmpty) 'vehicle_avg_consumption': _fuel.text.trim(),
       }));
       if (mounted) {
@@ -168,10 +195,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(context.t('profile'))),
         body: ListView(padding: const EdgeInsets.all(16), children: [
-          TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: context.t('phone'), helperText: context.t('phone_hint'), helperMaxLines: 3)),
+          TextField(controller: _phone, enabled: !_phoneAccount, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: context.t('phone'), helperText: context.t(_phoneAccount ? 'phone_is_login' : 'phone_hint'), helperMaxLines: 3)),
           const SizedBox(height: 16),
           TextField(controller: _fuel, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: context.t('fuel_per_km'), prefixText: '${context.watch<AppState>().config.currencySymbol} ')),
-          SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('email_notifications')), value: _email, onChanged: (v) => setState(() => _email = v)),
+          if (!_phoneAccount) SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(context.t('email_notifications')), value: _email, onChanged: (v) => setState(() => _email = v)),
           const SizedBox(height: 12),
           FilledButton(onPressed: _busy ? null : _save, child: Text(context.t('save'))),
         ]),

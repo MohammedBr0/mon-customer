@@ -11,6 +11,7 @@ class User < ApplicationRecord
   # :recoverable, :rememberable, :trackable, :validatable
 
   GENDER = %w[male female].freeze
+  APP_MODES = %w[passenger driver].freeze
 
   paginates_per 25
 
@@ -30,11 +31,21 @@ class User < ApplicationRecord
   has_many :conversations, ->(user) { unscope(:where).where(sender: user).or(where(receiver: user)) }, inverse_of: :sender, dependent: :destroy
 
   validates :gender, inclusion: GENDER, allow_blank: true
+  validates :app_mode, inclusion: APP_MODES
   validates :time_zone, inclusion: ActiveSupport::TimeZone.all.map(&:name)
   validates :vehicle_avg_consumption, numericality: { greater_than: 0, less_than: 1000 }, presence: true
 
   def age
     ((Time.current.to_fs(:number).to_i - birthday.at_midnight.to_fs(:number).to_i) / 1e10.to_i) if birthday?
+  end
+
+  def driver_mode?
+    app_mode == 'driver'
+  end
+
+  # Registered with a phone number: the stored address is a stand-in, not somewhere mail can go.
+  def phone_account?
+    PhoneLogin.stand_in?(email)
   end
 
   def female?

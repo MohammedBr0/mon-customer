@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_08_150000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_10_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -154,6 +154,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_08_150000) do
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
+  create_table "phone_verifications", force: :cascade do |t|
+    t.string "phone", null: false
+    t.string "verification_id", null: false
+    t.string "ip"
+    t.integer "attempts", default: 0, null: false
+    t.datetime "expires_at", null: false
+    t.datetime "consumed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["phone", "created_at"], name: "index_phone_verifications_on_phone_and_created_at"
+    t.index ["verification_id"], name: "index_phone_verifications_on_verification_id", unique: true
+  end
+
   create_table "platform_settings", force: :cascade do |t|
     t.decimal "fee_percent", precision: 5, scale: 2, default: "10.0", null: false
     t.string "fee_charged_to", default: "passenger", null: false
@@ -254,6 +267,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_08_150000) do
     t.boolean "moderator", default: false, null: false
     t.datetime "verified_at"
     t.bigint "verified_by_id"
+    t.string "app_mode", default: "passenger", null: false
+    t.datetime "phone_verified_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["provider", "uid"], name: "index_users_on_provider_and_uid", unique: true
     t.index ["verified_by_id"], name: "index_users_on_verified_by_id"

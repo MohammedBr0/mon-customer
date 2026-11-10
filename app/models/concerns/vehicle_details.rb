@@ -13,6 +13,7 @@ module VehicleDetails
 
     before_validation :sanitize_vehicle_data
     before_validation :normalize_phone
+    before_save { self.phone_verified_at = nil if phone_changed? && !phone_verified_at_changed? }
     validate :vehicle_data_matches_fields
     # The condition keeps this server-side only: the browser would test the raw text ("0911 22 33 44")
     # before normalize_phone turns it into +251911223344, and wrongly block valid numbers.

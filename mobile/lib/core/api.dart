@@ -77,13 +77,14 @@ class Api {
   Future<AppConfig> config() async => AppConfig.fromJson(await _send('GET', '/config'));
 
   // ---- auth ----
-  Future<({String token, Profile user})> signIn(String email, String password) async {
-    final data = await _send('POST', '/auth/sign_in', body: {'email': email, 'password': password, 'device_name': 'android'});
+  /// [login] is an Ethiopian mobile number or an email address.
+  Future<({String token, Profile user})> signIn(String login, String password) async {
+    final data = await _send('POST', '/auth/sign_in', body: {'login': login, 'password': password, 'device_name': 'android'});
     return (token: data['token'] as String, user: Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map)));
   }
 
-  Future<({String token, Profile user})> signUp(String name, String email, String password) async {
-    final data = await _send('POST', '/auth/sign_up', body: {'name': name, 'email': email, 'password': password, 'device_name': 'android'});
+  Future<({String token, Profile user})> signUp(String name, String phone, String password, {required String mode}) async {
+    final data = await _send('POST', '/auth/sign_up', body: {'name': name, 'phone': phone, 'password': password, 'app_mode': mode, 'device_name': 'android'});
     return (token: data['token'] as String, user: Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map)));
   }
 

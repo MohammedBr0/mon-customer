@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
 import 'package:icare/core/format.dart';
+import 'package:icare/core/phone.dart';
 import 'package:icare/core/polyline.dart';
 import 'package:icare/widgets/map_markers.dart';
 import 'package:icare/widgets/route_map.dart';
@@ -182,6 +183,72 @@ void main() {
     });
   });
 
+  group('phone sign-up and roles', () {
+    test('accepts the ways an Ethiopian mobile number is written', () {
+      for (final written in ['0911 22 33 44', '911223344', '251911223344', '+251 911 223 344', '0911-223-344']) {
+        expect(normalizeEthiopianPhone(written), '+251911223344');
+      }
+      expect(normalizeEthiopianPhone('0711223344'), '+251711223344');
+      for (final bad in ['0811223344', '091122334', '+15551234567', 'abc', '']) {
+        expect(normalizeEthiopianPhone(bad), isNull);
+      }
+    });
+
+    test('a sign-in box takes a phone number or an email', () {
+      expect(isValidLogin('0911223344'), isTrue);
+      expect(isValidLogin('a@b.co'), isTrue);
+      expect(isValidLogin('a@b'), isFalse);
+      expect(isValidLogin('hello'), isFalse);
+    });
+
+    test('sign-up sends the phone number and the chosen role; switching saves it', () async {
+      final bodies = <String, dynamic>{};
+      final state = _state((r) async {
+        if (r.url.path.endsWith('/auth/sign_up')) {
+          bodies['sign_up'] = jsonDecode(r.body);
+          return _json({'token': 'tok', 'user': {..._profile, 'app_mode': 'driver', 'phone_account': true, 'phone': '+251911223344'}});
+        }
+        if (r.url.path.endsWith('/me') && r.method == 'PATCH') {
+          bodies['me'] = jsonDecode(r.body);
+          return _json({'user': {..._profile, 'app_mode': 'passenger'}});
+        }
+        return _json({'conversations': [], 'notifications': [], 'unread': 0});
+      });
+      await state.signUp('Abebe', '+251911223344', 'secret123', mode: 'driver');
+      expect(bodies['sign_up'], containsPair('phone', '+251911223344'));
+      expect(bodies['sign_up'], containsPair('app_mode', 'driver'));
+      expect(state.driverMode, isTrue);
+      expect(state.user!.phoneAccount, isTrue);
+
+      await state.setMode('passenger');
+      expect(bodies['me']['user'], {'app_mode': 'passenger'});
+      expect(state.driverMode, isFalse);
+      state.dispose();
+    });
+
+    test('an older server without a mode means passenger', () {
+      expect(Profile.fromJson(_profile).appMode, 'passenger');
+    });
+  });
+
+  testWidgets('registration asks for a phone number and a role', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2600);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    final state = _state((_) async => _json({}));
+    await tester.pumpWidget(IcareApp(state: state));
+    await state.start();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New here? Create an account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Passenger'), findsOneWidget);
+    expect(find.text('Driver'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextFormField, 'Phone number'), '12345');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pumpAndSettle();
+    expect(find.text('Enter an Ethiopian mobile number, like 0911 22 33 44'), findsOneWidget);
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;
@@ -266,7 +333,7 @@ void main() {
     expect(find.text('Sign in'), findsWidgets);
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Enter a valid email'), findsOneWidget);
+    expect(find.text('Enter your phone number or email'), findsOneWidget);
     expect(find.text('Use at least 8 characters'), findsOneWidget);
     expect(calls, 0);
   });

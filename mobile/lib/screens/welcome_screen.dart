@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/app_state.dart';
+import '../core/phone.dart';
 import '../l10n/strings.dart';
 import '../widgets/common.dart';
 
@@ -19,6 +20,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _signUp = false;
+  String _mode = 'passenger';
   bool _busy = false;
   bool _hidePassword = true;
   String? _error;
@@ -40,7 +42,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     });
     try {
       if (_signUp) {
-        await app.signUp(_name.text, _email.text, _password.text);
+        await app.signUp(_name.text, normalizeEthiopianPhone(_email.text)!, _password.text, mode: _mode);
       } else {
         await app.signIn(_email.text, _password.text);
       }
@@ -100,14 +102,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   const SizedBox(height: 12),
                 ],
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: InputDecoration(labelText: context.t('email')),
-                  validator: (v) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch((v ?? '').trim()) ? null : context.tr('invalid_email'),
-                ),
+                if (_signUp)
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.telephoneNumber],
+                    decoration: InputDecoration(labelText: context.t('phone'), hintText: '0911 22 33 44', prefixIcon: const Padding(padding: EdgeInsets.fromLTRB(14, 14, 8, 14), child: Text('🇪🇹 +251', style: TextStyle(fontWeight: FontWeight.w700)))),
+                    validator: (v) => normalizeEthiopianPhone(v ?? '') == null ? context.tr('invalid_phone') : null,
+                  )
+                else
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.telephoneNumber, AutofillHints.email],
+                    decoration: InputDecoration(labelText: context.t('phone_or_email'), hintText: '0911 22 33 44', prefixIcon: const Icon(Icons.phone_android)),
+                    validator: (v) => isValidLogin(v ?? '') ? null : context.tr('invalid_login'),
+                  ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _password,
@@ -122,6 +134,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                   validator: (v) => (v ?? '').length < 8 ? context.tr('password_short') : null,
                 ),
+                if (_signUp) ...[
+                  const SizedBox(height: 16),
+                  Text(context.t('i_am'), style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(child: RoleCard(icon: Icons.airline_seat_recline_normal, title: context.t('role_passenger'), subtitle: context.t('role_passenger_hint'), selected: _mode == 'passenger', onTap: () => setState(() => _mode = 'passenger'))),
+                    const SizedBox(width: 10),
+                    Expanded(child: RoleCard(icon: Icons.directions_car, title: context.t('role_driver'), subtitle: context.t('role_driver_hint'), selected: _mode == 'driver', onTap: () => setState(() => _mode = 'driver'))),
+                  ]),
+                  Padding(padding: const EdgeInsets.only(top: 6), child: Text(context.t('role_switch_hint'), style: Theme.of(context).textTheme.bodySmall)),
+                ],
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Container(
@@ -139,6 +162,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   onPressed: _busy ? null : () => setState(() {
                     _signUp = !_signUp;
                     _error = null;
+                    _email.clear();
                   }),
                   child: Text(_signUp ? context.t('have_account') : context.t('no_account')),
                 ),
@@ -165,4 +189,46 @@ class OfflineScreen extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// A big tappable choice between riding and driving.
+class RoleCard extends StatelessWidget {
+  const RoleCard({super.key, required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected ? scheme.primaryContainer : scheme.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: selected ? scheme.primary : scheme.outlineVariant, width: selected ? 2 : 1),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(icon, color: selected ? scheme.primary : scheme.onSurfaceVariant),
+              const Spacer(),
+              Icon(selected ? Icons.check_circle : Icons.circle_outlined, size: 20, color: selected ? scheme.primary : scheme.outlineVariant),
+            ]),
+            const SizedBox(height: 8),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+          ]),
+        ),
+      ),
+    );
+  }
 }

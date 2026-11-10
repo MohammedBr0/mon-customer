@@ -4,6 +4,12 @@ en-US:
     unauthorized: Please sign in again
     banned: This account is suspended
     rate_limited: Too many attempts. Try again in a few minutes.
+    invalid_login: Enter your phone number or email address
+    invalid_phone: "Enter an Ethiopian mobile number, like 0911 22 33 44"
+    phone_taken: This phone number already has an account. Sign in instead.
+    sms_unavailable: We could not send the text message. Try again in a moment.
+    invalid_code: That code is wrong or has expired. Ask for a new one.
+    otp_sms: "Your %{app} code is"
     maps_unavailable: Maps are not available right now
     no_route: No driving route found between those places
   notifications:

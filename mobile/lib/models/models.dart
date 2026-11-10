@@ -170,7 +170,11 @@ class Profile {
     this.gender,
     this.role = 'user',
     this.vehicle = const [],
+    this.appMode = 'passenger',
+    this.phoneAccount = false,
   });
+  final String appMode; // passenger | driver
+  final bool phoneAccount;
   final int id;
   final String name;
   final String? firstName;
@@ -208,6 +212,8 @@ class Profile {
         missingVehicleFields: [for (final k in (j['missing_vehicle_fields'] as List? ?? const [])) '$k'],
         gender: j['gender'] as String?,
         role: j['role'] as String? ?? 'user',
+        appMode: j['app_mode'] == 'driver' ? 'driver' : 'passenger',
+        phoneAccount: j['phone_account'] == true,
         vehicle: [
           for (final v in (j['vehicle'] as List? ?? const [])) (label: '${(v as Map)['label']}', value: '${v['value']}'),
         ],

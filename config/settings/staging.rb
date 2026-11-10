@@ -13,6 +13,12 @@ SimpleConfig.for :application do
   set :google_maps_server_key, ENV['GOOGLE_MAPS_SERVER_KEY']
   set :google_static_maps, ENV['GOOGLE_STATIC_MAPS'] == 'true'
 
+  group :afromessage do
+    set :token, ENV['AFROMESSAGE_TOKEN']
+    set :identifier, ENV['AFROMESSAGE_IDENTIFIER']
+    set :sender, ENV['AFROMESSAGE_SENDER']
+  end
+
   group :neon_auth do
     set :issuer, ENV['NEON_AUTH_URL']
     set :client_id, ENV['NEON_AUTH_CLIENT_ID']

@@ -4,6 +4,12 @@ am-ET:
     unauthorized: እባክዎ እንደገና ይግቡ
     banned: ይህ መለያ ታግዷል
     rate_limited: ብዙ ሙከራዎች። ከጥቂት ደቂቃዎች በኋላ እንደገና ይሞክሩ።
+    invalid_login: ስልክ ቁጥርዎን ወይም ኢሜይልዎን ያስገቡ
+    invalid_phone: "የኢትዮጵያ ሞባይል ቁጥር ያስገቡ፣ ለምሳሌ 0911 22 33 44"
+    phone_taken: ይህ ስልክ ቁጥር መለያ አለው። ይግቡ።
+    sms_unavailable: የጽሑፍ መልእክቱን መላክ አልቻልንም። ከጥቂት ጊዜ በኋላ እንደገና ይሞክሩ።
+    invalid_code: ኮዱ የተሳሳተ ነው ወይም ጊዜው አልፏል። አዲስ ይጠይቁ።
+    otp_sms: "የ%{app} ኮድዎ"
     maps_unavailable: ካርታዎች አሁን አይገኙም
     no_route: በእነዚህ ቦታዎች መካከል የመኪና መንገድ አልተገኘም
   notifications:

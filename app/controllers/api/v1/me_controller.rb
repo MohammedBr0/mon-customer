@@ -23,7 +23,7 @@ module Api
       private
 
       def profile_params
-        params.require(:user).permit(:time_zone, :locale, :vehicle_avg_consumption, :send_email_messages, :phone, vehicle_data: {})
+        params.require(:user).permit(:app_mode, :time_zone, :locale, :vehicle_avg_consumption, :send_email_messages, :phone, vehicle_data: {})
       end
     end
   end

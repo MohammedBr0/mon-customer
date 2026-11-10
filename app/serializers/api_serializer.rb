@@ -27,7 +27,7 @@ module ApiSerializer
 
   def me(user)
     user(user).merge(
-      email: user.email, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
+      email: (user.email unless user.phone_account?), phone_account: user.phone_account?, app_mode: user.app_mode, phone_verified: user.phone_verified_at.present?, phone: user.phone, locale: user.locale, time_zone: user.time_zone, send_email_messages: user.send_email_messages,
       vehicle_avg_consumption: user.vehicle_avg_consumption.to_f, vehicle_data: user.vehicle_data, vehicle_complete: user.vehicle_complete?,
       missing_vehicle_fields: user.missing_vehicle_fields.map(&:key), gender: user.gender, role: user.role_name, staff: user.staff?
     )

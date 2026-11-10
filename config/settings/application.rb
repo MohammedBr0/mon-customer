@@ -20,6 +20,14 @@ SimpleConfig.for :application do
   set :google_analytics_id, nil
   set :google_maps_api_key, nil
   set :google_maps_server_key, nil
+
+  # SMS codes for phone registration (AfroMessage). Without a token, phone sign-up works without a code.
+  group :afromessage do
+    set :token, nil
+    set :identifier, nil
+    set :sender, nil
+  end
+
   set :google_static_maps, false
 
   # Neon Auth (managed Better Auth) acting as an OpenID Connect provider

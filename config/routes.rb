@@ -53,6 +53,7 @@ Rails.application.routes.draw do
       resource :config, only: :show, controller: :config
       post 'auth/sign_in', to: 'auth#sign_in'
       post 'auth/sign_up', to: 'auth#sign_up'
+      post 'auth/send_code', to: 'auth#send_code'
       delete 'auth/sign_out', to: 'auth#sign_out'
       resource :me, only: %i[show update destroy], controller: :me
       resources :itineraries, only: %i[index show create update] do
