@@ -66,12 +66,26 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// True once the server's settings (payment methods, vehicle questions, fees, towns) have arrived.
+  bool configLoaded = false;
+  Timer? _configRetry;
+
+  /// Fetches the server's settings. The server can take up to a minute to wake after being idle, so a failed
+  /// attempt is retried in the background until it succeeds instead of leaving the app on empty defaults.
   Future<void> loadConfig() async {
     try {
       config = await api.config();
+      configLoaded = true;
       offline = false;
+      _configRetry?.cancel();
+      _configRetry = null;
     } on ApiException {
       offline = true;
+      if (!configLoaded) {
+        _configRetry ??= Timer.periodic(const Duration(seconds: 8), (_) {
+          if (!_disposed) loadConfig();
+        });
+      }
     }
     notifyListeners();
   }
@@ -167,6 +181,7 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _configRetry?.cancel();
     _timer?.cancel();
     super.dispose();
   }

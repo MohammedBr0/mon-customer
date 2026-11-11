@@ -32,6 +32,17 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       _names[p.id] = TextEditingController(text: p.accountName ?? '');
       _numbers[p.id] = TextEditingController(text: p.accountNumber ?? '');
     }
+    // Always ask for the current list, so methods the admins add or switch off show without restarting the app.
+    _reload();
+  }
+
+  bool _loadingList = false;
+
+  Future<void> _reload() async {
+    final app = context.read<AppState>();
+    setState(() => _loadingList = true);
+    await app.loadConfig();
+    if (mounted) setState(() => _loadingList = false);
   }
 
   @override
@@ -72,10 +83,18 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
       appBar: AppBar(title: Text(context.t('payment_methods'))),
       body: Form(
         key: _form,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+        child: RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
           Text(context.t('payment_methods_intro')),
           const SizedBox(height: 12),
-          if (options.isEmpty) EmptyState(context.t('no_payment_methods'), icon: Icons.account_balance_wallet_outlined),
+          if (options.isEmpty && _loadingList) const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())),
+          if (options.isEmpty && !_loadingList)
+            EmptyState(
+              context.t(context.watch<AppState>().configLoaded ? 'no_payment_methods' : 'settings_not_loaded'),
+              icon: Icons.account_balance_wallet_outlined,
+              action: OutlinedButton(onPressed: _reload, child: Text(context.t('retry'))),
+            ),
           for (final option in options)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -104,8 +123,9 @@ class _PaymentMethodsScreenState extends State<PaymentMethodsScreen> {
             ),
           Text(context.t('payment_privacy'), style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _busy ? null : _save, child: Text(context.t('save'))),
+          FilledButton(onPressed: _busy || options.isEmpty ? null : _save, child: Text(context.t('save'))),
         ]),
+        ),
       ),
     );
   }

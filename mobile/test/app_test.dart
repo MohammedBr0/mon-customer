@@ -602,6 +602,27 @@ void main() {
     });
   });
 
+  test('settings that fail to load at start are fetched again instead of staying empty', () async {
+    var calls = 0;
+    final state = _state((r) async {
+      if (r.url.path.endsWith('/config')) {
+        calls++;
+        if (calls == 1) throw http.ClientException('server asleep');
+        return _json({'payment_methods': [{'id': 1, 'name': 'Cash'}], 'vehicle_fields': [{'key': 'make', 'label': 'Make'}]});
+      }
+      return _json({});
+    });
+    await state.start();
+    expect(state.configLoaded, isFalse);
+    expect(state.config.paymentMethods, isEmpty);
+
+    await state.loadConfig(); // what the retry timer and the screens do
+    expect(state.configLoaded, isTrue);
+    expect(state.config.paymentMethods.single.name, 'Cash');
+    expect(state.config.vehicleFields.single.key, 'make');
+    state.dispose();
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;

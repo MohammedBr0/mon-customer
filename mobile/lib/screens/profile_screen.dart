@@ -276,6 +276,21 @@ class _VehicleScreenState extends State<VehicleScreen> {
   late final Map<String, dynamic> _values = Map<String, dynamic>.from(context.read<AppState>().user?.vehicleData ?? const {});
   final Map<String, TextEditingController> _controllers = {};
   bool _busy = false;
+  bool _loadingFields = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Always ask for the current questions, so changes the admins make show without restarting the app.
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    final app = context.read<AppState>();
+    setState(() => _loadingFields = true);
+    await app.loadConfig();
+    if (mounted) setState(() => _loadingFields = false);
+  }
 
   TextEditingController _controller(VehicleField f) => _controllers.putIfAbsent(f.key, () => TextEditingController(text: '${_values[f.key] ?? ''}'));
 
@@ -327,15 +342,25 @@ class _VehicleScreenState extends State<VehicleScreen> {
       appBar: AppBar(title: Text(context.t('vehicle_details'))),
       body: Form(
         key: _form,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+        child: RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
           Text(context.t('vehicle_intro')),
           const SizedBox(height: 16),
+          if (fields.isEmpty && _loadingFields) const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())),
+          if (fields.isEmpty && !_loadingFields)
+            EmptyState(
+              context.t(context.watch<AppState>().configLoaded ? 'no_vehicle_fields' : 'settings_not_loaded'),
+              icon: Icons.directions_car_outlined,
+              action: OutlinedButton(onPressed: _reload, child: Text(context.t('retry'))),
+            ),
           for (final f in fields) ...[
             _field(context, f),
             const SizedBox(height: 14),
           ],
-          FilledButton(onPressed: _busy ? null : _save, child: Text(context.t('save'))),
+          FilledButton(onPressed: _busy || fields.isEmpty ? null : _save, child: Text(context.t('save'))),
         ]),
+        ),
       ),
     );
   }
