@@ -14,6 +14,8 @@ class IdentityDocument < ApplicationRecord
   validates :kind, inclusion: { in: KINDS }, uniqueness: { scope: :user_id }
   validates :status, inclusion: { in: STATUSES }
   validates :number, presence: true, length: { maximum: 40 }
+  # The national ID is checked by its FAN, the 16-digit Fayda Alias Number printed on the Fayda card.
+  validates :number, format: { with: /\A\d{16}\z/, message: :invalid_fan }, if: -> { kind == 'national_id' }
   validates :content_type, inclusion: { in: IMAGE_TYPES, message: :not_an_image }
   validates :image, presence: true
   validate :image_is_small_enough
@@ -28,6 +30,7 @@ class IdentityDocument < ApplicationRecord
   # Sends in (or replaces) one document. A new picture always goes back to "pending".
   def self.submit!(user:, kind:, number:, upload:)
     document = find_or_initialize_by(user:, kind:)
+    number = number.to_s.gsub(/[\s-]/, '') if kind.to_s == 'national_id' # people type the FAN in groups of four
     document.assign_attributes(number: number.to_s.strip, image: upload.read, content_type: upload.content_type.to_s,
                                status: 'pending', rejection_reason: nil, reviewed_by: nil, reviewed_at: nil)
     document.save!
@@ -47,10 +50,10 @@ class IdentityDocument < ApplicationRecord
     Notification.notify(user, 'identity_rejected', document: kind, reason: rejection_reason)
   end
 
-  # The verified badge follows the documents: on when both are approved, off as soon as one is not.
+  # The verified badge means "we checked this person's national ID", for passengers and drivers alike.
+  # Whether a driver's licence was checked is shown separately (User#licence_verified?).
   def self.sync_verification(user, by: nil)
-    approved = where(user:, status: 'approved').pluck(:kind)
-    complete = (KINDS - approved).empty?
+    complete = where(user:, kind: 'national_id', status: 'approved').exists?
     if complete && !user.verified?
       user.update_columns(verified_at: Time.current, verified_by_id: by&.id)
     elsif !complete && user.verified? && exists?(user:)

@@ -69,7 +69,7 @@ module Api
 
       def respond_with_session(neon_user, status: :ok, phone: nil, mode: nil, verified: false)
         user = User.where(provider: 'neon', uid: neon_user.id).first_or_initialize
-        user.assign_attributes(email: neon_user.email, name: neon_user.name.presence || user.name || neon_user.email.to_s.split('@').first, image: neon_user.image.presence || user.image)
+        user.assign_attributes(email: neon_user.email, name: neon_user.name.presence || user.name || neon_user.email.to_s.split('@').first, image: (user.image if user.image.to_s.start_with?('/avatars/')) || neon_user.image.presence || user.image)
         # A phone account always carries its sign-in number, so drivers and passengers can call each other.
         user.phone = phone || PhoneLogin.phone_from(neon_user.email) || user.phone
         user.app_mode = mode if mode

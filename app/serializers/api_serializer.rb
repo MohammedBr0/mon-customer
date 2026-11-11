@@ -17,8 +17,8 @@ module ApiSerializer
 
   def user(user, confirmed: false, vehicle: false)
     data = {
-      id: user.id, name: user.to_s, first_name: user.first_name, image: user.image.presence,
-      verified: user.verified?, rating: user.average_rating, reviews_count: user.reviews_count
+      id: user.id, name: user.to_s, first_name: user.first_name, image: absolute_image(user.image),
+      verified: user.verified?, licence_verified: user.licence_verified?, rating: user.average_rating, reviews_count: user.reviews_count
     }
     data[:phone] = user.phone if confirmed && user.phone.present?
     data[:vehicle] = user.visible_vehicle_details(confirmed:).map { |field, value| { key: field.key, label: field.label_for, value: } } if vehicle
@@ -124,6 +124,14 @@ module ApiSerializer
       end
     end
     data
+  end
+
+  # Uploaded photos are stored as paths on this site; the app needs the full address.
+  def absolute_image(image)
+    return if image.blank?
+    return image unless image.start_with?('/')
+
+    "#{NeonAuthClient.origin}#{image}"
   end
 
   def payment_method(method)

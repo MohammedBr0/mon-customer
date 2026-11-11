@@ -569,6 +569,39 @@ void main() {
     });
   });
 
+  group('photos, FAN and refresh', () {
+    test('a FAN is 16 digits, with or without spaces', () {
+      expect(isFan('1234 5678 9012 3456'), isTrue);
+      expect(isFan('1234567890123456'), isTrue);
+      expect(isFan('1234-5678-9012-3456'), isTrue);
+      expect(isFan('123456789012'), isFalse); // 12 digits is the FIN, not the FAN
+      expect(isFan('12345678901234567'), isFalse);
+      expect(isFan('abcd 5678 9012 3456'), isFalse);
+    });
+
+    test('a profile knows whether the ID and the licence were checked', () {
+      final p = Profile.fromJson({..._profile, 'verified': true, 'licence_verified': false});
+      expect(p.verified, isTrue);
+      expect(p.licenceVerified, isFalse);
+    });
+
+    test('a profile photo is uploaded as a photo and can be removed', () async {
+      final seen = <String>[];
+      final api = Api(client: MockClient.streaming((request, body) async {
+        seen.add('${request.method} ${request.url.path}');
+        final bytes = await body.toBytes();
+        if (request.method == 'POST') {
+          expect(request.headers['content-type'], startsWith('multipart/form-data'));
+          expect(String.fromCharCodes(bytes), contains('filename="me.jpg"'));
+        }
+        return http.StreamedResponse(Stream.value(utf8.encode(jsonEncode({'user': {..._profile, 'image': 'https://x.test/avatars/7?v=1'}}))), 200, headers: {'content-type': 'application/json'});
+      }), base: 'https://x.test');
+      expect((await api.uploadAvatar([1, 2, 3], 'me.jpg')).image, 'https://x.test/avatars/7?v=1');
+      await api.removeAvatar();
+      expect(seen, ['POST /api/v1/me/avatar', 'DELETE /api/v1/me/avatar']);
+    });
+  });
+
   group('Api', () {
     test('sends the bearer token and language', () async {
       late http.Request seen;

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../core/phone.dart';
+
 import '../core/app_state.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
@@ -119,24 +121,32 @@ class IdentityScreen extends StatelessWidget {
     final docs = {for (final d in user?.identity ?? const <IdentityDoc>[]) d.kind: d};
     return Scaffold(
       appBar: AppBar(title: Text(context.t('identity_title'))),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
+      body: RefreshIndicator(
+        onRefresh: () async {
+          try {
+            await context.read<AppState>().refreshUser();
+          } catch (_) {}
+        },
+        child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
         Card(
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Row(children: [
               Icon(user?.verified == true ? Icons.verified : Icons.shield_outlined, color: Theme.of(context).colorScheme.primary, size: 32),
               const SizedBox(width: 12),
-              Expanded(child: Text(context.t(user?.verified == true ? 'identity_verified' : 'identity_intro'))),
+              Expanded(child: Text(context.t(user?.verified == true ? 'identity_verified' : (context.watch<AppState>().driverMode ? 'identity_intro' : 'identity_intro_passenger')))),
             ]),
           ),
         ),
         const SizedBox(height: 12),
-        for (final kind in const ['driver_license', 'national_id']) ...[
+        // Everyone proves who they are with their national ID; drivers also send their driving licence.
+        for (final kind in ['national_id', if (context.watch<AppState>().driverMode) 'driver_license']) ...[
           _DocumentCard(kind: kind, doc: docs[kind]),
           const SizedBox(height: 12),
         ],
         Text(context.t('identity_privacy'), style: Theme.of(context).textTheme.bodySmall),
       ]),
+      ),
     );
   }
 }
@@ -176,6 +186,10 @@ class _DocumentCardState extends State<_DocumentCard> {
     final app = context.read<AppState>();
     if (_number.text.trim().isEmpty || _photo == null) {
       setState(() => _error = context.tr('identity_need_both'));
+      return;
+    }
+    if (widget.kind == 'national_id' && !isFan(_number.text)) {
+      setState(() => _error = context.tr('fan_invalid'));
       return;
     }
     setState(() {
@@ -223,7 +237,16 @@ class _DocumentCardState extends State<_DocumentCard> {
           if (status == 'pending') Padding(padding: const EdgeInsets.only(top: 8), child: Text(context.t('identity_pending_hint'), style: Theme.of(context).textTheme.bodySmall)),
           if (!approved) ...[
             const SizedBox(height: 12),
-            TextField(controller: _number, decoration: InputDecoration(labelText: context.t('doc_number'))),
+            TextField(
+              controller: _number,
+              keyboardType: widget.kind == 'national_id' ? TextInputType.number : TextInputType.text,
+              decoration: InputDecoration(
+                labelText: context.t(widget.kind == 'national_id' ? 'fan_number' : 'doc_number'),
+                hintText: widget.kind == 'national_id' ? '1234 5678 9012 3456' : null,
+                helperText: widget.kind == 'national_id' ? context.t('fan_hint') : null,
+                helperMaxLines: 2,
+              ),
+            ),
             const SizedBox(height: 10),
             Row(children: [
               Expanded(child: OutlinedButton.icon(onPressed: _busy ? null : () => _pick(ImageSource.camera), icon: const Icon(Icons.photo_camera_outlined), label: Text(context.t('take_photo')))),

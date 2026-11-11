@@ -174,6 +174,7 @@ class Profile {
     this.phone,
     this.image,
     this.verified = false,
+    this.licenceVerified = false,
     this.rating,
     this.reviewsCount = 0,
     this.locale,
@@ -202,7 +203,8 @@ class Profile {
   final String? email;
   final String? phone;
   final String? image;
-  final bool verified;
+  final bool verified; // staff checked their national ID
+  final bool licenceVerified; // staff checked their driving licence
   final double? rating;
   final int reviewsCount;
   final String? locale;
@@ -223,6 +225,7 @@ class Profile {
         phone: j['phone'] as String?,
         image: j['image'] as String?,
         verified: j['verified'] == true,
+        licenceVerified: j['licence_verified'] == true,
         rating: j['rating'] == null ? null : _d(j['rating']),
         reviewsCount: _i(j['reviews_count']) ?? 0,
         locale: j['locale'] as String?,

@@ -14,3 +14,6 @@ bool isValidLogin(String raw) {
   if (text.contains('@')) return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(text);
   return normalizeEthiopianPhone(text) != null;
 }
+
+/// The FAN (Fayda Alias Number) on an Ethiopian national ID card: 16 digits, often written in groups of four.
+bool isFan(String raw) => RegExp(r'^\d{16}$').hasMatch(raw.replaceAll(RegExp(r'[\s-]'), ''));

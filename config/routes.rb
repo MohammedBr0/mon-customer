@@ -21,6 +21,8 @@ Rails.application.routes.draw do
   get 'maps/geocode', to: 'maps#geocode'
   get 'maps/route', to: 'maps#route'
 
+  get 'avatars/:id', to: 'avatars#show', as: :avatar
+
   resources :city_commutes, only: %i[index new create]
 
   resources :itineraries, only: %i[show new create edit update destroy index search] do
@@ -58,6 +60,8 @@ Rails.application.routes.draw do
       resource :me, only: %i[show update destroy], controller: :me do
         put :payment_methods
         post :identity
+        post :avatar
+        delete :avatar, action: :remove_avatar
       end
       resources :itineraries, only: %i[index show create update] do
         get :mine, on: :collection

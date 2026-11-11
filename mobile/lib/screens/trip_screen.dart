@@ -168,6 +168,7 @@ class _TripScreenState extends State<TripScreen> {
                   Row(children: [
                     Flexible(child: Text(trip.driver.name, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800), overflow: TextOverflow.ellipsis)),
                     if (trip.driver.verified) ...[const SizedBox(width: 6), Chip2(context.t('verified'), icon: Icons.verified)],
+                    if (trip.driver.licenceVerified) ...[const SizedBox(width: 6), Chip2(context.t('licensed'), icon: Icons.badge_outlined)],
                   ]),
                   RatingLine(trip.driver),
                 ]),

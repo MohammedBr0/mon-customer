@@ -288,7 +288,9 @@ class _HomeTabState extends State<HomeTab> {
             color: scheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             clipBehavior: Clip.antiAlias,
-            child: ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 0, 16, 90), children: [
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(controller: scroll, physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.fromLTRB(16, 0, 16, 90), children: [
               // The handle: tap or drag to minimise and restore the list.
               Semantics(
                 button: true,
@@ -331,6 +333,7 @@ class _HomeTabState extends State<HomeTab> {
                   child: RideRow(trip: _trips[i], requests: _pending[_trips[i].id] ?? 0, away: _driver ? null : _away(_trips[i]), symbol: app.config.currencySymbol, locale: app.locale, onTap: () => openTrip(context, _trips[i].id), onShowOnMap: _canShowMap ? () => _focus(i) : null),
                 ),
             ]),
+            ),
           ),
         ),
       ),

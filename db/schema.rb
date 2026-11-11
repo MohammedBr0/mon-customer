@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_11_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -39,6 +39,15 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_120000) do
     t.index ["action"], name: "index_audit_logs_on_action"
     t.index ["actor_id"], name: "index_audit_logs_on_actor_id"
     t.index ["subject_type", "subject_id"], name: "index_audit_logs_on_subject_type_and_subject_id"
+  end
+
+  create_table "avatars", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.binary "image", null: false
+    t.string "content_type", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_avatars_on_user_id", unique: true
   end
 
   create_table "bookings", force: :cascade do |t|
@@ -345,6 +354,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_120000) do
 
   add_foreign_key "api_tokens", "users"
   add_foreign_key "audit_logs", "users", column: "actor_id"
+  add_foreign_key "avatars", "users", on_delete: :cascade
   add_foreign_key "bookings", "itineraries"
   add_foreign_key "bookings", "users", column: "cancelled_by_id"
   add_foreign_key "bookings", "users", column: "passenger_id"

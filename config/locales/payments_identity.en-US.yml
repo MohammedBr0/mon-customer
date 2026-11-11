@@ -20,11 +20,11 @@ en-US:
       deleted: Payment method deleted.
   identity:
     admin_title: Identity checks
-    admin_intro: Driving licences and national IDs sent in from the app. A person gets the verified badge when both are approved.
+    admin_intro: National IDs (checked by their FAN) and driving licences sent in from the app. Approving a national ID gives the person the verified badge; approving a licence marks a driver as licensed.
     none: Nothing here.
     review: Review
     person: Person
-    number: Document number
+    number: Document number (FAN for a national ID)
     status: Status
     sent: Sent
     approve: Approve
@@ -60,3 +60,11 @@ en-US:
               not_an_image: must be a JPEG, PNG or WebP photo
             image:
               too_large: is too large (5 MB at most)
+            number:
+              invalid_fan: must be the 16-digit FAN from your Fayda card
+        avatar:
+          attributes:
+            content_type:
+              not_an_image: must be a JPEG, PNG or WebP photo
+            image:
+              too_large: is too large (2 MB at most)

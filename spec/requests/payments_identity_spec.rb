@@ -64,7 +64,8 @@ RSpec.describe 'Payment methods and identity verification' do
   end
 
   describe 'identity verification' do
-    def send_document(kind, user: driver, file: photo, number: 'ET-12345')
+    def send_document(kind, user: driver, file: photo, number: nil)
+      number ||= kind == 'national_id' ? '1234 5678 9012 3456' : 'DL-12345'
       post '/api/v1/me/identity', params: { kind:, number:, image: file }, headers: api_headers(user)
     end
 
@@ -87,6 +88,23 @@ RSpec.describe 'Payment methods and identity verification' do
       expect(IdentityDocument.count).to eq 0
     end
 
+    it 'checks the national ID by its 16-digit FAN, typed with or without spaces' do
+      send_document('national_id', number: '1234 5678 9012 3456')
+      expect(response).to have_http_status(:created), response.body
+      expect(driver.identity_documents.find_by(kind: 'national_id').number).to eq '1234567890123456'
+
+      send_document('national_id', user: rider, number: '12345')
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json['error']['message']).to include('FAN')
+    end
+
+    it 'verifies a passenger from their national ID alone' do
+      send_document('national_id', user: rider)
+      rider.identity_documents.first.approve!(by: admin)
+      expect(rider.reload).to be_verified
+      expect(rider).not_to be_licence_verified
+    end
+
     it 'verifies the person when staff approve both documents, and tells them' do
       send_document('driver_license')
       send_document('national_id')
@@ -100,7 +118,8 @@ RSpec.describe 'Payment methods and identity verification' do
       expect(response.headers['Cache-Control']).to include('no-store')
 
       patch "/admin/identity_documents/#{license.id}/approve"
-      expect(driver.reload).not_to be_verified
+      expect(driver.reload).not_to be_verified # the badge comes from the national ID
+      expect(driver).to be_licence_verified
       patch "/admin/identity_documents/#{national.id}/approve"
       expect(driver.reload).to be_verified
       expect(driver.notifications.pluck(:kind)).to eq %w[identity_approved identity_approved]
@@ -114,13 +133,14 @@ RSpec.describe 'Payment methods and identity verification' do
       expect(driver.reload).to be_verified
 
       sign_in admin
-      patch "/admin/identity_documents/#{driver.identity_documents.first.id}/reject", params: { reason: 'Photo is blurred' }
+      patch "/admin/identity_documents/#{driver.identity_documents.find_by(kind: 'national_id').id}/reject", params: { reason: 'Photo is blurred' }
       expect(driver.reload).not_to be_verified
       expect(driver.notifications.last.body).to include('Photo is blurred')
 
       sign_out admin
       send_document('driver_license')
       expect(driver.identity_documents.find_by(kind: 'driver_license')).to be_pending
+      expect(driver.reload).not_to be_licence_verified
     end
 
     it 'keeps the pictures away from everyone but staff' do
@@ -129,6 +149,44 @@ RSpec.describe 'Payment methods and identity verification' do
       sign_in rider
       get "/admin/identity_documents/#{document.id}/image"
       expect(response).to redirect_to(root_path)
+    end
+  end
+
+  describe 'profile photos' do
+    it 'lets anyone upload a photo, shown to others by its address' do
+      post '/api/v1/me/avatar', params: { image: photo }, headers: api_headers(rider)
+      expect(response).to have_http_status(:created), response.body
+      expect(json['user']['image']).to match(%r{\Ahttps?://.+/avatars/#{rider.id}\?v=\d+\z})
+
+      get "/avatars/#{rider.id}"
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq 'image/jpeg'
+      expect(response.headers['Cache-Control']).to include('public')
+
+      get "/api/v1/itineraries/#{create(:itinerary, user: rider).id}", headers: api_headers(driver)
+      expect(json['itinerary']['driver']['image']).to include("/avatars/#{rider.id}")
+    end
+
+    it 'replaces the old photo, removes it on request, and refuses files that are not photos' do
+      post '/api/v1/me/avatar', params: { image: photo }, headers: api_headers(rider)
+      post '/api/v1/me/avatar', params: { image: photo }, headers: api_headers(rider)
+      expect(Avatar.where(user: rider).count).to eq 1
+
+      post '/api/v1/me/avatar', params: { image: Rack::Test::UploadedFile.new(StringIO.new('%PDF'), 'application/pdf', true, original_filename: 'x.pdf') }, headers: api_headers(rider)
+      expect(response).to have_http_status(:unprocessable_entity)
+
+      delete '/api/v1/me/avatar', headers: api_headers(rider)
+      expect(json['user']['image']).to be_nil
+      get "/avatars/#{rider.id}"
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'keeps an uploaded photo when the person signs in again' do
+      Avatar.upload!(user: rider, upload: photo)
+      rider.update!(provider: 'neon', uid: 'neon-1')
+      stub_request(:post, "#{APP_CONFIG.neon_auth.issuer}/sign-in/email").to_return(body: { user: { id: 'neon-1', email: rider.email, name: rider.name, image: 'https://example.com/old.png' } }.to_json, headers: { 'Content-Type' => 'application/json' })
+      post '/api/v1/auth/sign_in', params: { login: rider.email, password: 'secret-pass' }
+      expect(json['user']['image']).to include('/avatars/')
     end
   end
 end

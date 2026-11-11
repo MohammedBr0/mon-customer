@@ -82,7 +82,9 @@ class _AlertsScreenState extends State<AlertsScreen> {
                   setState(() => _loading = true);
                   _load();
                 })
-              : ListView(padding: const EdgeInsets.all(16), children: [
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
                   SectionTitle(context.t('new_alert')),
                   PlaceField(label: context.t('from'), value: _from, onChanged: (p) => setState(() => _from = p)),
                   const SizedBox(height: 12),
@@ -104,6 +106,7 @@ class _AlertsScreenState extends State<AlertsScreen> {
                       ),
                     ),
                 ]),
+                ),
     );
   }
 }

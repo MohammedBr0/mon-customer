@@ -29,6 +29,22 @@ module Api
         render_invalid e.record
       end
 
+      # A new profile photo, for passengers and drivers alike.
+      def avatar
+        upload = params.require(:image)
+        return render_error('invalid_request', I18n.t('api.identity_image'), :unprocessable_entity) unless upload.respond_to?(:read)
+
+        Avatar.upload!(user: current_user, upload:)
+        render json: { user: serializer.me(current_user.reload) }, status: :created
+      rescue ActiveRecord::RecordInvalid => e
+        render_invalid e.record
+      end
+
+      def remove_avatar
+        Avatar.remove!(current_user)
+        render json: { user: serializer.me(current_user.reload) }
+      end
+
       # Sends in a photo of a driving licence or national ID for staff to check.
       def identity
         upload = params.require(:image)

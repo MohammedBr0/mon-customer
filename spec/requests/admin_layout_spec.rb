@@ -10,7 +10,7 @@ RSpec.describe 'Admin side menu and dashboard' do
     driver = create(:user, app_mode: 'driver')
     trip = create(:itinerary, user: driver)
     create(:booking, itinerary: trip, passenger: create(:user))
-    IdentityDocument.create!(user: driver, kind: 'national_id', number: 'X1', image: 'img', content_type: 'image/jpeg')
+    IdentityDocument.create!(user: driver, kind: 'national_id', number: '1234567890123456', image: 'img', content_type: 'image/jpeg')
   end
 
   it 'shows a super admin every section, with counts of what is waiting' do

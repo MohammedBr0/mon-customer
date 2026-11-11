@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,12 +23,18 @@ class ProfileTab extends StatelessWidget {
     final user = app.user;
     if (user == null) return const SizedBox.shrink();
     void push(Widget screen) => Navigator.push(context, MaterialPageRoute(builder: (_) => screen)).then((_) => app.refreshUser());
-    return ListView(padding: const EdgeInsets.all(16), children: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        try {
+          await app.refreshUser();
+        } catch (_) {}
+      },
+      child: ListView(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(16), children: [
       Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(children: [
-            Avatar(user, size: 56),
+            AvatarEditor(user: user),
             const SizedBox(width: 14),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -64,11 +71,11 @@ class ProfileTab extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
+      _Tile(Icons.verified_user_outlined, context.t('identity_title'), () => push(const IdentityScreen()), warn: !user.verified || (user.appMode == 'driver' && !user.licenceVerified)),
       _Tile(Icons.edit_outlined, context.t('profile'), () => push(const ProfileFormScreen())),
       if (user.appMode == 'driver') ...[
         _Tile(Icons.directions_car_outlined, context.t('vehicle_details'), () => push(const VehicleScreen()), warn: !user.vehicleComplete),
         _Tile(Icons.account_balance_wallet_outlined, context.t('payment_methods'), () => push(const PaymentMethodsScreen()), warn: user.payments.isEmpty),
-        _Tile(Icons.verified_user_outlined, context.t('identity_title'), () => push(const IdentityScreen()), warn: !user.verified),
         _Tile(Icons.route_outlined, context.t('my_trips'), () => push(const MyTripsScreen())),
       ],
       _Tile(Icons.notifications_outlined, context.t('alerts_title'), () => push(const AlertsScreen())),
@@ -166,7 +173,8 @@ class ProfileTab extends StatelessWidget {
         },
         child: Text(context.t('delete_account')),
       ),
-    ]);
+    ]),
+    );
   }
 }
 
@@ -372,5 +380,74 @@ class _VehicleScreenState extends State<VehicleScreen> {
       default:
         return TextFormField(controller: _controller(f), decoration: InputDecoration(labelText: label, helperText: helper), validator: requiredCheck);
     }
+  }
+}
+
+/// The profile photo with a camera badge: tap to take a new photo, choose one, or remove it.
+class AvatarEditor extends StatefulWidget {
+  const AvatarEditor({super.key, required this.user});
+  final Profile user;
+
+  @override
+  State<AvatarEditor> createState() => _AvatarEditorState();
+}
+
+class _AvatarEditorState extends State<AvatarEditor> {
+  bool _busy = false;
+
+  Future<void> _change() async {
+    final hasPhoto = (widget.user.image ?? '').isNotEmpty;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: const Icon(Icons.photo_camera_outlined), title: Text(ctx.tr('take_photo')), onTap: () => Navigator.pop(ctx, 'camera')),
+          ListTile(leading: const Icon(Icons.photo_library_outlined), title: Text(ctx.tr('choose_photo')), onTap: () => Navigator.pop(ctx, 'gallery')),
+          if (hasPhoto) ListTile(leading: const Icon(Icons.delete_outline), title: Text(ctx.tr('remove_photo')), onTap: () => Navigator.pop(ctx, 'remove')),
+        ]),
+      ),
+    );
+    if (choice == null || !mounted) return;
+    final app = context.read<AppState>();
+    try {
+      if (choice == 'remove') {
+        setState(() => _busy = true);
+        app.updateUser(await app.api.removeAvatar());
+        return;
+      }
+      // A small square-ish photo is plenty for a face and uploads quickly on a slow connection.
+      final photo = await ImagePicker().pickImage(source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery, maxWidth: 640, maxHeight: 640, imageQuality: 80, preferredCameraDevice: CameraDevice.front);
+      if (photo == null || !mounted) return;
+      setState(() => _busy = true);
+      app.updateUser(await app.api.uploadAvatar(await photo.readAsBytes(), photo.name));
+      if (mounted) showMessage(context, context.tr('photo_updated'));
+    } catch (e) {
+      if (mounted) showMessage(context, errorText(context, e), error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: context.t('change_photo'),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: _busy ? null : _change,
+        child: Stack(clipBehavior: Clip.none, children: [
+          Avatar(widget.user, size: 64),
+          if (_busy) const Positioned.fill(child: CircularProgressIndicator(strokeWidth: 3)),
+          Positioned(
+            right: -2,
+            bottom: -2,
+            child: CircleAvatar(radius: 13, backgroundColor: scheme.primary, child: Icon(Icons.photo_camera, size: 15, color: scheme.onPrimary)),
+          ),
+        ]),
+      ),
+    );
   }
 }

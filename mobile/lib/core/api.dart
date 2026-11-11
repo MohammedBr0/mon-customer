@@ -246,14 +246,22 @@ class Api {
   }
 
   /// Sends a photo of a driving licence or national ID to be checked by staff.
-  Future<Profile> submitIdentity({required String kind, required String number, required List<int> imageBytes, required String filename}) async {
+  Future<Profile> submitIdentity({required String kind, required String number, required List<int> imageBytes, required String filename}) =>
+      _upload('/me/identity', {'kind': kind, 'number': number}, imageBytes, filename);
+
+  /// A new profile photo.
+  Future<Profile> uploadAvatar(List<int> imageBytes, String filename) => _upload('/me/avatar', const {}, imageBytes, filename);
+
+  Future<Profile> removeAvatar() async => Profile.fromJson(Map<String, dynamic>.from((await _send('DELETE', '/me/avatar'))['user'] as Map));
+
+  /// Sends a photo with a few fields as a multipart form, and reads back the updated profile.
+  Future<Profile> _upload(String path, Map<String, String> fields, List<int> imageBytes, String filename) async {
     final lower = filename.toLowerCase();
     final type = lower.endsWith('.png') ? 'png' : (lower.endsWith('.webp') ? 'webp' : 'jpeg');
     final headers = Map<String, String>.from(_headers)..remove('Content-Type');
-    final request = http.MultipartRequest('POST', _uri('/me/identity', null))
+    final request = http.MultipartRequest('POST', _uri(path, null))
       ..headers.addAll(headers)
-      ..fields['kind'] = kind
-      ..fields['number'] = number
+      ..fields.addAll(fields)
       ..files.add(http.MultipartFile.fromBytes('image', imageBytes, filename: filename, contentType: MediaType('image', type)));
     final data = await _run(request, const Duration(seconds: 90));
     return Profile.fromJson(Map<String, dynamic>.from(data['user'] as Map));

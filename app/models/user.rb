@@ -24,6 +24,7 @@ class User < ApplicationRecord
   has_many :notifications, dependent: :delete_all
   has_many :driver_payment_methods, dependent: :destroy
   has_many :identity_documents, dependent: :destroy
+  has_one :avatar, dependent: :destroy
   has_many :reports_made, class_name: 'Report', foreign_key: :reporter_id, inverse_of: :reporter, dependent: :destroy
   belongs_to :verified_by, class_name: 'User', optional: true
   has_many :bookings, foreign_key: :passenger_id, inverse_of: :passenger, dependent: :destroy
@@ -41,6 +42,11 @@ class User < ApplicationRecord
 
   def age
     ((Time.current.to_fs(:number).to_i - birthday.at_midnight.to_fs(:number).to_i) / 1e10.to_i) if birthday?
+  end
+
+  # A driver whose driving licence staff have approved.
+  def licence_verified?
+    identity_documents.where(kind: 'driver_license', status: 'approved').exists?
   end
 
   def driver_mode?
