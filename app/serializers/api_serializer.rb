@@ -83,6 +83,8 @@ module ApiSerializer
         passenger_total: money(booking.passenger_total), driver_payout: money(booking.driver_payout)
       },
       reviewed: viewer ? booking.reviewed_by?(viewer) : nil,
+      payment: { method: booking.payment_method, state: booking.payment_state, held: money(booking.held_amount),
+                 can_confirm: booking.wallet_paid? && booking.payment_state == 'held' && booking.confirmed? && booking.first_ride_at.present? && booking.first_ride_at <= Time.current },
       # Only the two people in the booking ever get this serializer, so the pickup point stays between them.
       pickup: (booking.pickup? ? { lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label } : nil)
     }
@@ -132,6 +134,24 @@ module ApiSerializer
     return image unless image.start_with?('/')
 
     "#{NeonAuthClient.origin}#{image}"
+  end
+
+  def wallet(wallet)
+    { available: money(wallet.available), held: money(wallet.held) }
+  end
+
+  def wallet_entry(entry)
+    { id: entry.id, kind: entry.kind, available_change: money(entry.available_change), held_change: money(entry.held_change),
+      available_after: money(entry.available_after), memo: entry.memo, created_at: entry.created_at.iso8601 }
+  end
+
+  def topup(topup)
+    { id: topup.id, amount: money(topup.amount), provider: topup.provider, phone: topup.phone, status: topup.status, final: topup.final? || topup.status == 'failed', created_at: topup.created_at.iso8601 }
+  end
+
+  def withdrawal(withdrawal)
+    { id: withdrawal.id, amount: money(withdrawal.amount), method_name: withdrawal.method_name, account_number: withdrawal.account_number, status: withdrawal.status,
+      note: withdrawal.note, created_at: withdrawal.created_at.iso8601 }
   end
 
   def payment_method(method)

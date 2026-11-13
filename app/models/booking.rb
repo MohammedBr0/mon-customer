@@ -4,6 +4,8 @@
 # and either side can cancel it. Only confirmed bookings take seats.
 class Booking < ApplicationRecord
   STATUSES = %w[pending confirmed declined cancelled].freeze
+  PAYMENT_METHODS = %w[cash wallet].freeze
+  PAYMENT_STATES = %w[none held released refunded].freeze
   ACTIVE_STATUSES = %w[pending confirmed].freeze
   MAX_SEATS = 8
   MAX_NOTE_LENGTH = 500
@@ -18,6 +20,9 @@ class Booking < ApplicationRecord
   scope :pending, -> { where(status: 'pending') }
   scope :confirmed, -> { where(status: 'confirmed') }
 
+  # Wallet-paid seats: the money is set aside in the same transaction that creates the request.
+  after_create { BookingPayment.new(self).hold! }
+  after_update :settle_cancelled_payment, if: :saved_change_to_status?
   after_create_commit :notify_driver_of_request
   after_update_commit :notify_of_status_change, if: :saved_change_to_status?
 
@@ -25,6 +30,8 @@ class Booking < ApplicationRecord
   before_validation :snapshot_pricing, on: :create
 
   validates :status, inclusion: { in: STATUSES }
+  validates :payment_method, inclusion: { in: PAYMENT_METHODS }
+  validate :wallet_covers_the_seat, on: :create
   validates :seats, numericality: { only_integer: true, greater_than: 0, less_than_or_equal_to: MAX_SEATS }
   validates :note, length: { maximum: MAX_NOTE_LENGTH }
   validates :pickup_label, length: { maximum: 200 }
@@ -96,6 +103,30 @@ class Booking < ApplicationRecord
     itinerary.commute? ? ride_dates.min.present? && ride_dates.min < Itinerary.today : itinerary.past?
   end
 
+  def wallet_paid?
+    payment_method == 'wallet'
+  end
+
+  # When the first booked ride leaves, and when the last one is over (the trip's clock time on those days).
+  def first_ride_at
+    ride_at(ride_dates.min)
+  end
+
+  def ride_finished_at
+    return itinerary.live_ended_at if itinerary.live_ended_at.present? && !multi_day? && itinerary.live_ended_at >= (first_ride_at || itinerary.live_ended_at)
+
+    last = ride_at(ride_dates.max)
+    last && (last + 3.hours) # no "finished" signal: assume a ride is over three hours after it leaves
+  end
+
+  # The passenger says the ride went well, which pays the driver straight away.
+  def confirm_completed!
+    raise_unless confirmed? && wallet_paid? && payment_state == 'held' && first_ride_at && first_ride_at <= Time.current, :not_active
+    update!(passenger_confirmed_at: Time.current)
+    BookingPayment.new(self).release!
+    self
+  end
+
   def pickup?
     pickup_lat.present? && pickup_lng.present?
   end
@@ -113,6 +144,7 @@ class Booking < ApplicationRecord
     self.ride_dates = remaining
     snapshot_pricing(keep_fee_terms: true)
     save!
+    BookingPayment.new(self).adjust_hold!
     Notification.notify(counterpart_of(by), 'date_skipped', booking_id: id, itinerary_id: itinerary_id, trip: itinerary.title, person: by.to_s, date: date.iso8601)
     self
   end
@@ -134,6 +166,28 @@ class Booking < ApplicationRecord
   end
 
   private
+
+  def ride_at(date)
+    clock = itinerary.departure_time
+    return unless date && clock
+
+    Itinerary::RIDE_ZONE.local(date.year, date.month, date.day, clock.hour, clock.min)
+  end
+
+  def wallet_covers_the_seat
+    return unless wallet_paid? && passenger && passenger_total
+
+    errors.add(:base, :wallet_disabled) unless AfroPayClient.enabled?
+    errors.add(:base, :wallet_too_low, needed: passenger_total.to_f, balance: Wallet.for(passenger).available.to_f) if passenger_total > Wallet.for(passenger).available
+  end
+
+  # Declined, or cancelled by either side: the held money goes back (or is split, for a late passenger cancellation).
+  def settle_cancelled_payment
+    case status
+    when 'declined' then BookingPayment.new(self).refund_all!
+    when 'cancelled' then BookingPayment.new(self).cancel!(by: cancelled_by)
+    end
+  end
 
   def notify_driver_of_request
     Notification.notify(driver, 'booking_requested', booking_id: id, itinerary_id:, trip: itinerary.title, person: passenger.to_s, seats:)

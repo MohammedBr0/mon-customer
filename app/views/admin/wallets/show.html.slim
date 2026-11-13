@@ -1,0 +1,48 @@
+- title t('wallet.admin_title')
+.container
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  p.text-body-secondary = t('wallet.admin.intro')
+  .row.g-3.mb-4
+    .col-12.col-md-4
+      == render 'admin/dashboard/kpi', value: money(@totals[:available] + @totals[:held]), label: t('wallet.admin.customer_money'), icon: 'wallet', note: "#{money(@totals[:held])} #{t('wallet.admin.held').downcase}"
+    .col-6.col-md-4
+      == render 'admin/dashboard/kpi', value: money(@totals[:fees]), label: t('wallet.admin.platform_fees'), icon: 'coins', note: nil
+    .col-6.col-md-4
+      == render 'admin/dashboard/kpi', value: @withdrawals.size, label: t('wallet.admin.pending_withdrawals'), icon: 'hourglass-half', note: nil
+  - if @due.positive?
+    = button_to settle_admin_wallets_path, method: :post, class: 'btn btn-outline-primary mb-4' do
+      = t('wallet.admin.settle')
+  h2.section-title = t('wallet.admin.pending_withdrawals')
+  - if @withdrawals.empty?
+    .surface.empty = t('wallet.admin.no_withdrawals')
+  - else
+    .stack
+      - @withdrawals.each do |withdrawal|
+        .surface
+          .row-card
+            .row-card__main
+              span.row-card__title
+                = link_to withdrawal.user, admin_user_path(withdrawal.user)
+                strong.ms-2 = money(withdrawal.amount)
+              .d-flex.flex-wrap.gap-2.mt-1
+                span.chip = "#{t('wallet.admin.send_to')}: #{withdrawal.method_name}"
+                span.chip.chip--muted = withdrawal.account_number
+                - if withdrawal.account_name.present?
+                  span.chip.chip--muted = withdrawal.account_name
+                span.chip.chip--muted = l(withdrawal.created_at.in_time_zone, format: :short)
+          = form_with url: pay_admin_withdrawal_path(withdrawal), method: :patch, local: true, class: 'd-flex flex-wrap gap-2 mt-3' do
+            = text_field_tag :note, nil, class: 'form-control flex-grow-1 w-auto', maxlength: 200, placeholder: t('wallet.admin.reason'), 'aria-label': t('wallet.admin.reason')
+            = button_tag t('wallet.admin.mark_paid'), type: 'submit', class: 'btn btn-primary'
+            = button_tag t('wallet.admin.reject'), type: 'submit', formaction: reject_admin_withdrawal_path(withdrawal), class: 'btn btn-outline-danger'
+  h2.section-title.mt-4 = t('wallet.admin.recent_topups')
+  .surface
+    .mini-list
+      - @topups.each do |topup|
+        .mini-list__row
+          span.mini-list__icon
+            span.fas.fa-wallet aria-hidden='true'
+          span.mini-list__main
+            strong = "#{topup.user} · #{money(topup.amount)}"
+            small = [topup.provider, topup.phone, l(topup.created_at.in_time_zone, format: :short)].join(' · ')
+          span.chip class=('chip--muted' unless topup.status == 'success') = topup.status

@@ -1,0 +1,62 @@
+en-US:
+  wallet:
+    topup_description: "%{app} wallet top-up"
+    admin_title: Wallets
+    errors:
+      disabled: Wallet payments are not available right now
+      insufficient: There is not enough money in the wallet
+      gateway: "The payment could not be started (%{reason}). Try again."
+    admin:
+      intro: Money people hold in the service. Top-ups arrive through Afro Pay; withdrawals are sent by you and marked here.
+      customer_money: Held for customers
+      available: Available to spend or withdraw
+      held: Set aside for rides and withdrawals
+      platform_fees: Platform fees earned
+      pending_withdrawals: Withdrawals to send
+      no_withdrawals: No withdrawals are waiting.
+      settle: Release payments that are due
+      settled:
+        one: 1 payment released to its driver.
+        other: "%{count} payments released to their drivers."
+      mark_paid: Mark as sent
+      reject: Reject
+      reason: Reason (the person sees this)
+      paid: Withdrawal marked as sent.
+      rejected: Withdrawal rejected and the money returned.
+      recent_topups: Recent top-ups
+      send_to: Send to
+  notifications:
+    wallet_topup:
+      title: Money added
+      body: "%{amount} Br was added to your wallet"
+    payment_received:
+      title: You were paid
+      body: "%{amount} Br from %{person} for %{trip}"
+    payment_refunded:
+      title: Money returned
+      body: "%{amount} Br for %{trip} is back in your wallet"
+    withdrawal_paid:
+      title: Withdrawal sent
+      body: "%{amount} Br was sent to your account"
+    withdrawal_rejected:
+      title: Withdrawal not sent
+      body: "%{amount} Br is back in your wallet: %{reason}"
+  activerecord:
+    errors:
+      models:
+        booking:
+          attributes:
+            base:
+              wallet_disabled: Wallet payments are not available right now
+              wallet_too_low: "Your wallet has %{balance} Br but this seat costs %{needed} Br. Add money first."
+        wallet_topup:
+          attributes:
+            amount:
+              out_of_range: "must be between %{min} and %{max} Br"
+            phone:
+              invalid: must be an Ethiopian mobile number
+        wallet_withdrawal:
+          attributes:
+            amount:
+              below_minimum: "must be at least %{min} Br"
+              more_than_balance: is more than your available balance

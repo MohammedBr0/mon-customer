@@ -22,6 +22,12 @@ SimpleConfig.for :application do
   set :google_maps_server_key, nil
 
   # SMS codes for phone registration (AfroMessage). Without a token, phone sign-up works without a code.
+  # Wallet top-ups through Afro Pay. Without a key the wallet is switched off and rides are paid in cash.
+  group :afropay do
+    set :api_key, nil
+    set :base_url, 'https://paybridge.sandbox.afropays.co'
+  end
+
   group :afromessage do
     set :token, nil
     set :identifier, nil

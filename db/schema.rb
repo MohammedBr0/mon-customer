@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_13_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -72,6 +72,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
     t.decimal "pickup_lat", precision: 9, scale: 6
     t.decimal "pickup_lng", precision: 9, scale: 6
     t.string "pickup_label"
+    t.string "payment_method", default: "cash", null: false
+    t.string "payment_state", default: "none", null: false
+    t.decimal "held_amount", precision: 12, scale: 2, default: "0.0", null: false
+    t.datetime "passenger_confirmed_at"
+    t.datetime "settled_at"
     t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
     t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
     t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
@@ -239,6 +244,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
     t.boolean "commutes_enabled", default: true, null: false
     t.integer "commute_horizon_days", default: 14, null: false
     t.decimal "suggested_price_per_km", precision: 8, scale: 2, default: "6.0", null: false
+    t.decimal "min_topup", precision: 10, scale: 2, default: "10.0", null: false
+    t.decimal "max_topup", precision: 10, scale: 2, default: "20000.0", null: false
+    t.decimal "min_withdrawal", precision: 10, scale: 2, default: "100.0", null: false
   end
 
   create_table "popular_routes", force: :cascade do |t|
@@ -352,6 +360,68 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
     t.index ["key"], name: "index_vehicle_fields_on_key", unique: true
   end
 
+  create_table "wallet_entries", force: :cascade do |t|
+    t.bigint "wallet_id", null: false
+    t.string "kind", null: false
+    t.decimal "available_change", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "held_change", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "available_after", precision: 12, scale: 2, null: false
+    t.decimal "held_after", precision: 12, scale: 2, null: false
+    t.string "subject_type"
+    t.bigint "subject_id"
+    t.string "memo"
+    t.datetime "created_at", null: false
+    t.index ["subject_type", "subject_id"], name: "index_wallet_entries_on_subject"
+    t.index ["wallet_id", "id"], name: "index_wallet_entries_on_wallet_id_and_id"
+    t.index ["wallet_id"], name: "index_wallet_entries_on_wallet_id"
+  end
+
+  create_table "wallet_topups", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.string "provider", null: false
+    t.string "phone", null: false
+    t.string "merchant_order_id", null: false
+    t.string "callback_token", null: false
+    t.string "reference"
+    t.string "provider_reference"
+    t.string "status", default: "pending", null: false
+    t.datetime "credited_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["callback_token"], name: "index_wallet_topups_on_callback_token", unique: true
+    t.index ["merchant_order_id"], name: "index_wallet_topups_on_merchant_order_id", unique: true
+    t.index ["user_id"], name: "index_wallet_topups_on_user_id"
+  end
+
+  create_table "wallet_withdrawals", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.string "method_name", null: false
+    t.string "account_number", null: false
+    t.string "account_name"
+    t.string "status", default: "requested", null: false
+    t.string "note"
+    t.bigint "handled_by_id"
+    t.datetime "handled_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["handled_by_id"], name: "index_wallet_withdrawals_on_handled_by_id"
+    t.index ["status"], name: "index_wallet_withdrawals_on_status"
+    t.index ["user_id"], name: "index_wallet_withdrawals_on_user_id"
+  end
+
+  create_table "wallets", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "kind", default: "user", null: false
+    t.decimal "available", precision: 12, scale: 2, default: "0.0", null: false
+    t.decimal "held", precision: 12, scale: 2, default: "0.0", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_wallets_on_user_id", unique: true
+    t.check_constraint "available >= 0::numeric AND held >= 0::numeric", name: "wallets_never_negative"
+  end
+
   add_foreign_key "api_tokens", "users"
   add_foreign_key "audit_logs", "users", column: "actor_id"
   add_foreign_key "avatars", "users", on_delete: :cascade
@@ -372,4 +442,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_11_150000) do
   add_foreign_key "reviews", "users", column: "reviewer_id"
   add_foreign_key "ride_alerts", "users"
   add_foreign_key "users", "users", column: "verified_by_id"
+  add_foreign_key "wallet_entries", "wallets", on_delete: :cascade
+  add_foreign_key "wallet_topups", "users", on_delete: :cascade
+  add_foreign_key "wallet_withdrawals", "users", column: "handled_by_id", on_delete: :nullify
+  add_foreign_key "wallet_withdrawals", "users", on_delete: :cascade
+  add_foreign_key "wallets", "users", on_delete: :cascade
 end

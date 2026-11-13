@@ -13,6 +13,11 @@ SimpleConfig.for :application do
   set :google_maps_server_key, ENV['GOOGLE_MAPS_SERVER_KEY']
   set :google_static_maps, ENV['GOOGLE_STATIC_MAPS'] == 'true'
 
+  group :afropay do
+    set :api_key, ENV['AFROPAY_API_KEY']
+    set :base_url, ENV['AFROPAY_BASE_URL'].presence || 'https://paybridge.sandbox.afropays.co'
+  end
+
   group :afromessage do
     set :token, ENV['AFROMESSAGE_TOKEN']
     set :identifier, ENV['AFROMESSAGE_IDENTIFIER']

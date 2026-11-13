@@ -1,0 +1,23 @@
+am-ET:
+  wallet:
+    topup_description: "የ%{app} ቦርሳ መሙያ"
+    errors:
+      disabled: የቦርሳ ክፍያ አሁን አይገኝም
+      insufficient: በቦርሳው ውስጥ በቂ ገንዘብ የለም
+      gateway: "ክፍያውን መጀመር አልተቻለም (%{reason})። እንደገና ይሞክሩ።"
+  notifications:
+    wallet_topup:
+      title: ገንዘብ ተጨምሯል
+      body: "%{amount} ብር ወደ ቦርሳዎ ተጨምሯል"
+    payment_received:
+      title: ክፍያ ደርሶዎታል
+      body: "%{amount} ብር ከ%{person} ለ%{trip}"
+    payment_refunded:
+      title: ገንዘብ ተመልሷል
+      body: "ለ%{trip} %{amount} ብር ወደ ቦርሳዎ ተመልሷል"
+    withdrawal_paid:
+      title: ገንዘብ ተልኳል
+      body: "%{amount} ብር ወደ ሂሳብዎ ተልኳል"
+    withdrawal_rejected:
+      title: ገንዘብ አልተላከም
+      body: "%{amount} ብር ወደ ቦርሳዎ ተመልሷል፦ %{reason}"

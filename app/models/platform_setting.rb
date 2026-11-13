@@ -9,6 +9,7 @@ class PlatformSetting < ApplicationRecord
   validates :fee_charged_to, inclusion: { in: FEE_CHARGED_TO }
   validates :currency_code, presence: true, length: { maximum: 5 }
   validates :currency_symbol, presence: true, length: { maximum: 6 }
+  validates :min_topup, :max_topup, :min_withdrawal, numericality: { greater_than: 0, less_than_or_equal_to: 1_000_000 }
   validates :suggested_price_per_km, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10_000 }
   validates :max_price_per_seat, numericality: { greater_than: 0, less_than_or_equal_to: 1_000_000 }
   validates :payment_instructions, length: { maximum: 500 }

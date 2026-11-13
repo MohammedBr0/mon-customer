@@ -57,6 +57,12 @@ Rails.application.routes.draw do
       post 'auth/sign_up', to: 'auth#sign_up'
       post 'auth/send_code', to: 'auth#send_code'
       delete 'auth/sign_out', to: 'auth#sign_out'
+      resource :wallet, only: :show, controller: :wallet do
+        post :topup
+        get 'topups/:id', action: :topup_status
+        post :withdraw
+      end
+      post 'payments/afropay/:token', to: 'payments#afropay'
       resource :me, only: %i[show update destroy], controller: :me do
         put :payment_methods
         post :identity
@@ -78,6 +84,7 @@ Rails.application.routes.draw do
           patch :decline
           patch :cancel
           patch :skip_date
+          patch :complete
         end
         resources :reviews, only: :create
       end
@@ -104,6 +111,13 @@ Rails.application.routes.draw do
       patch :move, on: :member
     end
     resources :payment_methods, except: :show
+    resource :wallets, only: :show do
+      post :settle
+    end
+    resources :withdrawals, only: [] do
+      patch :pay, on: :member
+      patch :reject, on: :member
+    end
     resources :identity_documents, only: %i[index show] do
       get :image, on: :member
       patch :approve, on: :member

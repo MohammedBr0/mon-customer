@@ -21,6 +21,7 @@ module AdminHelper
     groups + [
       [t('admin_menu.configuration'), [
         [:settings, admin_settings_path, t('admin_extra.platform_settings'), 'sliders', nil],
+        [:wallets, admin_wallets_path, t('wallet.admin_title'), 'wallet', WalletWithdrawal.requested.count],
         [:payment_methods, admin_payment_methods_path, t('payments.admin_title'), 'credit-card', nil],
         [:vehicle_fields, admin_vehicle_fields_path, t('admin_extra.vehicle_fields'), 'car', nil],
         [:popular_routes, admin_popular_routes_path, t('admin_extra.popular_routes'), 'location-dot', nil]

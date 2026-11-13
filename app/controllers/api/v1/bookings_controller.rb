@@ -3,9 +3,10 @@
 module Api
   module V1
     class BookingsController < BaseController
-      before_action :set_booking, only: %i[confirm decline cancel skip_date]
+      before_action :set_booking, only: %i[confirm decline cancel skip_date complete]
       before_action :require_driver, only: %i[confirm decline]
       before_action :require_participant, only: %i[cancel skip_date]
+      before_action :settle_due, only: :index
 
       # Both directions: seats I asked for, and requests for my trips.
       def index
@@ -20,12 +21,25 @@ module Api
         return render_error('not_bookable', I18n.t('flash.errors.not_allowed'), :forbidden) unless itinerary.bookable_by?(current_user)
 
         booking = itinerary.bookings.new(booking_params.merge(passenger: current_user).merge(pickup_params))
+        booking.payment_method = params.dig(:booking, :payment_method) == 'wallet' ? 'wallet' : 'cash'
         if booking.save
           BookingMailer.with(booking:).requested.deliver_later
           render json: { booking: serializer.booking(booking, viewer: current_user) }, status: :created
         else
           render_invalid booking
         end
+      rescue Wallet::InsufficientFunds
+        render_error 'insufficient_funds', I18n.t('wallet.errors.insufficient'), :unprocessable_entity
+      end
+
+      # The passenger says the ride went well: the driver is paid straight away.
+      def complete
+        return render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden) unless @booking.passenger_id == current_user.id
+
+        @booking.confirm_completed!
+        render json: { booking: serializer.booking(@booking.reload, viewer: current_user) }
+      rescue Booking::InvalidTransition
+        render_error 'invalid_transition', I18n.t('flash.bookings.invalid'), :unprocessable_entity
       end
 
       def confirm
@@ -54,6 +68,11 @@ module Api
       end
 
       private
+
+      # There is no background worker, so payments that have come due are released when someone opens their bookings.
+      def settle_due
+        BookingPayment.settle_due!(Booking.where(passenger: current_user).or(Booking.where(itinerary_id: current_user.itineraries.select(:id))))
+      end
 
       def set_booking
         @booking = Booking.includes(:itinerary, :passenger).find(params[:id])
