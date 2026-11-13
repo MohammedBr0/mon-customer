@@ -150,9 +150,9 @@ class Api {
     return (made: parse(data['made']), received: parse(data['received']));
   }
 
-  Future<Booking> book(int tripId, {required int seats, List<String> days = const [], String? note, Place? pickup}) async {
+  Future<Booking> book(int tripId, {required int seats, List<String> days = const [], String? note, Place? pickup, String paymentMethod = 'cash'}) async {
     final data = await _send('POST', '/itineraries/$tripId/bookings', body: {
-      'booking': {'seats': seats, if (days.isNotEmpty) 'ride_dates': days, if (note != null && note.isNotEmpty) 'note': note, if (pickup != null) 'pickup': {'lat': pickup.lat, 'lng': pickup.lng, 'label': pickup.name}}
+      'booking': {'payment_method': paymentMethod, 'seats': seats, if (days.isNotEmpty) 'ride_dates': days, if (note != null && note.isNotEmpty) 'note': note, if (pickup != null) 'pickup': {'lat': pickup.lat, 'lng': pickup.lng, 'label': pickup.name}}
     });
     return Booking.fromJson(Map<String, dynamic>.from(data['booking'] as Map));
   }
@@ -163,6 +163,8 @@ class Api {
   Future<Booking> confirm(int id) => _bookingAction(id, 'confirm');
   Future<Booking> decline(int id) => _bookingAction(id, 'decline');
   Future<Booking> cancelBooking(int id) => _bookingAction(id, 'cancel');
+  /// The passenger says the ride went well, which pays the driver straight away.
+  Future<Booking> completeRide(int id) => _bookingAction(id, 'complete');
   Future<Booking> skipDate(int id, String isoDay) => _bookingAction(id, 'skip_date', {'date': isoDay});
 
   Future<void> review(int bookingId, int rating, String comment) =>
@@ -275,4 +277,24 @@ class Api {
   Future<void> sendLocation(int id, double lat, double lng, {double? heading}) => _send('POST', '/itineraries/$id/location', body: {'lat': lat, 'lng': lng, 'heading': ?heading});
   Future<LiveState> finishTrip(int id) async => _live(await _send('POST', '/itineraries/$id/finish'));
   Future<LiveState> liveTrip(int id) async => _live(await _send('GET', '/itineraries/$id/live'));
+
+  // ---- wallet ----
+  Future<({WalletBalance balance, List<WalletEntry> entries, List<Withdrawal> withdrawals, bool last})> wallet({int page = 1}) async {
+    final data = await _send('GET', '/wallet', query: {'page': page});
+    return (
+      balance: WalletBalance.fromJson(Map<String, dynamic>.from(data['wallet'] as Map)),
+      entries: [for (final e in (data['entries'] as List? ?? const [])) WalletEntry.fromJson(Map<String, dynamic>.from(e as Map))],
+      withdrawals: [for (final w in (data['withdrawals'] as List? ?? const [])) Withdrawal.fromJson(Map<String, dynamic>.from(w as Map))],
+      last: (data['meta'] as Map?)?['last'] != false,
+    );
+  }
+
+  /// Starts a top-up: the payment provider sends a PIN prompt to [phone].
+  Future<Topup> startTopup({required double amount, required String provider, required String phone}) async =>
+      Topup.fromJson(Map<String, dynamic>.from((await _send('POST', '/wallet/topup', body: {'amount': amount, 'provider': provider, 'phone': phone}))['topup'] as Map));
+
+  Future<Topup> topupStatus(int id) async => Topup.fromJson(Map<String, dynamic>.from((await _send('GET', '/wallet/topups/$id'))['topup'] as Map));
+
+  Future<void> requestWithdrawal({required double amount, required String methodName, required String accountNumber, String? accountName}) =>
+      _send('POST', '/wallet/withdraw', body: {'amount': amount, 'method_name': methodName, 'account_number': accountNumber, 'account_name': ?accountName});
 }

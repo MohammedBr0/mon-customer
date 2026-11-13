@@ -13,6 +13,7 @@ import 'alerts_screen.dart';
 import 'driver_setup_screens.dart';
 import 'home_shell.dart';
 import 'trip_screen.dart';
+import 'wallet_screen.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -71,6 +72,7 @@ class ProfileTab extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 12),
+      _Tile(Icons.account_balance_wallet_outlined, context.t('wallet'), () => push(const WalletScreen())),
       _Tile(Icons.verified_user_outlined, context.t('identity_title'), () => push(const IdentityScreen()), warn: !user.verified || (user.appMode == 'driver' && !user.licenceVerified)),
       _Tile(Icons.edit_outlined, context.t('profile'), () => push(const ProfileFormScreen())),
       if (user.appMode == 'driver') ...[

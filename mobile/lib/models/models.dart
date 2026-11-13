@@ -94,7 +94,19 @@ class AppConfig {
     this.phoneVerification = false,
     this.paymentMethods = const [],
     this.suggestedPricePerKm = 0,
+    this.walletEnabled = false,
+    this.walletProviders = const [],
+    this.minTopup = 10,
+    this.maxTopup = 20000,
+    this.minWithdrawal = 100,
   });
+
+  /// Wallet payments are on when the server has a payment gateway set up.
+  final bool walletEnabled;
+  final List<String> walletProviders;
+  final double minTopup;
+  final double maxTopup;
+  final double minWithdrawal;
 
   /// The admins' starting point for a trip's price: fare per km for the whole car (0 = no suggestion).
   final double suggestedPricePerKm;
@@ -147,6 +159,11 @@ class AppConfig {
       cities: _list(j['cities'], City.fromJson),
       phoneVerification: j['phone_verification'] == true,
       suggestedPricePerKm: _d(j['suggested_price_per_km']),
+      walletEnabled: (j['wallet'] as Map?)?['enabled'] == true,
+      walletProviders: [for (final p in ((j['wallet'] as Map?)?['providers'] as List? ?? const [])) '$p'],
+      minTopup: (j['wallet'] as Map?)?['min_topup'] is num ? _d((j['wallet'] as Map)['min_topup']) : 10,
+      maxTopup: (j['wallet'] as Map?)?['max_topup'] is num ? _d((j['wallet'] as Map)['max_topup']) : 20000,
+      minWithdrawal: (j['wallet'] as Map?)?['min_withdrawal'] is num ? _d((j['wallet'] as Map)['min_withdrawal']) : 100,
       paymentMethods: _list(j['payment_methods'], PaymentOption.fromJson),
     );
   }
@@ -307,7 +324,10 @@ class Price {
 }
 
 class Booking {
-  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed, this.pickup});
+  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed, this.pickup, this.paymentMethod = 'cash', this.paymentState = 'none', this.canConfirmRide = false});
+  final String paymentMethod; // cash | wallet
+  final String paymentState; // none | held | released | refunded
+  final bool canConfirmRide; // the passenger can say the ride went well, which pays the driver now
 
   /// Where the passenger asked to be picked up (a pin), when they gave one.
   final Place? pickup;
@@ -335,6 +355,9 @@ class Booking {
         price: Price.fromJson(Map<String, dynamic>.from(j['price'] as Map)),
         completed: j['completed'] == true,
         reviewed: j['reviewed'] as bool?,
+        paymentMethod: (j['payment'] as Map?)?['method'] as String? ?? 'cash',
+        paymentState: (j['payment'] as Map?)?['state'] as String? ?? 'none',
+        canConfirmRide: (j['payment'] as Map?)?['can_confirm'] == true,
         pickup: j['pickup'] is Map && (j['pickup'] as Map)['lat'] is num
             ? Place.pin(((j['pickup'] as Map)['lat'] as num).toDouble(), ((j['pickup'] as Map)['lng'] as num).toDouble(), '${(j['pickup'] as Map)['label'] ?? ''}')
             : null,
@@ -638,4 +661,69 @@ class IdentityDoc {
 
   factory IdentityDoc.fromJson(Map<String, dynamic> j) =>
       IdentityDoc(kind: j['kind'] as String? ?? '', status: j['status'] as String? ?? 'missing', number: j['number'] as String?, rejectionReason: j['rejection_reason'] as String?);
+}
+
+class WalletBalance {
+  const WalletBalance({this.available = 0, this.held = 0});
+  final double available;
+  final double held;
+
+  factory WalletBalance.fromJson(Map<String, dynamic> j) => WalletBalance(available: _d(j['available']), held: _d(j['held']));
+}
+
+/// One line of wallet history.
+class WalletEntry {
+  const WalletEntry({required this.id, required this.kind, required this.availableChange, required this.heldChange, this.memo, this.createdAt});
+  final int id;
+  final String kind;
+  final double availableChange;
+  final double heldChange;
+  final String? memo;
+  final DateTime? createdAt;
+
+  factory WalletEntry.fromJson(Map<String, dynamic> j) => WalletEntry(
+        id: _i(j['id']) ?? 0,
+        kind: j['kind'] as String? ?? '',
+        availableChange: _d(j['available_change']),
+        heldChange: _d(j['held_change']),
+        memo: j['memo'] as String?,
+        createdAt: _t(j['created_at']),
+      );
+
+  /// What the person feels: money in or out of what they can spend, else money set aside or freed.
+  double get amount => availableChange != 0 ? availableChange : -heldChange;
+}
+
+/// Money being added through the payment gateway: a PIN prompt goes to the phone, then it succeeds or not.
+class Topup {
+  const Topup({required this.id, required this.amount, required this.status, this.done = false});
+  final int id;
+  final double amount;
+  final String status;
+  final bool done; // nothing more will happen to it
+
+  factory Topup.fromJson(Map<String, dynamic> j) => Topup(id: _i(j['id']) ?? 0, amount: _d(j['amount']), status: j['status'] as String? ?? 'pending', done: j['final'] == true);
+
+  bool get succeeded => status == 'success';
+}
+
+class Withdrawal {
+  const Withdrawal({required this.id, required this.amount, required this.methodName, required this.accountNumber, required this.status, this.note, this.createdAt});
+  final int id;
+  final double amount;
+  final String methodName;
+  final String accountNumber;
+  final String status; // requested | paid | rejected
+  final String? note;
+  final DateTime? createdAt;
+
+  factory Withdrawal.fromJson(Map<String, dynamic> j) => Withdrawal(
+        id: _i(j['id']) ?? 0,
+        amount: _d(j['amount']),
+        methodName: j['method_name'] as String? ?? '',
+        accountNumber: j['account_number'] as String? ?? '',
+        status: j['status'] as String? ?? 'requested',
+        note: j['note'] as String?,
+        createdAt: _t(j['created_at']),
+      );
 }

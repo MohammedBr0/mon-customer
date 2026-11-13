@@ -11,6 +11,7 @@ import '../widgets/common.dart';
 import 'chat_screen.dart';
 import 'dialogs.dart';
 import 'live_screens.dart';
+import 'wallet_screen.dart';
 import 'map_screens.dart';
 import '../widgets/route_map.dart';
 
@@ -386,6 +387,23 @@ class _BookingFormState extends State<BookingForm> {
   final _note = TextEditingController();
   Place? _pickup; // where the passenger wants to be picked up; the driver sees it on a map with the request
   bool _busy = false;
+  String _pay = 'cash'; // cash | wallet
+  double? _balance; // what the passenger's wallet can spend; null until loaded
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_balance == null && context.read<AppState>().config.walletEnabled) _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final wallet = await context.read<AppState>().api.wallet();
+      if (mounted) setState(() => _balance = wallet.balance.available);
+    } catch (_) {
+      // Cash still works without the balance.
+    }
+  }
 
   @override
   void initState() {
@@ -410,7 +428,7 @@ class _BookingFormState extends State<BookingForm> {
     final app = context.read<AppState>();
     setState(() => _busy = true);
     try {
-      await app.api.book(widget.trip.id, seats: _seats.clamp(1, _maxSeats), days: _days.toList()..sort(), note: _note.text.trim(), pickup: _pickup);
+      await app.api.book(widget.trip.id, seats: _seats.clamp(1, _maxSeats), days: _days.toList()..sort(), note: _note.text.trim(), pickup: _pickup, paymentMethod: _pay);
       if (mounted) showMessage(context, context.tr('request_sent'));
       await widget.onBooked();
     } catch (e) {
@@ -458,6 +476,49 @@ class _BookingFormState extends State<BookingForm> {
           PlaceField(label: context.t('your_pickup'), value: _pickup, placeholder: context.t('your_pickup_hint'), icon: Icons.person_pin_circle_outlined, onChanged: (p) => setState(() => _pickup = p)),
           Padding(padding: const EdgeInsets.only(top: 4, left: 4, bottom: 12), child: Text(context.t('your_pickup_note'), style: Theme.of(context).textTheme.bodySmall)),
           TextField(controller: _note, maxLength: 500, decoration: InputDecoration(labelText: context.t('note_to_driver'))),
+          if (app.config.walletEnabled) ...[
+            Text(context.t('how_to_pay'), style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(value: 'cash', icon: const Icon(Icons.payments_outlined), label: Text(context.t('pay_cash'))),
+                  ButtonSegment(value: 'wallet', icon: const Icon(Icons.account_balance_wallet_outlined), label: Text(context.t('pay_wallet'))),
+                ],
+                selected: {_pay},
+                onSelectionChanged: (v) => setState(() => _pay = v.first),
+              ),
+            ),
+            if (_pay == 'wallet') ...[
+              const SizedBox(height: 8),
+              Builder(builder: (context) {
+                final total = app.config.passengerPrice(trip.pricePerSeat) * seats * days;
+                final balance = _balance;
+                final short = balance != null && balance < total;
+                return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  Text(
+                    balance == null ? context.t('wallet_note') : context.t(short ? 'wallet_short' : 'wallet_enough', {'balance': formatMoney(balance, app.config.currencySymbol), 'missing': formatMoney((total - balance).clamp(0, double.infinity), app.config.currencySymbol)}),
+                    style: TextStyle(fontSize: 13, color: short ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+                  if (short)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final added = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => TopUpScreen(suggested: total - balance)));
+                          if (added == true) _loadBalance();
+                        },
+                        icon: const Icon(Icons.add),
+                        label: Text(context.t('top_up')),
+                      ),
+                    ),
+                ]);
+              }),
+            ],
+            const SizedBox(height: 12),
+          ],
           if ((app.config.paymentInstructions ?? '').isNotEmpty)
             Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.account_balance_wallet_outlined, size: 18), const SizedBox(width: 8), Expanded(child: Text(app.config.paymentInstructions!, style: const TextStyle(fontSize: 13)))])),
           FilledButton.icon(onPressed: canBook ? _book : null, icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.confirmation_number_outlined), label: Text(context.t('request_seats'))),
@@ -555,10 +616,32 @@ class _BookingCardState extends State<BookingCard> {
                 ),
             ]),
           ],
+          if (b.paymentMethod == 'wallet') ...[
+            const SizedBox(height: 10),
+            Row(children: [
+              const Icon(Icons.account_balance_wallet_outlined, size: 18),
+              const SizedBox(width: 6),
+              Expanded(child: Text(context.t('pay_state_${b.paymentState}'), style: const TextStyle(fontWeight: FontWeight.w600))),
+            ]),
+          ],
           const Divider(height: 22),
           PriceBreakdown(perSeat: b.price.perSeat, seats: b.seats, days: b.price.rides, feePercent: b.price.feePercent, chargedTo: b.price.chargedTo, forDriver: widget.viewerIsDriver),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 8, children: [
+            if (!widget.viewerIsDriver && b.canConfirmRide)
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(150, 44)),
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final done = context.tr('ride_confirmed');
+                        if (await confirmDialog(context, context.tr('ride_completed_q'), action: context.tr('ride_completed'))) {
+                          await _do((api) => api.completeRide(b.id), done);
+                        }
+                      },
+                icon: const Icon(Icons.verified_outlined),
+                label: Text(context.t('ride_completed')),
+              ),
             if (widget.viewerIsDriver && b.status == 'pending') ...[
               FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size(120, 44)),
