@@ -1,0 +1,31 @@
+- title t('announce.title')
+.container
+  == render 'shared/flash_messages'
+  h1.page-title = yield :title
+  p.text-body-secondary = t('announce.intro')
+  = form_with url: admin_announcements_path, method: :post, local: true, class: 'surface stack mb-4' do
+    div
+      = label_tag :title, t('announce.subject'), class: 'form-label'
+      = text_field_tag :title, params[:title], class: 'form-control', maxlength: Admin::AnnouncementsController::MAX_TITLE, required: true
+    div
+      = label_tag :body, t('announce.message'), class: 'form-label'
+      = text_area_tag :body, params[:body], rows: 4, class: 'form-control', maxlength: Admin::AnnouncementsController::MAX_BODY, required: true
+    div
+      = label_tag :audience, t('announce.audience'), class: 'form-label'
+      = select_tag :audience, options_for_select(Notification::AUDIENCES.map { |a| [t("announce.audiences.#{a}"), a] }, params[:audience]), class: 'form-select'
+    = button_tag type: 'submit', class: 'btn btn-primary btn-lg', data: { confirm: t('announce.confirm') } do
+      span.fas.fa-bullhorn<> aria-hidden='true'
+      = t('announce.send')
+  h2.section-title = t('announce.recent')
+  - if @recent.empty?
+    .surface.empty = t('announce.none')
+  - else
+    .surface
+      .mini-list
+        - @recent.each do |log|
+          .mini-list__row
+            span.mini-list__icon
+              span.fas.fa-bullhorn aria-hidden='true'
+            span.mini-list__main
+              strong = log.details['title']
+              small = [t("announce.audiences.#{log.details['audience']}", default: log.details['audience'].to_s), t('announce.recipients', count: log.details['recipients'].to_i), log.actor.to_s, l(log.created_at.in_time_zone, format: :short)].join(' · ')

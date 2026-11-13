@@ -13,7 +13,8 @@ module AdminHelper
         [:itineraries, admin_itineraries_path, t('admin_menu.trips'), 'route', nil],
         [:bookings, admin_bookings_path, t('admin_extra.bookings'), 'ticket', nil],
         [:reviews, admin_reviews_path, t('admin_extra.reviews'), 'star', nil],
-        [:reports, admin_reports_path, t('admin_extra.reports'), 'flag', Report.open.count]
+        [:reports, admin_reports_path, t('admin_extra.reports'), 'flag', Report.open.count],
+        [:announcements, admin_announcements_path, t('announce.title'), 'bullhorn', nil]
       ]]
     ]
     return groups unless current_user.super_admin?

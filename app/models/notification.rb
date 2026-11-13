@@ -5,7 +5,8 @@
 class Notification < ApplicationRecord
   KINDS = %w[booking_requested booking_confirmed booking_declined booking_cancelled date_skipped itinerary_cancelled
              new_message review_received alert_match identity_approved identity_rejected trip_started
-             wallet_topup payment_received payment_refunded withdrawal_paid withdrawal_rejected].freeze
+             wallet_topup payment_received payment_refunded withdrawal_paid withdrawal_rejected announcement].freeze
+  AUDIENCES = %w[everyone drivers passengers].freeze
 
   belongs_to :user
 
@@ -28,11 +29,28 @@ class Notification < ApplicationRecord
     read_at.present?
   end
 
+  # Puts one message from the admins in many people's notifications at once. Returns how many received it.
+  def self.announce!(title:, body:, audience: 'everyone')
+    users = User.where(banned: false)
+    users = users.where(app_mode: 'driver') if audience == 'drivers'
+    users = users.where(app_mode: 'passenger') if audience == 'passengers'
+    now = Time.current
+    data = { 'title' => title.to_s.strip, 'body' => body.to_s.strip }
+    users.in_batches(of: 1000).sum do |batch|
+      rows = batch.pluck(:id).map { |id| { user_id: id, kind: 'announcement', data:, created_at: now, updated_at: now } }
+      rows.empty? ? 0 : insert_all(rows).length # rubocop:disable Rails/SkipsModelValidations
+    end
+  end
+
   def title
+    return data['title'].to_s if kind == 'announcement'
+
     I18n.t("notifications.#{kind}.title")
   end
 
   def body
+    return data['body'].to_s if kind == 'announcement'
+
     values = data.symbolize_keys.transform_values(&:to_s)
     values[:document] = I18n.t("identity.kinds.#{values[:document]}", default: values[:document]) if values[:document]
     I18n.t("notifications.#{kind}.body", **values, default: '')

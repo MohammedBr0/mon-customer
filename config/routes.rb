@@ -114,6 +114,7 @@ Rails.application.routes.draw do
       patch :move, on: :member
     end
     resources :payment_methods, except: :show
+    resources :announcements, only: %i[index create]
     resource :wallets, only: :show do
       post :settle
     end

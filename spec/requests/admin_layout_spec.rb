@@ -63,3 +63,39 @@ RSpec.describe 'Where people land' do
   end
 
 end
+
+RSpec.describe 'Admin announcements' do
+  let(:admin) { create(:user, admin: true) }
+
+  it 'puts the message in the chosen people\'s notifications' do
+    driver = create(:user, app_mode: 'driver')
+    passenger = create(:user, app_mode: 'passenger')
+    banned = create(:user, banned: true)
+    sign_in admin
+
+    post '/admin/announcements', params: { title: 'Holiday schedule', body: 'Fewer rides on Thursday.', audience: 'drivers' }
+    expect(response).to redirect_to('/admin/announcements')
+    expect(driver.notifications.pluck(:kind)).to eq ['announcement']
+    expect(passenger.notifications).to be_empty
+
+    post '/admin/announcements', params: { title: 'Welcome', body: 'Thanks for joining.', audience: 'everyone' }
+    expect(passenger.notifications.count).to eq 1
+    expect(banned.notifications).to be_empty
+
+    get '/api/v1/notifications', headers: api_headers(passenger)
+    expect(json['notifications'].first).to include('kind' => 'announcement', 'title' => 'Welcome', 'body' => 'Thanks for joining.', 'read' => false)
+
+    get '/admin/announcements'
+    expect(response.body).to include('Holiday schedule', 'Drivers only')
+  end
+
+  it 'needs a title and a message, and a super admin' do
+    sign_in admin
+    expect { post '/admin/announcements', params: { title: '', body: 'x' } }.not_to change(Notification, :count)
+    expect(response).to have_http_status(:unprocessable_entity)
+
+    sign_out admin
+    sign_in create(:user, moderator: true)
+    expect { post '/admin/announcements', params: { title: 'Hi', body: 'There' } }.not_to change(Notification, :count)
+  end
+end

@@ -50,3 +50,24 @@ en-US:
     mode:
       passenger: Passenger
       driver: Driver
+  announce:
+    title: Announcements
+    intro: Write a message to everyone, or only to drivers or passengers. It appears in their notifications, and as an alert on their phone the next time the app is running.
+    subject: Title
+    message: Message
+    audience: Send to
+    audiences:
+      everyone: Everyone
+      drivers: Drivers only
+      passengers: Passengers only
+    send: Send announcement
+    confirm: Send this to everyone selected? It cannot be taken back.
+    invalid: "Write a title (up to %{title} characters) and a message (up to %{body})."
+    sent:
+      one: Sent to 1 person.
+      other: "Sent to %{count} people."
+    recent: Recently sent
+    none: Nothing sent yet.
+    recipients:
+      one: 1 person
+      other: "%{count} people"
