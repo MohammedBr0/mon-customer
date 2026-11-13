@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_13_090000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -247,6 +247,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_090000) do
     t.decimal "min_topup", precision: 10, scale: 2, default: "10.0", null: false
     t.decimal "max_topup", precision: 10, scale: 2, default: "20000.0", null: false
     t.decimal "min_withdrawal", precision: 10, scale: 2, default: "100.0", null: false
+    t.decimal "auto_payout_limit", precision: 10, scale: 2, default: "0.0", null: false
   end
 
   create_table "popular_routes", force: :cascade do |t|
@@ -379,16 +380,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_090000) do
   create_table "wallet_topups", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.decimal "amount", precision: 12, scale: 2, null: false
-    t.string "provider", null: false
-    t.string "phone", null: false
+    t.string "provider", default: "chapa", null: false
+    t.string "phone"
     t.string "merchant_order_id", null: false
-    t.string "callback_token", null: false
+    t.string "callback_token"
     t.string "reference"
     t.string "provider_reference"
     t.string "status", default: "pending", null: false
     t.datetime "credited_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "checkout_url"
     t.index ["callback_token"], name: "index_wallet_topups_on_callback_token", unique: true
     t.index ["merchant_order_id"], name: "index_wallet_topups_on_merchant_order_id", unique: true
     t.index ["user_id"], name: "index_wallet_topups_on_user_id"
@@ -406,8 +408,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_090000) do
     t.datetime "handled_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "bank_code"
+    t.string "transfer_reference"
     t.index ["handled_by_id"], name: "index_wallet_withdrawals_on_handled_by_id"
     t.index ["status"], name: "index_wallet_withdrawals_on_status"
+    t.index ["transfer_reference"], name: "index_wallet_withdrawals_on_transfer_reference", unique: true
     t.index ["user_id"], name: "index_wallet_withdrawals_on_user_id"
   end
 

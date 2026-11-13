@@ -146,7 +146,7 @@ module ApiSerializer
   end
 
   def topup(topup)
-    { id: topup.id, amount: money(topup.amount), provider: topup.provider, phone: topup.phone, status: topup.status, final: topup.final? || topup.status == 'failed', created_at: topup.created_at.iso8601 }
+    { id: topup.id, amount: money(topup.amount), status: topup.status, final: topup.final?, checkout_url: topup.checkout_url, created_at: topup.created_at.iso8601 }
   end
 
   def withdrawal(withdrawal)

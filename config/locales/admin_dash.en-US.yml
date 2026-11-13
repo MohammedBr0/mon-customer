@@ -10,6 +10,11 @@ en-US:
     back_to_site: Back to the site
     trips: Trips
   admin_pricing:
+    min_topup: Smallest top-up
+    max_topup: Largest top-up
+    min_withdrawal: Smallest withdrawal
+    auto_payout_limit: Send withdrawals automatically up to
+    auto_payout_hint: Withdrawals up to this amount go out through Chapa without waiting for you. Leave it at 0 to approve every withdrawal yourself.
     per_km: Suggested trip price per km
     per_km_hint: Used to suggest a price when a driver posts a trip (the trip's distance times this rate, shared between the seats). Drivers can always change it. Set 0 for no suggestion.
   admin_dash:

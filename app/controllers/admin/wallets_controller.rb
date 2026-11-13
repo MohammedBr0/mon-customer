@@ -6,7 +6,7 @@ module Admin
     def show
       users = Wallet.where(kind: 'user')
       @totals = { available: users.sum(:available), held: users.sum(:held), fees: Wallet.platform.available }
-      @withdrawals = WalletWithdrawal.requested.includes(:user).order(:created_at)
+      @withdrawals = WalletWithdrawal.open.includes(:user).order(:created_at)
       @topups = WalletTopup.includes(:user).order(created_at: :desc).limit(15)
       @due = Booking.where(payment_method: 'wallet', payment_state: 'held', status: 'confirmed').count
     end

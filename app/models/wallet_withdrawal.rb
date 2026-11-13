@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-# A driver (or anyone with a balance) asks for money out of their wallet. The amount is set aside straight away;
-# an admin sends it by Telebirr or bank and marks it paid, or rejects it and the money goes back.
+# Someone asks for money out of their wallet. The amount is set aside straight away. It is then sent through
+# Chapa to their bank or mobile wallet: automatically when it is within the admins' limit, otherwise when an
+# admin approves it. If the transfer fails the request goes back to waiting; if it is rejected the money returns.
 class WalletWithdrawal < ApplicationRecord
-  STATUSES = %w[requested paid rejected].freeze
+  STATUSES = %w[requested sending paid rejected].freeze
 
   belongs_to :user
   belongs_to :handled_by, class_name: 'User', optional: true
@@ -13,22 +14,48 @@ class WalletWithdrawal < ApplicationRecord
   validates :account_name, :note, length: { maximum: 200 }
   validate :amount_is_allowed, on: :create
 
-  scope :requested, -> { where(status: 'requested') }
+  scope :open, -> { where(status: %w[requested sending]) }
 
   STATUSES.each { |name| define_method(:"#{name}?") { status == name } }
 
-  def self.request!(user:, amount:, method_name:, account_number:, account_name: nil)
-    transaction do
-      withdrawal = create!(user:, amount:, method_name:, account_number:, account_name:)
-      Wallet.for(user).move!('withdrawal_request', available: -withdrawal.amount, held: withdrawal.amount, subject: withdrawal, memo: method_name)
-      withdrawal
+  def self.request!(user:, amount:, method_name:, account_number:, account_name: nil, bank_code: nil)
+    withdrawal = transaction do
+      record = create!(user:, amount:, method_name:, account_number:, account_name: account_name.presence || user.to_s, bank_code:)
+      Wallet.for(user).move!('withdrawal_request', available: -record.amount, held: record.amount, subject: record, memo: method_name)
+      record
     end
+    withdrawal.send_with_chapa! if withdrawal.bank_code && withdrawal.amount <= PlatformSetting.current.auto_payout_limit
+    withdrawal
+  end
+
+  # Hands the payout to Chapa. The money stays set aside until Chapa says it arrived.
+  def send_with_chapa!(by: nil)
+    raise ActiveRecord::RecordInvalid, self unless requested? && bank_code.present?
+
+    reference = "ARIFWD#{id}T#{Time.current.to_i}"
+    update!(status: 'sending', transfer_reference: reference, handled_by: by, handled_at: Time.current)
+    ChapaClient.new.transfer(reference:, amount:, account_name:, account_number:, bank_code:)
+    self
+  rescue ChapaClient::Error => e
+    update!(status: 'requested', transfer_reference: nil, note: e.message.truncate(190))
+    self
+  end
+
+  # Asks Chapa how the transfer went and settles it.
+  def refresh!
+    return self unless sending?
+
+    case ChapaClient.new.verify_transfer(transfer_reference)
+    when 'success' then mark_paid!(by: handled_by, note: "Chapa #{transfer_reference}")
+    when 'failed' then update!(status: 'requested', note: I18n.t('wallet.transfer_failed'))
+    end
+    self
   end
 
   def mark_paid!(by:, note: nil)
     transaction do
       lock!
-      raise ActiveRecord::RecordInvalid, self unless requested?
+      raise ActiveRecord::RecordInvalid, self unless requested? || sending?
 
       update!(status: 'paid', handled_by: by, handled_at: Time.current, note:)
       Wallet.for(user).move!('withdrawal_paid', held: -amount, subject: self, memo: note)

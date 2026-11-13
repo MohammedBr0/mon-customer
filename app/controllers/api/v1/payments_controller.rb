@@ -2,16 +2,31 @@
 
 module Api
   module V1
-    # Where Afro Pay reports the result of a payment. Afro Pay does not sign its callbacks, so each top-up has its
-    # own secret address, and the report must match the order id and amount we asked for before any money is credited.
+    # Where Chapa reports on payments and payouts. Nothing here is trusted on its own: every report only makes
+    # the server ask Chapa (with our secret key) what really happened, and act on that answer.
     class PaymentsController < ActionController::API
-      def afropay
-        topup = WalletTopup.find_by(callback_token: params[:token].to_s)
-        return head :not_found unless topup
+      # Chapa's webhook (POST, signed) for payments and payouts.
+      def chapa
+        signature = request.headers['x-chapa-signature'].presence || request.headers['Chapa-Signature']
+        return head :unauthorized if ChapaClient.webhook_secret && !ChapaClient.valid_signature?(request.raw_post, signature)
 
-        body = params.to_unsafe_h
-        topup.apply_callback!(status: body['Status'], amount: body['Amount'], order_id: body['MerchantOrderId'], provider_reference: body['ProviderReference'].to_s.presence)
+        settle(params[:tx_ref].presence || params[:trx_ref].presence || params[:reference].presence || params[:merchant_reference])
         head :ok
+      end
+
+      # The callback_url Chapa calls when a checkout finishes.
+      def chapa_callback
+        settle(params[:trx_ref].presence || params[:tx_ref].presence || params[:ref_id])
+        head :ok
+      end
+
+      private
+
+      def settle(reference)
+        return if reference.blank?
+
+        WalletTopup.find_by(merchant_order_id: reference.to_s)&.refresh!
+        WalletWithdrawal.find_by(transfer_reference: reference.to_s)&.refresh!
       end
     end
   end

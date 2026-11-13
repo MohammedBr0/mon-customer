@@ -177,7 +177,7 @@ class Booking < ApplicationRecord
   def wallet_covers_the_seat
     return unless wallet_paid? && passenger && passenger_total
 
-    errors.add(:base, :wallet_disabled) unless AfroPayClient.enabled?
+    errors.add(:base, :wallet_disabled) unless ChapaClient.enabled?
     errors.add(:base, :wallet_too_low, needed: passenger_total.to_f, balance: Wallet.for(passenger).available.to_f) if passenger_total > Wallet.for(passenger).available
   end
 

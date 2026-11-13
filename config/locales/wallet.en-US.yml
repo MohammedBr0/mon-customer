@@ -2,12 +2,15 @@ en-US:
   wallet:
     topup_description: "%{app} wallet top-up"
     admin_title: Wallets
+    done_title: Payment received
+    done_body: "You can go back to the %{app} app now. Your wallet updates in a moment."
+    transfer_failed: Chapa could not complete the transfer. Check the account and send it again.
     errors:
       disabled: Wallet payments are not available right now
       insufficient: There is not enough money in the wallet
       gateway: "The payment could not be started (%{reason}). Try again."
     admin:
-      intro: Money people hold in the service. Top-ups arrive through Afro Pay; withdrawals are sent by you and marked here.
+      intro: Money people hold in the service. Top-ups arrive through Chapa. Withdrawals are sent through Chapa when you approve them, or automatically up to the limit in Fee & payments.
       customer_money: Held for customers
       available: Available to spend or withdraw
       held: Set aside for rides and withdrawals
@@ -18,7 +21,16 @@ en-US:
       settled:
         one: 1 payment released to its driver.
         other: "%{count} payments released to their drivers."
-      mark_paid: Mark as sent
+      mark_paid: Mark as sent by hand
+      mark_paid_confirm: Only do this if you sent the money yourself, outside Chapa. Continue?
+      send_chapa: Send with Chapa
+      sending: Sending through Chapa
+      check: Check with Chapa
+      sent: Handed to Chapa. The money stays set aside until Chapa confirms it arrived.
+      send_failed: "Chapa did not accept the transfer: %{reason}"
+      check_sending: Chapa has not finished this transfer yet.
+      check_paid: Chapa confirmed the transfer.
+      check_requested: Chapa reported that the transfer failed. It is waiting again.
       reject: Reject
       reason: Reason (the person sees this)
       paid: Withdrawal marked as sent.
@@ -53,8 +65,6 @@ en-US:
           attributes:
             amount:
               out_of_range: "must be between %{min} and %{max} Br"
-            phone:
-              invalid: must be an Ethiopian mobile number
         wallet_withdrawal:
           attributes:
             amount:

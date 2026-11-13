@@ -13,9 +13,10 @@ SimpleConfig.for :application do
   set :google_maps_server_key, ENV['GOOGLE_MAPS_SERVER_KEY']
   set :google_static_maps, ENV['GOOGLE_STATIC_MAPS'] == 'true'
 
-  group :afropay do
-    set :api_key, ENV['AFROPAY_API_KEY']
-    set :base_url, ENV['AFROPAY_BASE_URL'].presence || 'https://paybridge.sandbox.afropays.co'
+  group :chapa do
+    set :secret_key, ENV['CHAPA_SECRET_KEY']
+    set :webhook_secret, ENV['CHAPA_WEBHOOK_SECRET']
+    set :base_url, ENV['CHAPA_BASE_URL'].presence || 'https://api.chapa.co'
   end
 
   group :afromessage do

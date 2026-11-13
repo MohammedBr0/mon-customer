@@ -17,7 +17,7 @@ module Api
           phone_verification: AfroMessageClient.enabled?,
           commutes_enabled: setting.commutes_enabled, commute_horizon_days: setting.commute_horizon_days,
           announcement: (setting.announcement if setting.announcement_active?),
-          wallet: { enabled: AfroPayClient.enabled?, providers: AfroPayClient::PROVIDERS.keys, min_topup: serializer.money(setting.min_topup),
+          wallet: { enabled: ChapaClient.enabled?, min_topup: serializer.money(setting.min_topup),
                     max_topup: serializer.money(setting.max_topup), min_withdrawal: serializer.money(setting.min_withdrawal) },
           payment_methods: PaymentMethod.active.ordered.map { |method| serializer.payment_method(method) },
           vehicle_fields: VehicleField.active.map { |field| serializer.vehicle_field(field) },

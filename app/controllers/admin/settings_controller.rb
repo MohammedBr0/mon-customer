@@ -25,7 +25,7 @@ module Admin
     end
 
     def setting_params
-      params.require(:platform_setting).permit(:fee_percent, :fee_charged_to, :currency_code, :currency_symbol, :max_price_per_seat, :suggested_price_per_km, :payment_instructions,
+      params.require(:platform_setting).permit(:fee_percent, :fee_charged_to, :currency_code, :currency_symbol, :max_price_per_seat, :suggested_price_per_km, :min_topup, :max_topup, :min_withdrawal, :auto_payout_limit, :payment_instructions,
                                                :announcement, :announcement_active, :commutes_enabled, :commute_horizon_days)
     end
   end

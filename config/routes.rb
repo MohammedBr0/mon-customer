@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   get 'maps/route', to: 'maps#route'
 
   get 'avatars/:id', to: 'avatars#show', as: :avatar
+  get 'payments/done', to: 'payments#done'
 
   resources :city_commutes, only: %i[index new create]
 
@@ -60,9 +61,11 @@ Rails.application.routes.draw do
       resource :wallet, only: :show, controller: :wallet do
         post :topup
         get 'topups/:id', action: :topup_status
+        get :banks
         post :withdraw
       end
-      post 'payments/afropay/:token', to: 'payments#afropay'
+      post 'payments/chapa', to: 'payments#chapa'
+      match 'payments/chapa/callback', to: 'payments#chapa_callback', via: %i[get post]
       resource :me, only: %i[show update destroy], controller: :me do
         put :payment_methods
         post :identity
@@ -116,6 +119,8 @@ Rails.application.routes.draw do
     end
     resources :withdrawals, only: [] do
       patch :pay, on: :member
+      patch :send_out, on: :member
+      patch :check, on: :member
       patch :reject, on: :member
     end
     resources :identity_documents, only: %i[index show] do

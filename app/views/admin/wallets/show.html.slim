@@ -31,10 +31,21 @@
                 - if withdrawal.account_name.present?
                   span.chip.chip--muted = withdrawal.account_name
                 span.chip.chip--muted = l(withdrawal.created_at.in_time_zone, format: :short)
+          - if withdrawal.note.present?
+            p.text-danger.small.mt-2.mb-0 = withdrawal.note
+          - if withdrawal.sending?
+            p.mt-2.mb-0
+              span.chip = t('wallet.admin.sending')
+              small.text-body-secondary.ms-2 = withdrawal.transfer_reference
           = form_with url: pay_admin_withdrawal_path(withdrawal), method: :patch, local: true, class: 'd-flex flex-wrap gap-2 mt-3' do
             = text_field_tag :note, nil, class: 'form-control flex-grow-1 w-auto', maxlength: 200, placeholder: t('wallet.admin.reason'), 'aria-label': t('wallet.admin.reason')
-            = button_tag t('wallet.admin.mark_paid'), type: 'submit', class: 'btn btn-primary'
-            = button_tag t('wallet.admin.reject'), type: 'submit', formaction: reject_admin_withdrawal_path(withdrawal), class: 'btn btn-outline-danger'
+            - if withdrawal.requested? && withdrawal.bank_code.present?
+              = button_tag t('wallet.admin.send_chapa'), type: 'submit', formaction: send_out_admin_withdrawal_path(withdrawal), class: 'btn btn-primary'
+            - if withdrawal.sending?
+              = button_tag t('wallet.admin.check'), type: 'submit', formaction: check_admin_withdrawal_path(withdrawal), class: 'btn btn-primary'
+            = button_tag t('wallet.admin.mark_paid'), type: 'submit', class: 'btn btn-outline-primary', data: { confirm: t('wallet.admin.mark_paid_confirm') }
+            - if withdrawal.requested?
+              = button_tag t('wallet.admin.reject'), type: 'submit', formaction: reject_admin_withdrawal_path(withdrawal), class: 'btn btn-outline-danger'
   h2.section-title.mt-4 = t('wallet.admin.recent_topups')
   .surface
     .mini-list
@@ -44,5 +55,5 @@
             span.fas.fa-wallet aria-hidden='true'
           span.mini-list__main
             strong = "#{topup.user} · #{money(topup.amount)}"
-            small = [topup.provider, topup.phone, l(topup.created_at.in_time_zone, format: :short)].join(' · ')
+            small = [topup.provider_reference.presence || 'Chapa', topup.merchant_order_id, l(topup.created_at.in_time_zone, format: :short)].join(' · ')
           span.chip class=('chip--muted' unless topup.status == 'success') = topup.status
