@@ -66,6 +66,24 @@ RSpec.describe 'Wallet' do
       expect(rider.notifications.where(kind: 'wallet_topup').count).to eq 1
     end
 
+    it 'texts a confirmation with Chapa\'s receipt once, and a failed text never blocks the money' do
+      allow(AfroMessageClient).to receive(:token).and_return('afro')
+      sms = stub_request(:get, %r{https://api.afromessage.com/api/send}).to_return(body: { acknowledge: 'success', response: {} }.to_json)
+      rider.update!(phone: '0911223344')
+      topup = start
+      chapa_says(topup, status: 'success')
+      2.times { get "/api/v1/wallet/topups/#{topup.id}", headers: api_headers(rider) }
+      expect(sms).to have_been_requested.once
+      expect(WebMock).to have_requested(:get, %r{api.afromessage.com/api/send})
+        .with(query: hash_including('to' => '+251911223344', 'message' => '500 Br added to your Arifway wallet. Ref CH1. Receipt: https://chapa.link/payment-receipt/CH1'))
+
+      stub_request(:get, %r{https://api.afromessage.com/api/send}).to_return(status: 500, body: 'down')
+      second = start(amount: 200)
+      chapa_says(second, status: 'success')
+      get "/api/v1/wallet/topups/#{second.id}", headers: api_headers(rider)
+      expect(balance(rider)).to eq [700.0, 0.0]
+    end
+
     it 'never credits on a callback alone: Chapa must confirm the same amount in birr' do
       topup = start
       chapa_says(topup, status: 'pending')

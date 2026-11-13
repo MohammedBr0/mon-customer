@@ -61,6 +61,7 @@ class WalletWithdrawal < ApplicationRecord
       Wallet.for(user).move!('withdrawal_paid', held: -amount, subject: self, memo: note)
     end
     Notification.notify(user, 'withdrawal_paid', amount: ApiSerializer.money(amount).to_s)
+    PaymentSms.withdrawal(self)
   end
 
   def reject!(by:, note:)

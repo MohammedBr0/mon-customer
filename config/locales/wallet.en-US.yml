@@ -2,6 +2,9 @@ en-US:
   wallet:
     topup_description: "%{app} wallet top-up"
     admin_title: Wallets
+    sms:
+      topup: "%{amount} Br added to your %{app} wallet. Ref %{reference}. Receipt: %{receipt}"
+      withdrawal: "%{amount} Br sent from your %{app} wallet to %{account}. Ref %{reference}"
     done_title: Payment received
     done_body: "You can go back to the %{app} app now. Your wallet updates in a moment."
     transfer_failed: Chapa could not complete the transfer. Check the account and send it again.

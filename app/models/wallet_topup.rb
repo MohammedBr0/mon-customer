@@ -39,6 +39,7 @@ class WalletTopup < ApplicationRecord
     return self if final?
 
     result = ChapaClient.new.verify_payment(merchant_order_id)
+    credited = false
     with_lock do
       return self if final?
 
@@ -46,10 +47,12 @@ class WalletTopup < ApplicationRecord
         update!(status: 'success', reference: result[:reference], provider_reference: result[:method], credited_at: Time.current)
         Wallet.for(user).move!('topup', available: amount, subject: self, memo: result[:method].presence || 'Chapa')
         Notification.notify(user, 'wallet_topup', amount: ApiSerializer.money(amount).to_s)
+        credited = true
       elsif result[:status].start_with?('fail')
         update!(status: 'failed')
       end
     end
+    PaymentSms.topup(self) if credited # after the money is safely recorded
     self
   rescue ChapaClient::Error
     self # Chapa could not be reached: the top-up stays pending and is checked again later

@@ -30,6 +30,14 @@ class AfroMessageClient
     response['verificationId'].presence || raise(Error, 'no_verification_id')
   end
 
+  # Sends a plain text message. Returns true when AfroMessage accepted it.
+  def send_sms(phone, message)
+    get('/send', { to: phone, message:, from: APP_CONFIG.afromessage.identifier.presence, sender: APP_CONFIG.afromessage.sender.presence }.compact)
+    true
+  rescue Error
+    false
+  end
+
   # True when the code is the one sent for this verification.
   def verify(phone:, verification_id:, code:)
     get('/verify', { to: phone, vc: verification_id, code: })

@@ -1,6 +1,9 @@
 am-ET:
   wallet:
     topup_description: "የ%{app} ቦርሳ መሙያ"
+    sms:
+      topup: "%{amount} ብር ወደ %{app} ቦርሳዎ ተጨምሯል። ማጣቀሻ %{reference}። ደረሰኝ፦ %{receipt}"
+      withdrawal: "%{amount} ብር ከ%{app} ቦርሳዎ ወደ %{account} ተልኳል። ማጣቀሻ %{reference}"
     done_title: ክፍያው ደርሷል
     done_body: "አሁን ወደ %{app} መተግበሪያ መመለስ ይችላሉ። ቦርሳዎ በቅጽበት ይዘምናል።"
     transfer_failed: Chapa ዝውውሩን ማጠናቀቅ አልቻለም።
