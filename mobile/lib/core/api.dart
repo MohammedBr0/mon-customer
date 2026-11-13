@@ -289,12 +289,15 @@ class Api {
     );
   }
 
-  /// Starts a top-up: the payment provider sends a PIN prompt to [phone].
-  Future<Topup> startTopup({required double amount, required String provider, required String phone}) async =>
-      Topup.fromJson(Map<String, dynamic>.from((await _send('POST', '/wallet/topup', body: {'amount': amount, 'provider': provider, 'phone': phone}))['topup'] as Map));
+  /// Starts a top-up and returns it with the address of Chapa's checkout page.
+  Future<Topup> startTopup(double amount) async => Topup.fromJson(Map<String, dynamic>.from((await _send('POST', '/wallet/topup', body: {'amount': amount}))['topup'] as Map));
 
+  /// Asks the server (which asks Chapa) whether the payment went through.
   Future<Topup> topupStatus(int id) async => Topup.fromJson(Map<String, dynamic>.from((await _send('GET', '/wallet/topups/$id'))['topup'] as Map));
 
-  Future<void> requestWithdrawal({required double amount, required String methodName, required String accountNumber, String? accountName}) =>
-      _send('POST', '/wallet/withdraw', body: {'amount': amount, 'method_name': methodName, 'account_number': accountNumber, 'account_name': ?accountName});
+  Future<List<PayoutBank>> payoutBanks() async =>
+      [for (final b in ((await _send('GET', '/wallet/banks'))['banks'] as List? ?? const [])) PayoutBank.fromJson(Map<String, dynamic>.from(b as Map))];
+
+  Future<void> requestWithdrawal({required double amount, required PayoutBank bank, required String accountNumber, required String accountName}) =>
+      _send('POST', '/wallet/withdraw', body: {'amount': amount, 'bank_code': bank.id, 'method_name': bank.name, 'account_number': accountNumber, 'account_name': accountName});
 }

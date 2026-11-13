@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../core/app_state.dart';
 import '../core/format.dart';
-import '../core/phone.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
 import '../widgets/common.dart';
@@ -67,7 +67,7 @@ class _WalletScreenState extends State<WalletScreen> {
     final app = context.watch<AppState>();
     final scheme = Theme.of(context).colorScheme;
     final symbol = app.config.currencySymbol;
-    final waiting = _withdrawals.where((w) => w.status == 'requested').toList();
+    final waiting = _withdrawals.where((w) => w.status == 'requested' || w.status == 'sending').toList();
     return Scaffold(
       appBar: AppBar(title: Text(context.t('wallet'))),
       body: _loading
@@ -141,9 +141,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 }
 
-String providerLabel(String key) => switch (key) { 'telebirr' => 'Telebirr', 'cbe_birr' => 'CBE Birr', 'mpesa' => 'M-Pesa', 'awash_birr' => 'Awash Birr', _ => key };
-
-/// Add money: choose an amount and a provider, then approve the PIN prompt that appears on the phone.
+/// Add money: choose an amount, pay on Chapa's page (Telebirr, CBE Birr, M-Pesa or card), come back.
 class TopUpScreen extends StatefulWidget {
   const TopUpScreen({super.key, this.suggested});
   final double? suggested;
@@ -152,23 +150,33 @@ class TopUpScreen extends StatefulWidget {
   State<TopUpScreen> createState() => _TopUpScreenState();
 }
 
-class _TopUpScreenState extends State<TopUpScreen> {
+class _TopUpScreenState extends State<TopUpScreen> with WidgetsBindingObserver {
   final _form = GlobalKey<FormState>();
   late final _amount = TextEditingController(text: widget.suggested == null ? '' : widget.suggested!.ceil().toString());
-  late final _phone = TextEditingController(text: (context.read<AppState>().user?.phone ?? '').replaceFirst('+251', '0'));
-  late String _provider = context.read<AppState>().config.walletProviders.firstOrNull ?? 'telebirr';
   bool _busy = false;
   String? _error;
-  Topup? _topup; // set once the prompt has been sent; the screen then waits for the result
+  Topup? _topup; // set once the payment page has been opened; the screen then waits for the result
   Timer? _poll;
   int _waited = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _poll?.cancel();
     _amount.dispose();
-    _phone.dispose();
     super.dispose();
+  }
+
+  // Coming back from the payment page: check straight away instead of waiting for the next tick.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _topup != null && !_topup!.done) _check();
   }
 
   Future<void> _start() async {
@@ -179,14 +187,15 @@ class _TopUpScreenState extends State<TopUpScreen> {
       _error = null;
     });
     try {
-      final topup = await app.api.startTopup(amount: double.parse(_amount.text.trim()), provider: _provider, phone: normalizeEthiopianPhone(_phone.text)!);
+      final topup = await app.api.startTopup(double.parse(_amount.text.trim()));
       if (!mounted) return;
       setState(() {
         _topup = topup;
         _waited = 0;
       });
-      // The provider tells the server the result; ask the server every few seconds until it is known.
-      _poll = Timer.periodic(const Duration(seconds: 3), (_) => _check());
+      await _openCheckout();
+      _poll?.cancel();
+      _poll = Timer.periodic(const Duration(seconds: 4), (_) => _check());
     } catch (e) {
       if (mounted) setState(() => _error = errorText(context, e));
     } finally {
@@ -194,15 +203,25 @@ class _TopUpScreenState extends State<TopUpScreen> {
     }
   }
 
+  Future<void> _openCheckout() async {
+    final url = _topup?.checkoutUrl;
+    if (url == null) return;
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
+    } catch (_) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    }
+  }
+
   Future<void> _check() async {
     final id = _topup?.id;
     if (id == null) return;
-    _waited += 3;
+    _waited += 4;
     try {
       final topup = await context.read<AppState>().api.topupStatus(id);
       if (!mounted) return;
-      setState(() => _topup = topup);
-      if (topup.done || _waited >= 180) _poll?.cancel();
+      setState(() => _topup = Topup(id: topup.id, amount: topup.amount, status: topup.status, done: topup.done, checkoutUrl: topup.checkoutUrl ?? _topup?.checkoutUrl));
+      if (topup.done || _waited >= 600) _poll?.cancel();
     } catch (_) {
       // Try again at the next tick.
     }
@@ -210,61 +229,53 @@ class _TopUpScreenState extends State<TopUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    final config = app.config;
+    final config = context.watch<AppState>().config;
     final symbol = config.currencySymbol;
     final topup = _topup;
     return Scaffold(
       appBar: AppBar(title: Text(context.t('top_up'))),
-      body: topup != null ? _waiting(context, topup, symbol) : Form(
-        key: _form,
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          TextFormField(
-            controller: _amount,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-            decoration: InputDecoration(labelText: context.t('amount'), prefixText: '$symbol '),
-            validator: (v) {
-              final n = double.tryParse((v ?? '').trim());
-              return n == null || n < config.minTopup || n > config.maxTopup ? context.tr('amount_between', {'min': config.minTopup.round(), 'max': config.maxTopup.round()}) : null;
-            },
-          ),
-          const SizedBox(height: 10),
-          Wrap(spacing: 8, children: [
-            for (final quick in const [100, 200, 500, 1000]) ActionChip(label: Text('$quick'), onPressed: () => setState(() => _amount.text = '$quick')),
-          ]),
-          const SizedBox(height: 16),
-          Text(context.t('pay_with_provider'), style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final p in config.walletProviders) ChoiceChip(label: Text(providerLabel(p)), selected: _provider == p, onSelected: (_) => setState(() => _provider = p)),
-          ]),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phone,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(labelText: context.t('paying_phone'), helperText: context.t('paying_phone_hint'), helperMaxLines: 2, prefixIcon: const Icon(Icons.phone_android)),
-            validator: (v) => normalizeEthiopianPhone(v ?? '') == null ? context.tr('invalid_phone') : null,
-          ),
-          if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
-          const SizedBox(height: 20),
-          FilledButton(onPressed: _busy ? null : _start, child: _busy ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5)) : Text(context.t('send_payment_prompt'))),
-        ]),
-      ),
+      body: topup != null
+          ? _waiting(context, topup, symbol)
+          : Form(
+              key: _form,
+              child: ListView(padding: const EdgeInsets.all(16), children: [
+                TextFormField(
+                  controller: _amount,
+                  autofocus: widget.suggested == null,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  decoration: InputDecoration(labelText: context.t('amount'), prefixText: '$symbol '),
+                  validator: (v) {
+                    final n = double.tryParse((v ?? '').trim());
+                    return n == null || n < config.minTopup || n > config.maxTopup ? context.tr('amount_between', {'min': config.minTopup.round(), 'max': config.maxTopup.round()}) : null;
+                  },
+                ),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, children: [
+                  for (final quick in const [100, 200, 500, 1000]) ActionChip(label: Text('$quick'), onPressed: () => setState(() => _amount.text = '$quick')),
+                ]),
+                const SizedBox(height: 16),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icon(Icons.lock_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(context.t('topup_how'), style: Theme.of(context).textTheme.bodySmall)),
+                ]),
+                if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                const SizedBox(height: 20),
+                FilledButton(onPressed: _busy ? null : _start, child: _busy ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5)) : Text(context.t('continue_to_payment'))),
+              ]),
+            ),
     );
   }
 
   Widget _waiting(BuildContext context, Topup topup, String symbol) {
     final scheme = Theme.of(context).colorScheme;
     final failed = topup.done && !topup.succeeded;
-    final timedOut = !topup.done && _waited >= 180;
     final (icon, color, title, detail) = topup.succeeded
         ? (Icons.check_circle, scheme.primary, context.t('topup_done', {'amount': formatMoney(topup.amount, symbol)}), context.t('topup_done_hint'))
         : failed
-            ? (Icons.error_outline, scheme.error, context.t('topup_failed'), context.t('topup_status_${topup.status}'))
-            : timedOut
-                ? (Icons.schedule, scheme.onSurfaceVariant, context.t('topup_slow'), context.t('topup_slow_hint'))
-                : (Icons.phone_android, scheme.primary, context.t('check_your_phone'), context.t('check_your_phone_hint', {'amount': formatMoney(topup.amount, symbol), 'provider': providerLabel(_provider)}));
+            ? (Icons.error_outline, scheme.error, context.t('topup_failed'), context.t('topup_status_failed'))
+            : (Icons.open_in_browser, scheme.primary, context.t('finish_payment'), context.t('finish_payment_hint', {'amount': formatMoney(topup.amount, symbol)}));
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -274,11 +285,17 @@ class _TopUpScreenState extends State<TopUpScreen> {
         const SizedBox(height: 8),
         Text(detail, textAlign: TextAlign.center, style: TextStyle(color: scheme.onSurfaceVariant)),
         const SizedBox(height: 24),
-        if (!topup.done && !timedOut) const Center(child: CircularProgressIndicator()),
-        if (topup.succeeded || timedOut) FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('close'))),
+        if (!topup.done) ...[
+          const Center(child: CircularProgressIndicator()),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(onPressed: _openCheckout, icon: const Icon(Icons.open_in_new), label: Text(context.t('open_payment_page'))),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('close'))),
+        ],
+        if (topup.succeeded) FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(context.t('close'))),
         if (failed) ...[
           FilledButton(
             onPressed: () => setState(() {
+              _poll?.cancel();
               _topup = null;
               _error = null;
             }),
@@ -291,7 +308,7 @@ class _TopUpScreenState extends State<TopUpScreen> {
   }
 }
 
-/// Ask for money out of the wallet. An admin sends it and marks it done.
+/// Ask for money out of the wallet, to a bank or mobile wallet from Chapa's list.
 class WithdrawScreen extends StatefulWidget {
   const WithdrawScreen({super.key, required this.available});
   final double available;
@@ -303,35 +320,56 @@ class WithdrawScreen extends StatefulWidget {
 class _WithdrawScreenState extends State<WithdrawScreen> {
   final _form = GlobalKey<FormState>();
   final _amount = TextEditingController();
-  late final List<DriverPayment> _accounts = [for (final p in context.read<AppState>().user?.payments ?? const <DriverPayment>[]) if ((p.accountNumber ?? '').isNotEmpty) p];
-  late DriverPayment? _account = _accounts.firstOrNull;
-  final _method = TextEditingController();
-  final _number = TextEditingController();
+  late final _name = TextEditingController(text: context.read<AppState>().user?.name ?? '');
+  late final _number = TextEditingController(text: (context.read<AppState>().user?.phone ?? '').replaceFirst('+251', '0'));
+  List<PayoutBank> _banks = [];
+  PayoutBank? _bank;
+  bool _loadingBanks = true;
   bool _busy = false;
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _loadBanks();
+  }
+
+  @override
   void dispose() {
     _amount.dispose();
-    _method.dispose();
+    _name.dispose();
     _number.dispose();
     super.dispose();
   }
 
+  Future<void> _loadBanks() async {
+    setState(() {
+      _loadingBanks = true;
+      _error = null;
+    });
+    try {
+      final banks = await context.read<AppState>().api.payoutBanks();
+      if (!mounted) return;
+      setState(() {
+        _banks = banks;
+        _bank = banks.where((b) => b.name.toLowerCase().contains('telebirr')).firstOrNull ?? banks.firstOrNull;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = errorText(context, e));
+    } finally {
+      if (mounted) setState(() => _loadingBanks = false);
+    }
+  }
+
   Future<void> _send() async {
-    if (!_form.currentState!.validate()) return;
+    if (!_form.currentState!.validate() || _bank == null) return;
     final app = context.read<AppState>();
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await app.api.requestWithdrawal(
-        amount: double.parse(_amount.text.trim()),
-        methodName: _account?.name ?? _method.text.trim(),
-        accountNumber: _account?.accountNumber ?? _number.text.trim(),
-        accountName: _account?.accountName,
-      );
+      await app.api.requestWithdrawal(amount: double.parse(_amount.text.trim()), bank: _bank!, accountNumber: _number.text.trim(), accountName: _name.text.trim());
       if (mounted) {
         showMessage(context, context.tr('withdrawal_requested'));
         Navigator.pop(context, true);
@@ -347,6 +385,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   Widget build(BuildContext context) {
     final config = context.watch<AppState>().config;
     final symbol = config.currencySymbol;
+    final bank = _bank;
     return Scaffold(
       appBar: AppBar(title: Text(context.t('withdraw'))),
       body: Form(
@@ -365,27 +404,36 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
             },
           ),
           const SizedBox(height: 16),
-          Text(context.t('send_money_to'), style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          if (_accounts.isNotEmpty)
-            RadioGroup<DriverPayment?>(
-              groupValue: _account,
-              onChanged: (v) => setState(() => _account = v),
-              child: Column(children: [
-                for (final a in _accounts) RadioListTile<DriverPayment?>(contentPadding: EdgeInsets.zero, value: a, title: Text(a.name), subtitle: Text(a.accountNumber!)),
-                RadioListTile<DriverPayment?>(contentPadding: EdgeInsets.zero, value: null, title: Text(context.t('another_account'))),
-              ]),
+          if (_loadingBanks) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+          if (!_loadingBanks && _banks.isEmpty) OutlinedButton(onPressed: _loadBanks, child: Text(context.t('retry'))),
+          if (_banks.isNotEmpty) ...[
+            DropdownButtonFormField<int>(
+              initialValue: bank?.id,
+              isExpanded: true,
+              decoration: InputDecoration(labelText: context.t('send_money_to')),
+              items: [for (final b in _banks) DropdownMenuItem(value: b.id, child: Text(b.name, overflow: TextOverflow.ellipsis))],
+              onChanged: (id) => setState(() => _bank = _banks.firstWhere((b) => b.id == id)),
             ),
-          if (_account == null) ...[
-            TextFormField(controller: _method, decoration: InputDecoration(labelText: context.t('payout_method'), hintText: 'Telebirr'), validator: (v) => (v ?? '').trim().isEmpty ? context.tr('required') : null),
-            const SizedBox(height: 10),
-            TextFormField(controller: _number, decoration: InputDecoration(labelText: context.t('account_number')), validator: (v) => (v ?? '').trim().isEmpty ? context.tr('required') : null),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _number,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(labelText: context.t(bank?.mobile == true ? 'payout_phone' : 'account_number')),
+              validator: (v) {
+                final digits = (v ?? '').replaceAll(RegExp(r'\s'), '');
+                if (digits.isEmpty) return context.tr('required');
+                final length = bank?.accountLength;
+                return length != null && digits.length != length ? context.tr('account_length', {'length': length}) : null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(controller: _name, textCapitalization: TextCapitalization.words, decoration: InputDecoration(labelText: context.t('account_holder')), validator: (v) => (v ?? '').trim().isEmpty ? context.tr('required') : null),
           ],
           const SizedBox(height: 8),
           Text(context.t('withdraw_note'), style: Theme.of(context).textTheme.bodySmall),
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _busy ? null : _send, child: Text(context.t('request_withdrawal'))),
+          FilledButton(onPressed: _busy || _bank == null ? null : _send, child: Text(context.t('request_withdrawal'))),
         ]),
       ),
     );

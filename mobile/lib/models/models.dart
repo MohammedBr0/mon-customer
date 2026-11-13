@@ -95,7 +95,6 @@ class AppConfig {
     this.paymentMethods = const [],
     this.suggestedPricePerKm = 0,
     this.walletEnabled = false,
-    this.walletProviders = const [],
     this.minTopup = 10,
     this.maxTopup = 20000,
     this.minWithdrawal = 100,
@@ -103,7 +102,6 @@ class AppConfig {
 
   /// Wallet payments are on when the server has a payment gateway set up.
   final bool walletEnabled;
-  final List<String> walletProviders;
   final double minTopup;
   final double maxTopup;
   final double minWithdrawal;
@@ -160,7 +158,6 @@ class AppConfig {
       phoneVerification: j['phone_verification'] == true,
       suggestedPricePerKm: _d(j['suggested_price_per_km']),
       walletEnabled: (j['wallet'] as Map?)?['enabled'] == true,
-      walletProviders: [for (final p in ((j['wallet'] as Map?)?['providers'] as List? ?? const [])) '$p'],
       minTopup: (j['wallet'] as Map?)?['min_topup'] is num ? _d((j['wallet'] as Map)['min_topup']) : 10,
       maxTopup: (j['wallet'] as Map?)?['max_topup'] is num ? _d((j['wallet'] as Map)['max_topup']) : 20000,
       minWithdrawal: (j['wallet'] as Map?)?['min_withdrawal'] is num ? _d((j['wallet'] as Map)['min_withdrawal']) : 100,
@@ -694,17 +691,30 @@ class WalletEntry {
   double get amount => availableChange != 0 ? availableChange : -heldChange;
 }
 
-/// Money being added through the payment gateway: a PIN prompt goes to the phone, then it succeeds or not.
+/// Money being added through Chapa: the person pays on Chapa's checkout page, then it succeeds or not.
 class Topup {
-  const Topup({required this.id, required this.amount, required this.status, this.done = false});
+  const Topup({required this.id, required this.amount, required this.status, this.done = false, this.checkoutUrl});
   final int id;
   final double amount;
-  final String status;
+  final String status; // pending | success | failed
   final bool done; // nothing more will happen to it
+  final String? checkoutUrl;
 
-  factory Topup.fromJson(Map<String, dynamic> j) => Topup(id: _i(j['id']) ?? 0, amount: _d(j['amount']), status: j['status'] as String? ?? 'pending', done: j['final'] == true);
+  factory Topup.fromJson(Map<String, dynamic> j) =>
+      Topup(id: _i(j['id']) ?? 0, amount: _d(j['amount']), status: j['status'] as String? ?? 'pending', done: j['final'] == true, checkoutUrl: j['checkout_url'] as String?);
 
   bool get succeeded => status == 'success';
+}
+
+/// A bank or mobile wallet a withdrawal can be sent to.
+class PayoutBank {
+  const PayoutBank({required this.id, required this.name, this.accountLength, this.mobile = false});
+  final int id;
+  final String name;
+  final int? accountLength;
+  final bool mobile;
+
+  factory PayoutBank.fromJson(Map<String, dynamic> j) => PayoutBank(id: _i(j['id']) ?? 0, name: j['name'] as String? ?? '', accountLength: _i(j['account_length']), mobile: j['mobile'] == true);
 }
 
 class Withdrawal {

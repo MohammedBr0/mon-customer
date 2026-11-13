@@ -625,9 +625,8 @@ void main() {
 
   group('wallet', () {
     test('config says whether the wallet is on and how to top up; an older server means off', () {
-      final config = AppConfig.fromJson({'wallet': {'enabled': true, 'providers': ['telebirr', 'cbe_birr'], 'min_topup': 10, 'max_topup': 20000, 'min_withdrawal': 100}});
+      final config = AppConfig.fromJson({'wallet': {'enabled': true, 'min_topup': 10, 'max_topup': 20000, 'min_withdrawal': 100}});
       expect(config.walletEnabled, isTrue);
-      expect(config.walletProviders, ['telebirr', 'cbe_birr']);
       expect(config.minWithdrawal, 100);
       expect(AppConfig.fromJson({}).walletEnabled, isFalse);
     });
@@ -645,29 +644,33 @@ void main() {
       expect((b.paymentMethod, b.paymentState, b.canConfirmRide), ('wallet', 'held', true));
     });
 
-    test('top-up, its status, paying from the wallet and withdrawing call the server', () async {
+    test('top-up, its status, paying from the wallet, banks and withdrawing call the server', () async {
       final sent = <String, dynamic>{};
       final api = Api(client: MockClient((r) async {
         final key = '${r.method} ${r.url.path.replaceFirst('/api/v1', '')}';
         if (r.body.isNotEmpty) sent[key] = jsonDecode(r.body);
-        if (key == 'POST /wallet/topup') return _json({'topup': {'id': 4, 'amount': 500, 'status': 'pending', 'final': false}}, 201);
+        if (key == 'POST /wallet/topup') return _json({'topup': {'id': 4, 'amount': 500, 'status': 'pending', 'final': false, 'checkout_url': 'https://checkout.chapa.co/checkout/payment/abc'}}, 201);
         if (key == 'GET /wallet/topups/4') return _json({'topup': {'id': 4, 'amount': 500, 'status': 'success', 'final': true}});
+        if (key == 'GET /wallet/banks') return _json({'banks': [{'id': 855, 'name': 'telebirr', 'account_length': 10, 'mobile': true}]});
         if (key == 'GET /wallet') return _json({'wallet': {'available': 500, 'held': 0}, 'entries': [{'id': 1, 'kind': 'topup', 'available_change': 500, 'held_change': 0}], 'withdrawals': [], 'meta': {'last': true}});
         return _json({'booking': {'id': 1, 'status': 'pending', 'seats': 1, 'ride_dates': [], 'passenger': _profile, 'driver': _profile, 'itinerary': {'id': 3},
           'price': {'price_per_seat': 1, 'rides': 1, 'fare_total': 1, 'fee_percent': 0, 'fee_amount': 0, 'passenger_total': 1, 'driver_payout': 1}}}, 201);
       }), base: 'https://x.test');
 
-      final topup = await api.startTopup(amount: 500, provider: 'telebirr', phone: '+251911223344');
+      final topup = await api.startTopup(500);
       expect(topup.done, isFalse);
-      expect(sent['POST /wallet/topup'], {'amount': 500.0, 'provider': 'telebirr', 'phone': '+251911223344'});
+      expect(topup.checkoutUrl, startsWith('https://checkout.chapa.co/'));
+      expect(sent['POST /wallet/topup'], {'amount': 500.0});
       final settled = await api.topupStatus(4);
       expect((settled.done, settled.succeeded), (true, true));
       expect((await api.wallet()).balance.available, 500);
 
       await api.book(3, seats: 1, paymentMethod: 'wallet');
       expect(sent['POST /itineraries/3/bookings']['booking']['payment_method'], 'wallet');
-      await api.requestWithdrawal(amount: 300, methodName: 'Telebirr', accountNumber: '0911223344');
-      expect(sent['POST /wallet/withdraw'], {'amount': 300.0, 'method_name': 'Telebirr', 'account_number': '0911223344'});
+      final bank = (await api.payoutBanks()).single;
+      expect((bank.id, bank.mobile, bank.accountLength), (855, true, 10));
+      await api.requestWithdrawal(amount: 300, bank: bank, accountNumber: '0911223344', accountName: 'Dawit');
+      expect(sent['POST /wallet/withdraw'], {'amount': 300.0, 'bank_code': 855, 'method_name': 'telebirr', 'account_number': '0911223344', 'account_name': 'Dawit'});
     });
   });
 
