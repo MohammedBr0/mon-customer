@@ -26,6 +26,10 @@ class NoopNotifier implements PhoneNotifier {
 }
 
 class LocalPhoneNotifier implements PhoneNotifier {
+  LocalPhoneNotifier({this.askPermission = true});
+
+  /// Whether to show Android's "allow notifications?" prompt. Only possible while the app is on screen.
+  final bool askPermission;
   final _plugin = FlutterLocalNotificationsPlugin();
   bool _ready = false;
 
@@ -33,7 +37,7 @@ class LocalPhoneNotifier implements PhoneNotifier {
   Future<void> init() async {
     try {
       await _plugin.initialize(settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')));
-      await _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+      if (askPermission) await _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
       _ready = true;
     } catch (_) {
       _ready = false; // The app still works; notifications stay in the in-app inbox.

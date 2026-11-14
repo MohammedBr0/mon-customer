@@ -170,7 +170,7 @@ class Strings {
     'no_notifications': 'Nothing new. Seat requests, bookings and messages show up here.',
     'mark_all_read': 'Mark all read',
     'phone_alerts': 'Show alerts on this phone',
-    'phone_alerts_hint': 'Seat requests, answers and messages appear in your notification shade while the app is running.',
+    'phone_alerts_hint': 'Seat requests, answers, messages and announcements appear in your notification shade, also when the app is closed.',
     'city_chip': 'In the city',
     'mode_towns': 'Between towns',
     'mode_city': 'Inside a city',

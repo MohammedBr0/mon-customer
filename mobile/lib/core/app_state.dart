@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/models.dart';
 import 'api.dart';
+import 'background_check.dart';
 import 'phone_notifier.dart';
 import 'reminders.dart';
 import 'token_store.dart';
@@ -198,20 +199,7 @@ class AppState extends ChangeNotifier {
     if (status != AuthStatus.signedIn || _checking) return;
     _checking = true;
     try {
-      final last = await store.readLastNotified();
-      final data = await api.notifications(after: last);
-      unreadNotifications = data.unread;
-      if (data.items.isNotEmpty) {
-        final newest = data.items.map((n) => n.id).reduce((a, b) => a > b ? a : b);
-        if (last != null && phoneAlerts) {
-          for (final n in data.items.where((n) => !n.read).toList().reversed.take(5)) {
-            await notifier.show(n.id, n.title, n.body);
-          }
-        }
-        await store.saveLastNotified(newest);
-      } else if (last == null) {
-        await store.saveLastNotified(0);
-      }
+      unreadNotifications = await deliverNewNotifications(api: api, store: store, notifier: notifier, alerts: phoneAlerts) ?? unreadNotifications;
       notifyListeners();
     } on ApiException {
       // Try again at the next tick.

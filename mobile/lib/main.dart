@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/api.dart';
 import 'core/app_state.dart';
+import 'core/background_check.dart';
 import 'core/phone_notifier.dart';
 import 'core/token_store.dart';
 import 'l10n/strings.dart';
@@ -18,6 +19,7 @@ Future<void> main() async {
   final state = AppState(api: Api(), store: const SecureTokenStore(), notifier: LocalPhoneNotifier());
   runApp(IcareApp(state: state));
   state.start();
+  scheduleBackgroundChecks(); // notifications keep arriving while the app is closed
 }
 
 class IcareApp extends StatelessWidget {

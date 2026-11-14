@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:icare/core/api.dart';
 import 'package:icare/core/app_state.dart';
+import 'package:icare/core/background_check.dart';
 import 'package:icare/core/device_location.dart';
 import 'package:icare/core/format.dart';
 import 'package:icare/widgets/map_style.dart';
@@ -671,6 +672,62 @@ void main() {
       expect((bank.id, bank.mobile, bank.accountLength), (855, true, 10));
       await api.requestWithdrawal(amount: 300, bank: bank, accountNumber: '0911223344', accountName: 'Dawit');
       expect(sent['POST /wallet/withdraw'], {'amount': 300.0, 'bank_code': 855, 'method_name': 'telebirr', 'account_number': '0911223344', 'account_name': 'Dawit'});
+    });
+  });
+
+  group('notifications while the app is closed', () {
+    Map<String, dynamic> note(int id, {bool read = false}) => {'id': id, 'kind': 'announcement', 'title': 'Notice $id', 'body': 'Body $id', 'read': read, 'data': {}};
+    Api apiReturning(List<Map<String, dynamic>> Function() items, {List<Uri>? seen}) => Api(
+          client: MockClient((r) async {
+            seen?.add(r.url);
+            expect(r.headers['Authorization'], 'Bearer tok');
+            return _json({'notifications': items(), 'unread': items().length, 'meta': {'last': true}});
+          }),
+          base: 'https://x.test',
+        );
+
+    test('a background check shows what is new, once, and remembers where it got to', () async {
+      final store = MemoryTokenStore()
+        ..token = 'tok'
+        ..lastNotified = 10;
+      final notifier = NoopNotifier();
+      final seen = <Uri>[];
+      var items = [note(12), note(11)];
+      final api = apiReturning(() => items, seen: seen);
+
+      await checkInBackground(store: store, api: api, notifier: notifier);
+      expect(seen.single.queryParameters['after'], '10');
+      expect(notifier.shown, ['Notice 11|Body 11', 'Notice 12|Body 12']);
+      expect(store.lastNotified, 12);
+
+      items = [];
+      await checkInBackground(store: store, api: api, notifier: notifier);
+      expect(notifier.shown.length, 2); // nothing new: nothing shown again
+    });
+
+    test('it stays quiet when signed out, when alerts are off, and on a phone\'s first check', () async {
+      final notifier = NoopNotifier();
+      final api = apiReturning(() => [note(5)]);
+
+      await checkInBackground(store: MemoryTokenStore(), api: api, notifier: notifier); // signed out
+      final off = MemoryTokenStore()
+        ..token = 'tok'
+        ..lastNotified = 1
+        ..phoneAlerts = false;
+      await checkInBackground(store: off, api: api, notifier: notifier);
+      final first = MemoryTokenStore()..token = 'tok';
+      await checkInBackground(store: first, api: api, notifier: notifier);
+      expect(notifier.shown, isEmpty);
+      expect(first.lastNotified, 5); // only records where things stand
+    });
+
+    test('read notifications are not shown again', () async {
+      final store = MemoryTokenStore()
+        ..token = 'tok'
+        ..lastNotified = 1;
+      final notifier = NoopNotifier();
+      await checkInBackground(store: store, api: apiReturning(() => [note(3, read: true), note(2)]), notifier: notifier);
+      expect(notifier.shown, ['Notice 2|Body 2']);
     });
   });
 
