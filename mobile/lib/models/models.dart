@@ -264,7 +264,8 @@ class Profile {
 }
 
 class TripSummary {
-  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false, this.cityCommute = false, this.startName, this.endName, this.live = false});
+  const TripSummary({required this.id, required this.title, required this.startAddress, required this.endAddress, this.leaveDate, this.commute = false, this.scheduleSummary, this.cancelled = false, this.cityCommute = false, this.startName, this.endName, this.live = false, this.status = 'scheduled'});
+  final String status; // scheduled | boarding | in_progress | arrived | completed | cancelled
   final String? startName;
   final String? endName;
   final bool live;
@@ -291,10 +292,12 @@ class TripSummary {
         startName: j['start_name'] as String?,
         endName: j['end_name'] as String?,
         live: j['live'] == true,
+        status: j['status'] as String? ?? (j['cancelled'] == true ? 'cancelled' : (j['live'] == true ? 'in_progress' : 'scheduled')),
       );
 
   String get from => (startName ?? '').isNotEmpty ? startName! : startAddress;
   String get to => (endName ?? '').isNotEmpty ? endName! : endAddress;
+  bool get upcoming => tripUpcoming(status: status, cancelled: cancelled, commute: commute, leaveDate: leaveDate);
 }
 
 class Price {
@@ -321,7 +324,8 @@ class Price {
 }
 
 class Booking {
-  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed, this.pickup, this.paymentMethod = 'cash', this.paymentState = 'none', this.canConfirmRide = false});
+  const Booking({required this.id, required this.status, required this.seats, required this.rideDates, this.note, required this.trip, required this.passenger, required this.driver, required this.price, this.completed = false, this.reviewed, this.pickup, this.paymentMethod = 'cash', this.paymentState = 'none', this.canConfirmRide = false, this.today});
+  final TodayState? today; // on a ride day: checked in, dropped off...
   final String paymentMethod; // cash | wallet
   final String paymentState; // none | held | released | refunded
   final bool canConfirmRide; // the passenger can say the ride went well, which pays the driver now
@@ -355,12 +359,69 @@ class Booking {
         paymentMethod: (j['payment'] as Map?)?['method'] as String? ?? 'cash',
         paymentState: (j['payment'] as Map?)?['state'] as String? ?? 'none',
         canConfirmRide: (j['payment'] as Map?)?['can_confirm'] == true,
+        today: j['today'] is Map ? TodayState.fromJson(Map<String, dynamic>.from(j['today'] as Map)) : null,
         pickup: j['pickup'] is Map && (j['pickup'] as Map)['lat'] is num
             ? Place.pin(((j['pickup'] as Map)['lat'] as num).toDouble(), ((j['pickup'] as Map)['lng'] as num).toDouble(), '${(j['pickup'] as Map)['label'] ?? ''}')
             : null,
       );
 
   bool get isActive => status == 'pending' || status == 'confirmed';
+}
+
+/// A passenger's status on the day of a ride.
+class TodayState {
+  const TodayState({required this.date, required this.status, this.canBoard = false, this.canDropOff = false, this.arrived = false});
+  final String date;
+  final String status; // waiting | boarded | no_show | dropped_off
+  final bool canBoard;
+  final bool canDropOff;
+  final bool arrived; // the car reached the destination
+
+  factory TodayState.fromJson(Map<String, dynamic> j) => TodayState(
+        date: '${j['date'] ?? ''}',
+        status: j['status'] as String? ?? 'waiting',
+        canBoard: j['can_board'] == true,
+        canDropOff: j['can_drop_off'] == true,
+        arrived: j['arrived'] == true,
+      );
+}
+
+/// One of today's passengers, as the driver sees them.
+class Rider {
+  const Rider({required this.bookingId, required this.name, required this.seats, this.phone, required this.status, this.canNoShow = false, this.pickup});
+  final int bookingId;
+  final String name;
+  final int seats;
+  final String? phone;
+  final String status; // waiting | boarded | no_show | dropped_off
+  final bool canNoShow;
+  final Place? pickup;
+
+  factory Rider.fromJson(Map<String, dynamic> j) => Rider(
+        bookingId: _i(j['booking_id']) ?? 0,
+        name: '${j['name'] ?? ''}',
+        seats: _i(j['seats']) ?? 1,
+        phone: j['phone'] as String?,
+        status: j['status'] as String? ?? 'waiting',
+        canNoShow: j['can_no_show'] == true,
+        pickup: j['pickup'] is Map && (j['pickup'] as Map)['lat'] is num
+            ? Place.pin(((j['pickup'] as Map)['lat'] as num).toDouble(), ((j['pickup'] as Map)['lng'] as num).toDouble(), '${(j['pickup'] as Map)['label'] ?? ''}')
+            : null,
+      );
+
+  bool get resolved => status != 'waiting';
+}
+
+/// Whether the driver can start the ride now, and if not why.
+class StartGate {
+  const StartGate({this.allowed = false, this.reason, this.opensAt, this.departsAt});
+  final bool allowed;
+  final String? reason; // too_early | not_today | waiting | finished | cancelled
+  final DateTime? opensAt;
+  final DateTime? departsAt;
+
+  factory StartGate.fromJson(Map<String, dynamic> j) =>
+      StartGate(allowed: j['allowed'] == true, reason: j['reason'] as String?, opensAt: _t(j['opens_at']), departsAt: _t(j['departs_at']));
 }
 
 class DaySeats {
@@ -409,7 +470,17 @@ class Trip {
     this.startLng,
     this.endLat,
     this.endLng,
+    this.status = 'scheduled',
+    this.editable = false,
+    this.editUntil,
+    this.start,
+    this.riders = const [],
   });
+  final String status; // scheduled | boarding | in_progress | arrived | completed | cancelled
+  final bool editable; // driver only: changes are allowed until 30 minutes before it leaves
+  final DateTime? editUntil;
+  final StartGate? start; // driver only
+  final List<Rider> riders; // driver only: today's passengers
   final String? polyline;
   final double? distanceKm;
   final String? startName; // short names for display, like "Bole" and "Piassa"
@@ -493,12 +564,26 @@ class Trip {
         startLng: _pt(j['start_location'], 'lng'),
         endLat: _pt(j['end_location'], 'lat'),
         endLng: _pt(j['end_location'], 'lng'),
+        status: j['status'] as String? ?? (j['cancelled'] == true ? 'cancelled' : (j['live'] == true ? 'in_progress' : 'scheduled')),
+        editable: j['editable'] == true,
+        editUntil: _t(j['edit_until']),
+        start: j['start'] is Map ? StartGate.fromJson(Map<String, dynamic>.from(j['start'] as Map)) : null,
+        riders: _list(j['riders'], Rider.fromJson),
         myBooking: j['my_booking'] == null ? null : Booking.fromJson(Map<String, dynamic>.from(j['my_booking'] as Map)),
       );
 }
 
+/// Where a trip is at. "Active" covers boarding (the start window is open), in progress and arrived.
+bool tripActive(String status) => status == 'boarding' || status == 'in_progress' || status == 'arrived';
+
+/// Still ahead of us or under way: not cancelled, not completed.
+bool tripUpcoming({required String status, required bool cancelled, required bool commute, DateTime? leaveDate}) =>
+    !cancelled && status != 'completed' && status != 'cancelled' && (tripActive(status) || commute || (leaveDate?.isAfter(DateTime.now()) ?? false));
+
 /// Short display names, falling back to the full address on an older server.
 extension TripNames on Trip {
+  bool get upcoming => tripUpcoming(status: status, cancelled: cancelled, commute: commute, leaveDate: leaveDate);
+
   String get from => (startName ?? '').isNotEmpty ? startName! : startAddress;
   String get to => (endName ?? '').isNotEmpty ? endName! : endAddress;
 }
@@ -596,7 +681,9 @@ class RoutePreview {
 
 /// Where the car is while a ride is under way.
 class LiveState {
-  const LiveState({required this.active, this.lat, this.lng, this.heading, this.updatedAt, this.fresh = false, this.ended = false, this.pickups = const []});
+  const LiveState({required this.active, this.lat, this.lng, this.heading, this.updatedAt, this.fresh = false, this.ended = false, this.pickups = const [], this.arrived = false, this.riders = const []});
+  final bool arrived; // the car reached the destination
+  final List<Rider> riders; // driver only
   final bool active;
   final double? lat;
   final double? lng;
@@ -616,6 +703,8 @@ class LiveState {
       updatedAt: _t(j['updated_at']),
       fresh: j['fresh'] == true,
       ended: j['ended_at'] != null,
+      arrived: j['arrived'] == true,
+      riders: _list(j['riders'], Rider.fromJson),
       pickups: [
         for (final p in (j['pickups'] as List? ?? const []))
           (name: '${(p as Map)['name'] ?? ''}', lat: _d(p['lat']), lng: _d(p['lng']), label: p['label'] as String?, seats: _i(p['seats']) ?? 1),

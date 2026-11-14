@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_14_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
@@ -50,6 +50,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
     t.index ["user_id"], name: "index_avatars_on_user_id", unique: true
   end
 
+  create_table "boardings", force: :cascade do |t|
+    t.bigint "booking_id", null: false
+    t.date "ride_date", null: false
+    t.datetime "boarded_at"
+    t.datetime "no_show_at"
+    t.datetime "dropped_off_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["booking_id", "ride_date"], name: "index_boardings_on_booking_id_and_ride_date", unique: true
+    t.index ["booking_id"], name: "index_boardings_on_booking_id"
+  end
+
   create_table "bookings", force: :cascade do |t|
     t.bigint "itinerary_id", null: false
     t.bigint "passenger_id", null: false
@@ -78,7 +90,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
     t.datetime "passenger_confirmed_at"
     t.datetime "settled_at"
     t.index ["cancelled_by_id"], name: "index_bookings_on_cancelled_by_id"
-    t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY ((ARRAY['pending'::character varying, 'confirmed'::character varying])::text[]))"
+    t.index ["itinerary_id", "passenger_id"], name: "index_bookings_one_active_per_passenger", unique: true, where: "((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('confirmed'::character varying)::text]))"
     t.index ["itinerary_id"], name: "index_bookings_on_itinerary_id"
     t.index ["passenger_id"], name: "index_bookings_on_passenger_id"
     t.index ["status"], name: "index_bookings_on_status"
@@ -178,6 +190,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
     t.decimal "live_lng", precision: 9, scale: 6
     t.decimal "live_heading", precision: 5, scale: 1
     t.datetime "live_updated_at"
+    t.date "live_ride_date"
+    t.datetime "arrived_at"
     t.index ["cancelled_at"], name: "index_itineraries_on_cancelled_at"
     t.index ["city", "leave_date"], name: "index_itineraries_on_city_and_leave_date", where: "(city IS NOT NULL)"
     t.index ["slug"], name: "index_itineraries_on_slug", unique: true
@@ -430,6 +444,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_13_200000) do
   add_foreign_key "api_tokens", "users"
   add_foreign_key "audit_logs", "users", column: "actor_id"
   add_foreign_key "avatars", "users", on_delete: :cascade
+  add_foreign_key "boardings", "bookings", on_delete: :cascade
   add_foreign_key "bookings", "itineraries"
   add_foreign_key "bookings", "users", column: "cancelled_by_id"
   add_foreign_key "bookings", "users", column: "passenger_id"

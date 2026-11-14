@@ -38,8 +38,20 @@ module Api
         end
       end
 
+      # Changes are allowed until 30 minutes before the next ride. Passengers hear about changes to the time or the route.
       def update
-        if @itinerary.update(params.require(:itinerary).permit(:description, :price_per_seat, :pickup_point, :dropoff_point, :smoking_allowed, :pets_allowed))
+        return render_error('edit_locked', I18n.t('api.trip_edit_locked'), :unprocessable_entity) unless @itinerary.editable?
+
+        attrs = params.require(:itinerary).permit(:description, :price_per_seat, :pickup_point, :dropoff_point, :smoking_allowed, :pets_allowed, :leave_date, :num_people)
+        seats = attrs[:num_people].presence&.to_i
+        if seats && seats < @itinerary.occurrence_dates.map { |date| @itinerary.seats_taken(date) }.max.to_i
+          return render_error('seats_taken', I18n.t('api.trip_seats_taken'), :unprocessable_entity)
+        end
+
+        before = { leave_date: @itinerary.leave_date, pickup_point: @itinerary.pickup_point, dropoff_point: @itinerary.dropoff_point }
+        if @itinerary.update(attrs)
+          changed = before.any? { |key, value| @itinerary.public_send(key) != value }
+          notify_changed if changed
           render json: { itinerary: serializer.itinerary(@itinerary, viewer: current_user, detail: true) }
         else
           render_invalid @itinerary
@@ -55,7 +67,10 @@ module Api
 
       # ---- live tracking: the driver starts the ride, the app sends positions, passengers follow along ----
       def start
-        return render_error('invalid_transition', I18n.t('api.trip_cancelled'), :unprocessable_entity) if @itinerary.cancelled?
+        return render json: { live: serializer.live(@itinerary, viewer: current_user) } if @itinerary.live?
+
+        blocker = @itinerary.start_blocker
+        return render_error("start_#{blocker}", I18n.t("api.start_blocked.#{blocker}"), :unprocessable_entity) if blocker
 
         @itinerary.start_live!
         render json: { live: serializer.live(@itinerary, viewer: current_user) }
@@ -80,10 +95,18 @@ module Api
       def live
         return render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden) unless @itinerary.trackable_by?(current_user)
 
+        @itinerary.close_if_done!
+
         render json: { live: serializer.live(@itinerary, viewer: current_user) }
       end
 
       private
+
+      def notify_changed
+        @itinerary.bookings.active.includes(:passenger).find_each do |booking|
+          Notification.notify(booking.passenger, 'trip_changed', itinerary_id: @itinerary.id, booking_id: booking.id, trip: @itinerary.title, person: current_user.to_s)
+        end
+      end
 
       def set_itinerary
         @itinerary = Itinerary.friendly.find(params[:id])

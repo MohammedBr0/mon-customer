@@ -213,6 +213,119 @@ class Itinerary < ApplicationRecord
   end
 
   LIVE_STALE_AFTER = 2.minutes
+  EDIT_LOCK = 30.minutes        # trips can be changed until this long before they leave
+  START_OPENS = 30.minutes      # and started from this long before they leave
+  START_CLOSES = 6.hours        # until this long after
+  ARRIVAL_RADIUS_METERS = 400   # this close to the destination counts as arrived
+  ARRIVED_AUTO_FINISH = 30.minutes
+
+  # When the ride leaves on [date] (Ethiopian time).
+  def ride_at(date)
+    clock = departure_time
+    return unless date && clock
+
+    RIDE_ZONE.local(date.year, date.month, date.day, clock.hour, clock.min)
+  end
+
+  # The ride the driver is about to do, is doing, or did today: its day, or nil.
+  # A one-off trip has one day; a commute has today if today is one of its days.
+  def current_ride_date(now = Time.current)
+    return live_ride_date if live? && live_ride_date
+    return if cancelled?
+
+    day = now.in_time_zone(RIDE_ZONE).to_date
+    candidates = commute? ? occurrence_dates(from: day, horizon: 0) : [first_ride_date]
+    candidates.find { |date| date && now >= ride_at(date) - START_OPENS && now <= ride_at(date) + START_CLOSES }
+  end
+
+  # When the next ride leaves (now or later), for the edit lock and the start button.
+  def next_departure_at(now = Time.current)
+    return if cancelled?
+    return leave_date unless commute?
+
+    occurrence_dates(from: now.in_time_zone(RIDE_ZONE).to_date).map { |date| ride_at(date) }.find { |at| at > now }
+  end
+
+  # Changes are allowed until 30 minutes before the next ride, and never while one is under way.
+  def editable?(now = Time.current)
+    departure = next_departure_at(now)
+    !cancelled? && !live? && departure.present? && departure - EDIT_LOCK > now
+  end
+
+  # Confirmed passengers riding on [date].
+  def riders(date)
+    bookings.confirmed.includes(:passenger, :boardings).select { |booking| booking.rides_on?(date) }
+  end
+
+  # Why the driver can't start yet, or nil when they can.
+  #   :too_early       more than 30 minutes before departure (opens_at says when)
+  #   :not_today       no ride today, or today's ride is long past
+  #   :waiting         some passengers are neither picked up nor marked as no-shows
+  def start_blocker(now = Time.current)
+    return :cancelled if cancelled?
+
+    date = current_ride_date(now)
+    return :finished if date && ride_finished?(date)
+    unless date
+      departure = next_departure_at(now)
+      return departure && departure - START_OPENS > now ? :too_early : :not_today
+    end
+    return :waiting if riders(date).any? { |booking| !booking.boarding_for(date)&.resolved? }
+
+    nil
+  end
+
+  # Whether the ride on [date] has already been driven and finished.
+  def ride_finished?(date)
+    live_ended_at.present? && live_started_at.present? && (live_ride_date.nil? ? !commute? : live_ride_date == date)
+  end
+
+  TRIP_STATUSES = %w[scheduled boarding in_progress arrived completed cancelled].freeze
+
+  # Where the trip is at, for badges on lists and the trip page:
+  #   scheduled    waiting for its next ride
+  #   boarding     the start window is open (30 minutes before): passengers are getting in
+  #   in_progress  the driver started it and the car is on its way
+  #   arrived      the car reached the destination; waiting for drop-off confirmations
+  #   completed    a one-off trip that was driven or has gone; a commute whose last day has gone
+  #   cancelled
+  def trip_status(now = Time.current)
+    return 'cancelled' if cancelled?
+    return(arrived_at ? 'arrived' : 'in_progress') if live?
+    return 'completed' if !commute? && ride_finished?(first_ride_date)
+
+    date = current_ride_date(now)
+    return 'boarding' if date && !ride_finished?(date)
+
+    past? ? 'completed' : 'scheduled'
+  end
+
+  def start_opens_at(now = Time.current)
+    next_departure_at(now)&.then { |at| at - START_OPENS }
+  end
+
+  # How far the car is from the destination, in metres.
+  def meters_to_destination(lat, lng)
+    return unless end_location
+
+    rad = Math::PI / 180
+    dlat = (end_location.lat - lat) * rad
+    dlng = (end_location.lon - lng) * rad
+    a = (Math.sin(dlat / 2)**2) + (Math.cos(lat * rad) * Math.cos(end_location.lat * rad) * (Math.sin(dlng / 2)**2))
+    2 * 6_371_000 * Math.asin(Math.sqrt(a))
+  end
+
+  def arrived?
+    live? && arrived_at.present?
+  end
+
+  # Ends a ride that has arrived once every passenger confirmed being dropped off, or half an hour after arriving.
+  def close_if_done!(now = Time.current)
+    return unless arrived?
+
+    on_board = riders(live_ride_date).map { |booking| booking.boarding_for(live_ride_date) }.select { |boarding| boarding&.boarded_at }
+    finish_live! if (on_board.any? && on_board.all?(&:dropped_off_at)) || arrived_at <= now - ARRIVED_AUTO_FINISH
+  end
 
   # A ride is "live" from the moment the driver starts it until they finish it.
   def live?
@@ -220,20 +333,40 @@ class Itinerary < ApplicationRecord
   end
 
   # The driver sets off: confirmed passengers are told and can follow the car.
-  def start_live!
-    update!(live_started_at: Time.current, live_ended_at: nil, live_lat: nil, live_lng: nil, live_heading: nil, live_updated_at: nil)
-    bookings.confirmed.includes(:passenger).find_each do |booking|
+  def start_live!(now = Time.current)
+    date = current_ride_date(now)
+    update!(live_started_at: now, live_ended_at: nil, live_ride_date: date, arrived_at: nil, live_lat: nil, live_lng: nil, live_heading: nil, live_updated_at: nil)
+    riders(date).each do |booking|
+      next if booking.boarding_for(date)&.no_show_at
+
       Notification.notify(booking.passenger, 'trip_started', itinerary_id: id, booking_id: booking.id, trip: title, person: user.to_s)
     end
     self
   end
 
+  # The car's latest position. The first time it comes within reach of the destination, passengers are asked
+  # to confirm they were dropped off, and the driver is told they can finish.
   def update_live_position!(lat:, lng:, heading: nil)
     update_columns(live_lat: lat, live_lng: lng, live_heading: heading, live_updated_at: Time.current)
+    distance = meters_to_destination(lat, lng)
+    return unless arrived_at.nil? && distance && distance <= ARRIVAL_RADIUS_METERS
+
+    update_columns(arrived_at: Time.current)
+    riders(live_ride_date).each do |booking|
+      next unless booking.boarding_for(live_ride_date)&.boarded_at
+
+      Notification.notify(booking.passenger, 'dropoff_confirm', itinerary_id: id, booking_id: booking.id, trip: title)
+    end
+    Notification.notify(user, 'arrived', itinerary_id: id, trip: title)
   end
 
   def finish_live!
     update!(live_ended_at: Time.current)
+    # Anyone still on board when the ride ends was dropped off.
+    riders(live_ride_date).each do |booking|
+      boarding = booking.boarding_for(live_ride_date)
+      boarding.update!(dropped_off_at: Time.current) if boarding&.boarded_at && boarding.dropped_off_at.nil?
+    end
   end
 
   # Who may follow the car: the driver and passengers with a confirmed seat.

@@ -103,9 +103,10 @@ class _PickupMapScreenState extends State<PickupMapScreen> {
 
 /// A ride under way. The driver's phone sends its position; passengers with a confirmed seat watch the car move.
 class LiveTripScreen extends StatefulWidget {
-  const LiveTripScreen({super.key, required this.trip, required this.driving});
+  const LiveTripScreen({super.key, required this.trip, required this.driving, this.booking});
   final Trip trip;
   final bool driving;
+  final Booking? booking; // the passenger's own booking, for "Confirm drop-off"
 
   @override
   State<LiveTripScreen> createState() => _LiveTripScreenState();
@@ -123,6 +124,8 @@ class _LiveTripScreenState extends State<LiveTripScreen> {
   bool _busy = false;
   bool _follow = true;
   String? _problem;
+  bool _droppedOff = false;
+  bool _askedToFinish = false;
 
   late final List<LatLng> _route = routePoints(polyline: widget.trip.polyline, startLat: widget.trip.startLat, startLng: widget.trip.startLng, endLat: widget.trip.endLat, endLng: widget.trip.endLng);
 
@@ -150,6 +153,7 @@ class _LiveTripScreenState extends State<LiveTripScreen> {
     try {
       final live = await context.read<AppState>().api.liveTrip(widget.trip.id);
       if (!mounted) return;
+      final justArrived = live.arrived && !(_live?.arrived ?? false);
       setState(() {
         _live = live;
         if (!widget.driving && live.lat != null && live.lng != null) {
@@ -158,6 +162,13 @@ class _LiveTripScreenState extends State<LiveTripScreen> {
         }
       });
       if (!widget.driving && _follow && _car != null) _map?.animateCamera(CameraUpdate.newLatLng(_car!));
+      // At the destination: the driver is offered to finish once everyone on board has confirmed the drop-off.
+      if (widget.driving && live.active && live.arrived && !_askedToFinish && live.riders.where((r) => r.status == 'boarded').isEmpty && live.riders.isNotEmpty) {
+        _askedToFinish = true;
+        _finish();
+      } else if (justArrived && mounted) {
+        showMessage(context, context.tr(widget.driving ? 'arrived_driver' : 'you_arrived'));
+      }
     } catch (_) {
       // A missed update is replaced by the next one.
     }
@@ -210,10 +221,31 @@ class _LiveTripScreenState extends State<LiveTripScreen> {
     }
   }
 
+  Future<void> _dropOff() async {
+    final booking = widget.booking;
+    if (booking == null) return;
+    final app = context.read<AppState>();
+    final done = context.tr('dropoff_confirmed');
+    if (!await confirmDialog(context, context.tr('confirm_dropoff_q'), action: context.tr('confirm_dropoff'))) return;
+    setState(() => _busy = true);
+    try {
+      await app.api.dropOff(booking.id);
+      if (!mounted) return;
+      setState(() => _droppedOff = true);
+      showMessage(context, done);
+      _refresh();
+    } catch (e) {
+      if (mounted) showMessage(context, errorText(context, e), error: true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   String _status(BuildContext context) {
     final live = _live;
     if (live == null) return context.t('loading');
     if (!live.active) return context.t(live.ended ? 'trip_finished' : 'trip_not_started');
+    if (live.arrived) return context.t(widget.driving ? 'arrived_driver' : 'you_arrived');
     if (widget.driving) return context.t('sharing_location');
     if (_car == null) return context.t('waiting_for_car');
     return context.t(live.fresh ? 'car_on_the_way' : 'car_position_old');
@@ -278,6 +310,21 @@ class _LiveTripScreenState extends State<LiveTripScreen> {
                     Expanded(child: Text(_status(context), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16))),
                   ]),
                   if (_problem != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(_problem!, style: TextStyle(color: scheme.error))),
+                  if (widget.driving && (live?.riders.isNotEmpty ?? false))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Wrap(spacing: 6, runSpacing: 6, children: [
+                        for (final r in live!.riders.where((r) => r.status != 'no_show'))
+                          Chip2('${r.name} · ${context.t('rider_${r.status}')}', tone: r.status == 'dropped_off' ? ChipTone.muted : ChipTone.brand),
+                      ]),
+                    ),
+                  if (!widget.driving && widget.booking != null && live?.active == true && !_droppedOff && !const ['no_show', 'dropped_off'].contains(widget.booking!.today?.status)) ...[
+                    const SizedBox(height: 10),
+                    if (live!.arrived)
+                      FilledButton.icon(onPressed: _busy ? null : _dropOff, icon: const Icon(Icons.check_circle_outline), label: Text(context.t('confirm_dropoff')))
+                    else
+                      OutlinedButton.icon(onPressed: _busy ? null : _dropOff, icon: const Icon(Icons.check_circle_outline), label: Text(context.t('confirm_dropoff'))),
+                  ],
                   if (widget.driving && live?.active == true) ...[
                     Padding(padding: const EdgeInsets.only(top: 6), child: Text(context.t('keep_screen_open'), style: Theme.of(context).textTheme.bodySmall)),
                     const SizedBox(height: 10),

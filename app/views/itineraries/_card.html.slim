@@ -17,14 +17,14 @@
       span
         span.fas.fa-clock<> aria-hidden='true'
         = itinerary.commute? ? itinerary.schedule_summary : l(itinerary.leave_date.in_time_zone, format: :short)
-      - if itinerary.cancelled?
-        span.chip.chip--muted = t('bookings.statuses.cancelled')
-      - elsif itinerary.seats_available.nil?
-        span.chip = t('trip.seats_unlimited')
-      - elsif itinerary.full?
-        span.chip.chip--danger = t('trip.fully_booked')
-      - else
-        span.chip = t('trip.seats_left', available: itinerary.seats_available, total: itinerary.num_people)
+      == render 'itineraries/status_chip', itinerary: itinerary
+      - if itinerary.trip_status == 'scheduled'
+        - if itinerary.seats_available.nil?
+          span.chip = t('trip.seats_unlimited')
+        - elsif itinerary.full?
+          span.chip.chip--danger = t('trip.fully_booked')
+        - else
+          span.chip = t('trip.seats_left', available: itinerary.seats_available, total: itinerary.num_people)
       - if itinerary.pink?
         span.chip.chip--pink
           span.fas.fa-lock<> aria-hidden='true'
@@ -47,9 +47,10 @@
             = itinerary.user.average_rating
   - if edit
     .trip-card__actions
-      = link_to edit_itinerary_path(itinerary), class: 'btn btn-outline-primary btn-sm' do
-        span.fas.fa-pencil-alt aria-hidden='true'
-        = t('helpers.links.edit')
+      - if itinerary.editable?
+        = link_to edit_itinerary_path(itinerary), class: 'btn btn-outline-primary btn-sm' do
+          span.fas.fa-pencil-alt aria-hidden='true'
+          = t('helpers.links.edit')
       = link_to itinerary_path(itinerary), method: :delete, data: { confirm: t('helpers.links.confirm') }, class: 'btn btn-outline-danger btn-sm' do
         span.fas.fa-times aria-hidden='true'
         = t('helpers.links.destroy')

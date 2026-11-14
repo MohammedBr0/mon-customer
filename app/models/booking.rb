@@ -15,6 +15,7 @@ class Booking < ApplicationRecord
   belongs_to :cancelled_by, class_name: 'User', optional: true
 
   has_many :reviews, dependent: :destroy
+  has_many :boardings, dependent: :destroy
 
   scope :active, -> { where(status: ACTIVE_STATUSES) }
   scope :pending, -> { where(status: 'pending') }
@@ -100,7 +101,9 @@ class Booking < ApplicationRecord
   def completed?
     return false unless confirmed?
 
-    itinerary.commute? ? ride_dates.min.present? && ride_dates.min < Itinerary.today : itinerary.past?
+    return itinerary.ride_finished?(itinerary.first_ride_date) || itinerary.past? unless itinerary.commute?
+
+    ride_dates.min.present? && ride_dates.min < Itinerary.today
   end
 
   def wallet_paid?
@@ -125,6 +128,44 @@ class Booking < ApplicationRecord
     update!(passenger_confirmed_at: Time.current)
     BookingPayment.new(self).release!
     self
+  end
+
+  def rides_on?(date)
+    date.present? && ride_dates.include?(date)
+  end
+
+  def boarding_for(date)
+    boardings.find { |boarding| boarding.ride_date == date }
+  end
+
+  # The passenger is in the car. The passenger or the driver can say so, once the ride's start window opens.
+  def board!(date)
+    raise_unless confirmed? && rides_on?(date), :not_active
+    boarding = boardings.find_or_initialize_by(ride_date: date)
+    boarding.update!(boarded_at: boarding.boarded_at || Time.current, no_show_at: nil)
+    boarding
+  end
+
+  # The passenger never came. Only the driver can say so, and only once the departure time has passed.
+  def no_show!(date, now = Time.current)
+    raise_unless confirmed? && rides_on?(date) && itinerary.ride_at(date) && itinerary.ride_at(date) <= now, :too_early
+    boarding = boardings.find_or_initialize_by(ride_date: date)
+    raise_unless boarding.boarded_at.nil?, :not_active
+    boarding.update!(no_show_at: now)
+    boarding
+  end
+
+  # The passenger confirms they were dropped off. On the last day of a wallet-paid booking this pays the driver.
+  def drop_off!(date)
+    boarding = boarding_for(date)
+    raise_unless boarding&.boarded_at, :not_active
+    boarding.update!(dropped_off_at: boarding.dropped_off_at || Time.current)
+    if date == ride_dates.max && wallet_paid? && payment_state == 'held'
+      update!(passenger_confirmed_at: Time.current)
+      BookingPayment.new(self).release!
+    end
+    itinerary.reload.close_if_done!
+    boarding
   end
 
   def pickup?
@@ -168,10 +209,7 @@ class Booking < ApplicationRecord
   private
 
   def ride_at(date)
-    clock = itinerary.departure_time
-    return unless date && clock
-
-    Itinerary::RIDE_ZONE.local(date.year, date.month, date.day, clock.hour, clock.min)
+    itinerary.ride_at(date)
   end
 
   def wallet_covers_the_seat

@@ -73,6 +73,11 @@ RSpec.describe 'API pickups, reminders, names and live tracking' do
       expect(json['error']['code']).to eq 'not_live'
 
       post "/api/v1/itineraries/#{trip.id}/start", headers: api_headers(driver)
+      expect(json['error']['code']).to eq 'start_too_early' # a day before it leaves
+
+      travel_to(trip.leave_date - 10.minutes)
+      trip.bookings.first.board!(trip.current_ride_date)
+      post "/api/v1/itineraries/#{trip.id}/start", headers: api_headers(driver)
       expect(json['live']).to include('active' => true, 'position' => nil)
       expect(rider.notifications.pluck(:kind)).to include('trip_started')
 
@@ -80,6 +85,7 @@ RSpec.describe 'API pickups, reminders, names and live tracking' do
       expect(response).to have_http_status(:no_content)
       post "/api/v1/itineraries/#{trip.id}/location", params: { lat: 999, lng: 38 }, headers: api_headers(driver)
       expect(response).to have_http_status(:unprocessable_entity)
+      travel_back
     end
 
     it 'shows the car to confirmed passengers and the driver, and nobody else' do

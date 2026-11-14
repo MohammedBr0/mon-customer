@@ -102,7 +102,11 @@ textarea.form-control { min-height: 96px; }
   &--warn { background: rgba(242, 183, 5, .2); color: #8a6500; }
   &--danger { background: rgba(214, 69, 65, .14); color: var(--danger); }
   &--pink { background: rgba(195, 50, 95, .12); color: #c3325f; }
+  &--live { background: #1565c0; color: #fff; }
+  &--live::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: chip-pulse 1.4s infinite; }
 }
+
+@keyframes chip-pulse { 50% { opacity: .3; } }
 
 @media (prefers-color-scheme: dark) {
   .chip--warn { color: #f2c94c; }

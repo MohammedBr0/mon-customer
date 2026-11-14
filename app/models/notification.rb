@@ -5,7 +5,8 @@
 class Notification < ApplicationRecord
   KINDS = %w[booking_requested booking_confirmed booking_declined booking_cancelled date_skipped itinerary_cancelled
              new_message review_received alert_match identity_approved identity_rejected trip_started
-             wallet_topup payment_received payment_refunded withdrawal_paid withdrawal_rejected announcement].freeze
+             wallet_topup payment_received payment_refunded withdrawal_paid withdrawal_rejected announcement
+             trip_changed dropoff_confirm arrived].freeze
   AUDIENCES = %w[everyone drivers passengers].freeze
 
   belongs_to :user

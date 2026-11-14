@@ -3,7 +3,8 @@
 module Api
   module V1
     class BookingsController < BaseController
-      before_action :set_booking, only: %i[confirm decline cancel skip_date complete]
+      rescue_from Booking::InvalidTransition, with: :invalid_transition
+      before_action :set_booking, only: %i[confirm decline cancel skip_date complete board no_show dropoff]
       before_action :require_driver, only: %i[confirm decline]
       before_action :require_participant, only: %i[cancel skip_date]
       before_action :settle_due, only: :index
@@ -38,8 +39,42 @@ module Api
 
         @booking.confirm_completed!
         render json: { booking: serializer.booking(@booking.reload, viewer: current_user) }
-      rescue Booking::InvalidTransition
-        render_error 'invalid_transition', I18n.t('flash.bookings.invalid'), :unprocessable_entity
+      end
+
+      def invalid_transition(error)
+        key = { 'too_early' => 'api.no_show_not_yet', 'not_enough_seats' => 'flash.bookings.not_enough_seats' }.fetch(error.message, 'flash.bookings.invalid')
+        render_error 'invalid_transition', I18n.t(key), :unprocessable_entity
+      end
+
+      # ---- on the day: picked up, didn't show, dropped off ----
+      # The passenger ("I'm in the car") or the driver ("Picked up") marks the passenger as on board.
+      def board
+        return forbidden unless @booking.participant?(current_user)
+
+        date = @booking.itinerary.current_ride_date
+        return render_error('not_yet', I18n.t('api.board_not_yet'), :unprocessable_entity) unless date
+
+        @booking.board!(date)
+        render_booking
+      end
+
+      def no_show
+        return forbidden unless @booking.driver == current_user
+
+        date = @booking.itinerary.current_ride_date
+        return render_error('not_yet', I18n.t('api.no_show_not_yet'), :unprocessable_entity) unless date
+
+        @booking.no_show!(date)
+        render_booking
+      end
+
+      # The passenger confirms they were dropped off: closes the ride once everyone has, and pays a wallet booking.
+      def dropoff
+        return forbidden unless @booking.passenger_id == current_user.id
+
+        date = @booking.itinerary.live_ride_date || @booking.itinerary.current_ride_date
+        @booking.drop_off!(date)
+        render_booking
       end
 
       def confirm
@@ -68,6 +103,16 @@ module Api
       end
 
       private
+
+      def forbidden
+        render_error('forbidden', I18n.t('flash.errors.not_allowed'), :forbidden)
+      end
+
+      def render_booking
+        render json: { booking: serializer.booking(@booking.reload, viewer: current_user) }
+      rescue Booking::InvalidTransition
+        render_error 'invalid_transition', I18n.t('flash.bookings.invalid'), :unprocessable_entity
+      end
 
       # There is no background worker, so payments that have come due are released when someone opens their bookings.
       def settle_due

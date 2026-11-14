@@ -88,6 +88,9 @@ Rails.application.routes.draw do
           patch :cancel
           patch :skip_date
           patch :complete
+          patch :board
+          patch :no_show
+          patch :dropoff
         end
         resources :reviews, only: :create
       end

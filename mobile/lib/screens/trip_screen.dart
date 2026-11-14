@@ -10,6 +10,7 @@ import '../models/models.dart';
 import '../widgets/common.dart';
 import 'chat_screen.dart';
 import 'dialogs.dart';
+import 'edit_trip_screen.dart';
 import 'live_screens.dart';
 import 'wallet_screen.dart';
 import 'map_screens.dart';
@@ -103,6 +104,8 @@ class _TripScreenState extends State<TripScreen> {
           decoration: BoxDecoration(color: const Color(0x33F2B705), borderRadius: BorderRadius.circular(12)),
           child: Row(children: [const Icon(Icons.block), const SizedBox(width: 8), Expanded(child: Text(context.t('trip_cancelled')))]),
         ),
+      if (trip.status != 'scheduled' && !trip.cancelled)
+        Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [TripStatusChip(trip.status)])),
       Builder(builder: (context) {
         final points = routePoints(polyline: trip.polyline, startLat: trip.startLat, startLng: trip.startLng, endLat: trip.endLat, endLng: trip.endLng);
         if (points.length < 2) return const SizedBox.shrink();
@@ -261,12 +264,34 @@ class _TripScreenState extends State<TripScreen> {
   }
 
   // ---- driver ----
+  /// Why the Start button is off, in words, or null when it is on.
+  String? _startHint(BuildContext context, AppState app, Trip trip) {
+    final gate = trip.start;
+    if (trip.live || gate == null || gate.allowed) return null;
+    return switch (gate.reason) {
+      'too_early' => context.t('start_opens_at', {'time': gate.opensAt == null ? '' : formatDateTime(gate.opensAt!, locale: app.locale)}),
+      'waiting' => context.t('start_waiting_riders'),
+      'finished' => context.t('start_finished'),
+      _ => context.t('start_not_today'),
+    };
+  }
+
   List<Widget> _driverSection(BuildContext context, AppState app, Trip trip) {
+    final hint = _startHint(context, app, trip);
+    final finished = trip.status == 'completed';
     return [
-      if (!trip.cancelled) ...[
+      if (trip.riders.isNotEmpty) ...[
+        SectionTitle(context.t('todays_passengers')),
+        Card(
+          child: Column(children: [
+            for (final r in trip.riders) _RiderTile(rider: r, busy: _busy, onBoard: () => _run(() => app.api.board(r.bookingId)), onNoShow: () => _run(() => app.api.noShow(r.bookingId))),
+          ]),
+        ),
+      ],
+      if (!trip.cancelled && !finished) ...[
         const SizedBox(height: 12),
         FilledButton.icon(
-          onPressed: _busy
+          onPressed: _busy || hint != null
               ? null
               : () async {
                   if (!trip.live) {
@@ -288,6 +313,32 @@ class _TripScreenState extends State<TripScreen> {
           icon: Icon(trip.live ? Icons.sensors : Icons.play_arrow),
           label: Text(context.t(trip.live ? 'continue_trip' : 'start_trip')),
         ),
+        if (hint != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Icon(Icons.info_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Expanded(child: Text(hint, style: Theme.of(context).textTheme.bodySmall)),
+            ]),
+          ),
+        const SizedBox(height: 10),
+        if (trip.editable)
+          OutlinedButton.icon(
+            onPressed: _busy
+                ? null
+                : () async {
+                    final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => EditTripScreen(trip: trip)));
+                    if (changed == true) {
+                      await _load();
+                      if (context.mounted) context.read<AppState>().syncReminders();
+                    }
+                  },
+            icon: const Icon(Icons.edit_outlined),
+            label: Text(context.t('edit_trip')),
+          )
+        else if (!trip.live && trip.status != 'arrived')
+          Text(context.t('edit_locked'), style: Theme.of(context).textTheme.bodySmall, textAlign: TextAlign.center),
       ],
       SectionTitle(context.t('requests')),
       if (_requests.isEmpty) Card(child: EmptyState(context.t('no_requests'), icon: Icons.confirmation_number_outlined)),
@@ -295,7 +346,7 @@ class _TripScreenState extends State<TripScreen> {
         BookingCard(booking: booking, viewerIsDriver: true, onChanged: _load),
         const SizedBox(height: 10),
       ],
-      if (!trip.cancelled) ...[
+      if (!trip.cancelled && !finished && !trip.live) ...[
         const SizedBox(height: 8),
         OutlinedButton.icon(
           style: OutlinedButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
@@ -320,9 +371,21 @@ class _TripScreenState extends State<TripScreen> {
     if (booking != null && booking.isActive) {
       return [
         SectionTitle(context.t('your_booking')),
+        if (booking.today != null) ...[
+          _TodayCard(
+            today: booking.today!,
+            busy: _busy,
+            onBoard: () => _run(() => app.api.board(booking.id), done: context.tr('checked_in')),
+            onDropOff: () async {
+              final done = context.tr('dropoff_confirmed');
+              if (await confirmDialog(context, context.tr('confirm_dropoff_q'), action: context.tr('confirm_dropoff'))) await _run(() => app.api.dropOff(booking.id), done: done);
+            },
+          ),
+          const SizedBox(height: 10),
+        ],
         if (trip.live && booking.status == 'confirmed') ...[
           FilledButton.icon(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveTripScreen(trip: trip, driving: false))).then((_) => _load()),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveTripScreen(trip: trip, driving: false, booking: booking))).then((_) => _load()),
             icon: const Icon(Icons.sensors),
             label: Text(context.t('track_ride')),
           ),
@@ -343,6 +406,77 @@ class _TripScreenState extends State<TripScreen> {
     return [
       if (booking != null) ...[SectionTitle(context.t('your_booking')), BookingCard(booking: booking, viewerIsDriver: false, onChanged: _load)],
     ];
+  }
+}
+
+/// One of today's passengers for the driver: waiting, on board, no-show or dropped off, with the actions that apply.
+class _RiderTile extends StatelessWidget {
+  const _RiderTile({required this.rider, required this.busy, required this.onBoard, required this.onNoShow});
+  final Rider rider;
+  final bool busy;
+  final VoidCallback onBoard;
+  final VoidCallback onNoShow;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, color) = switch (rider.status) {
+      'boarded' => (Icons.check_circle, scheme.primary),
+      'dropped_off' => (Icons.flag_circle, scheme.primary),
+      'no_show' => (Icons.person_off_outlined, scheme.error),
+      _ => (Icons.hourglass_top, scheme.onSurfaceVariant),
+    };
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(rider.seats > 1 ? '${rider.name} ×${rider.seats}' : rider.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text([context.t('rider_${rider.status}'), if ((rider.pickup?.name ?? '').isNotEmpty) rider.pickup!.name].join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: rider.status != 'waiting'
+          ? null
+          : Wrap(spacing: 4, children: [
+              if ((rider.phone ?? '').isNotEmpty) IconButton(tooltip: context.t('call'), onPressed: () => launchUrl(Uri.parse('tel:${rider.phone}')), icon: const Icon(Icons.call_outlined)),
+              if (rider.canNoShow) IconButton(tooltip: context.t('mark_no_show'), onPressed: busy ? null : onNoShow, icon: Icon(Icons.person_off_outlined, color: scheme.error)),
+              FilledButton(style: FilledButton.styleFrom(minimumSize: const Size(0, 38), padding: const EdgeInsets.symmetric(horizontal: 12)), onPressed: busy ? null : onBoard, child: Text(context.t('picked_up'))),
+            ]),
+    );
+  }
+}
+
+/// The passenger's ride-day card: check in when the car comes, confirm the drop-off at the end.
+class _TodayCard extends StatelessWidget {
+  const _TodayCard({required this.today, required this.busy, required this.onBoard, required this.onDropOff});
+  final TodayState today;
+  final bool busy;
+  final VoidCallback onBoard;
+  final VoidCallback onDropOff;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final arrivedAsk = today.canDropOff && today.arrived;
+    return Card(
+      color: arrivedAsk ? scheme.primaryContainer : null,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Icon(arrivedAsk ? Icons.flag : Icons.directions_car_outlined, color: scheme.primary),
+            const SizedBox(width: 10),
+            Expanded(child: Text(context.t(arrivedAsk ? 'you_arrived' : 'today_${today.status}'), style: const TextStyle(fontWeight: FontWeight.w800))),
+          ]),
+          if (today.canBoard) ...[
+            const SizedBox(height: 10),
+            FilledButton.icon(onPressed: busy ? null : onBoard, icon: const Icon(Icons.how_to_reg_outlined), label: Text(context.t('im_in_the_car'))),
+          ],
+          if (today.canDropOff) ...[
+            const SizedBox(height: 10),
+            if (arrivedAsk)
+              FilledButton.icon(onPressed: busy ? null : onDropOff, icon: const Icon(Icons.check_circle_outline), label: Text(context.t('confirm_dropoff')))
+            else
+              OutlinedButton.icon(onPressed: busy ? null : onDropOff, icon: const Icon(Icons.check_circle_outline), label: Text(context.t('confirm_dropoff'))),
+          ],
+        ]),
+      ),
+    );
   }
 }
 

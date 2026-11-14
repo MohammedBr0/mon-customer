@@ -141,6 +141,9 @@ class Api {
   Future<Trip> createTrip(Map<String, dynamic> fields) async =>
       Trip.fromJson(Map<String, dynamic>.from((await _send('POST', '/itineraries', body: {'itinerary': fields}))['itinerary'] as Map));
 
+  Future<Trip> updateTrip(int id, Map<String, dynamic> fields) async =>
+      Trip.fromJson(Map<String, dynamic>.from((await _send('PATCH', '/itineraries/$id', body: {'itinerary': fields}))['itinerary'] as Map));
+
   Future<Trip> cancelTrip(int id) async => Trip.fromJson(Map<String, dynamic>.from((await _send('PATCH', '/itineraries/$id/cancel'))['itinerary'] as Map));
 
   // ---- bookings ----
@@ -165,6 +168,9 @@ class Api {
   Future<Booking> cancelBooking(int id) => _bookingAction(id, 'cancel');
   /// The passenger says the ride went well, which pays the driver straight away.
   Future<Booking> completeRide(int id) => _bookingAction(id, 'complete');
+  Future<Booking> board(int id) => _bookingAction(id, 'board'); // "I'm in the car" / "Picked up"
+  Future<Booking> noShow(int id) => _bookingAction(id, 'no_show');
+  Future<Booking> dropOff(int id) => _bookingAction(id, 'dropoff');
   Future<Booking> skipDate(int id, String isoDay) => _bookingAction(id, 'skip_date', {'date': isoDay});
 
   Future<void> review(int bookingId, int rating, String comment) =>

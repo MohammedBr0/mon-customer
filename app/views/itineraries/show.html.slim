@@ -18,12 +18,15 @@
       span.fas.fa-ban<> aria-hidden='true'
       = t('trip.cancelled_banner')
   == render 'header'
+  - unless @itinerary.cancelled?
+    .mb-3 == render 'itineraries/status_chip', itinerary: @itinerary
   - if user_signed_in?
     - if current_user == @itinerary.user
       .d-flex.flex-wrap.gap-2.mb-3
-        = link_to edit_itinerary_path(@itinerary), class: 'btn btn-outline-primary' do
-          span.fas.fa-pencil-alt aria-hidden='true'
-          = t('helpers.titles.edit', model: Itinerary.model_name.human)
+        - if @itinerary.editable?
+          = link_to edit_itinerary_path(@itinerary), class: 'btn btn-outline-primary' do
+            span.fas.fa-pencil-alt aria-hidden='true'
+            = t('helpers.titles.edit', model: Itinerary.model_name.human)
         - unless @itinerary.cancelled?
           = button_to cancel_itinerary_path(@itinerary), method: :patch, form_class: 'd-inline-block', class: 'btn btn-outline-danger', data: { confirm: t('trip.cancel_confirm') } do
             span.fas.fa-ban aria-hidden='true'

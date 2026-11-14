@@ -160,6 +160,22 @@ class StatusChip extends StatelessWidget {
       );
 }
 
+/// The trip's status as a badge: boarding, in progress, arrived, completed, cancelled. Nothing for a plain scheduled trip.
+class TripStatusChip extends StatelessWidget {
+  const TripStatusChip(this.status, {super.key});
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == 'scheduled') return const SizedBox.shrink();
+    return Chip2(
+      context.t('trip_status_$status'),
+      icon: switch (status) { 'in_progress' => Icons.sensors, 'arrived' => Icons.flag, 'boarding' => Icons.directions_car_outlined, 'completed' => Icons.check_circle_outline, _ => Icons.block },
+      tone: switch (status) { 'in_progress' || 'arrived' => ChipTone.brand, 'boarding' => ChipTone.warn, _ => ChipTone.muted },
+    );
+  }
+}
+
 class SectionTitle extends StatelessWidget {
   const SectionTitle(this.text, {super.key});
   final String text;
@@ -247,7 +263,7 @@ class TripCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final symbol = app.config.currencySymbol;
     return Opacity(
-      opacity: trip.cancelled ? 0.6 : 1,
+      opacity: trip.cancelled || trip.status == 'completed' ? 0.6 : 1,
       child: Card(
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -270,8 +286,8 @@ class TripCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(trip.commute ? (trip.scheduleSummary ?? '') : (trip.leaveDate == null ? '' : formatDateTime(trip.leaveDate!, locale: app.locale)), style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
                 ]),
-                if (trip.cancelled)
-                  Chip2(context.t('cancelled'), tone: ChipTone.muted)
+                if (trip.status != 'scheduled')
+                  TripStatusChip(trip.status)
                 else if (trip.full)
                   Chip2(context.t('fully_booked'), tone: ChipTone.danger)
                 else if (trip.seatsAvailable != null)

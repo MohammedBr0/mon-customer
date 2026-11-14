@@ -41,7 +41,7 @@ module ApiSerializer
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title,
       start_address: itinerary.start_address, end_address: itinerary.end_address,
       start_name: short_name(itinerary.start_location, itinerary.start_address), end_name: short_name(itinerary.end_location, itinerary.end_address),
-      live: itinerary.live?,
+      live: itinerary.live?, status: itinerary.trip_status,
       start_location: point(itinerary.start_location), end_location: point(itinerary.end_location), overview_polyline: itinerary.overview_polyline,
       leave_date: itinerary.leave_date&.iso8601, return_date: itinerary.return_date&.iso8601,
       city: itinerary.city, city_commute: itinerary.city_commute?,
@@ -61,7 +61,43 @@ module ApiSerializer
       bookable:         viewer.present? && itinerary.bookable_by?(viewer),
       my_booking:       booking && booking(booking, viewer:),
       price_preview:    price_preview(itinerary)
-    )
+    ).merge(viewer && viewer.id == itinerary.user_id ? driver_controls(itinerary) : {})
+  end
+
+  # What the driver can do with their trip right now: edit it, start it, and who they are waiting for.
+  def driver_controls(itinerary)
+    departure = itinerary.next_departure_at
+    blocker = itinerary.start_blocker
+    date = itinerary.current_ride_date
+    {
+      editable: itinerary.editable?, edit_until: departure && (departure - Itinerary::EDIT_LOCK).iso8601,
+      start: { allowed: blocker.nil? || itinerary.live?, reason: (itinerary.live? ? nil : blocker&.to_s), opens_at: itinerary.start_opens_at&.iso8601,
+               departs_at: (date ? itinerary.ride_at(date) : departure)&.iso8601 },
+      ride_date: date&.iso8601, riders: riders(itinerary, date)
+    }
+  end
+
+  # Today's passengers and whether each is waiting, on board, a no-show or dropped off.
+  def riders(itinerary, date)
+    return [] unless date
+
+    can_no_show = itinerary.ride_at(date) <= Time.current
+    itinerary.riders(date).map do |booking|
+      boarding = booking.boarding_for(date)
+      { booking_id: booking.id, name: booking.passenger.first_name.presence || booking.passenger.to_s, seats: booking.seats,
+        phone: booking.passenger.phone, status: boarding&.status || 'waiting', can_no_show: can_no_show && boarding&.boarded_at.nil?,
+        pickup: (booking.pickup? ? { lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label } : nil) }
+    end
+  end
+
+  # The passenger's own day-of-ride status, so the app can show "I'm in the car" and "Confirm drop-off".
+  def boarding_state(booking)
+    itinerary = booking.itinerary
+    date = itinerary.live? ? itinerary.live_ride_date : itinerary.current_ride_date
+    return unless booking.confirmed? && booking.rides_on?(date)
+
+    status = booking.boarding_for(date)&.status || 'waiting'
+    { date: date.iso8601, status:, can_board: status == 'waiting', can_drop_off: status == 'boarded' && itinerary.live?, arrived: itinerary.arrived? }
   end
 
   def price_preview(itinerary)
@@ -86,7 +122,8 @@ module ApiSerializer
       payment: { method: booking.payment_method, state: booking.payment_state, held: money(booking.held_amount),
                  can_confirm: booking.wallet_paid? && booking.payment_state == 'held' && booking.confirmed? && booking.first_ride_at.present? && booking.first_ride_at <= Time.current },
       # Only the two people in the booking ever get this serializer, so the pickup point stays between them.
-      pickup: (booking.pickup? ? { lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label } : nil)
+      pickup: (booking.pickup? ? { lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label } : nil),
+      today: boarding_state(booking)
     }
   end
 
@@ -118,9 +155,11 @@ module ApiSerializer
     data = {
       active: itinerary.live?, started_at: itinerary.live_started_at&.iso8601, ended_at: itinerary.live_ended_at&.iso8601,
       position: (itinerary.live? && itinerary.live_lat ? { lat: itinerary.live_lat.to_f, lng: itinerary.live_lng.to_f, heading: itinerary.live_heading&.to_f } : nil),
-      updated_at: itinerary.live_updated_at&.iso8601, fresh:
+      updated_at: itinerary.live_updated_at&.iso8601, fresh:,
+      arrived: itinerary.arrived?, arrived_at: itinerary.arrived_at&.iso8601
     }
     if viewer.id == itinerary.user_id
+      data[:riders] = riders(itinerary, itinerary.live_ride_date)
       data[:pickups] = itinerary.bookings.confirmed.includes(:passenger).select(&:pickup?).map do |booking|
         { name: booking.passenger.first_name.presence || booking.passenger.to_s, lat: booking.pickup_lat.to_f, lng: booking.pickup_lng.to_f, label: booking.pickup_label, seats: booking.seats }
       end
@@ -191,7 +230,7 @@ module ApiSerializer
   def itinerary_summary(itinerary)
     {
       id: itinerary.id, slug: itinerary.slug, title: itinerary.title, start_address: itinerary.start_address, end_address: itinerary.end_address,
-      start_name: short_name(itinerary.start_location, itinerary.start_address), end_name: short_name(itinerary.end_location, itinerary.end_address), live: itinerary.live?,
+      start_name: short_name(itinerary.start_location, itinerary.start_address), end_name: short_name(itinerary.end_location, itinerary.end_address), live: itinerary.live?, status: itinerary.trip_status,
       leave_date: itinerary.leave_date&.iso8601, city_commute: itinerary.city_commute?, commute: itinerary.commute?, schedule_summary: itinerary.schedule_summary, cancelled: itinerary.cancelled?
     }
   end

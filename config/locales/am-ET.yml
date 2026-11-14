@@ -110,6 +110,13 @@ am-ET:
         allowed: የቤት እንስሳት ይፈቀዳሉ
         forbidden: የቤት እንስሳት አይፈቀዱም
   trip:
+    status:
+      scheduled: ታቅዷል
+      boarding: በመሳፈር ላይ
+      in_progress: በጉዞ ላይ
+      arrived: ደርሷል
+      completed: ተጠናቋል
+      cancelled: ተሰርዟል
     seats: መቀመጫዎች
     seats_unlimited: ያልተገደበ
     seats_left: "%{available} ከ%{total} ቀርተዋል"

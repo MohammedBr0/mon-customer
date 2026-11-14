@@ -27,6 +27,7 @@ class ItinerariesController < ApplicationController
 
   def edit
     @itinerary = current_user.itineraries.friendly.find params[:id]
+    edit_locked unless @itinerary.editable?
   end
 
   def create
@@ -41,6 +42,8 @@ class ItinerariesController < ApplicationController
 
   def update
     @itinerary = current_user.itineraries.friendly.find params[:id]
+    return edit_locked unless @itinerary.editable?
+
     if @itinerary.update itinerary_params
       redirect_to itinerary_path(@itinerary), flash: { success: t('flash.itineraries.success.update') }
     else
@@ -69,6 +72,11 @@ class ItinerariesController < ApplicationController
   protected
 
   def check_permissions; end
+
+  # Trips can't be changed in the last 30 minutes before they leave.
+  def edit_locked
+    redirect_to itinerary_path(@itinerary), flash: { error: t('api.trip_edit_locked') }
+  end
 
   def set_itinerary
     @itinerary = Itinerary.friendly.find params[:id]

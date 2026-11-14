@@ -82,8 +82,7 @@ class _HomeTabState extends State<HomeTab> {
       if (driver) {
         // A driver's home is about their own rides and who is asking for a seat.
         final mine = await app.api.myTrips();
-        final now = DateTime.now();
-        page = ResultPage([for (final t in mine.items) if (!t.cancelled && (t.commute || (t.leaveDate?.isAfter(now) ?? false))) t], 1, true);
+        page = ResultPage([for (final t in mine.items) if (t.upcoming) t], 1, true);
         for (final b in (await app.api.bookings()).received) {
           if (b.status == 'pending') pending[b.trip.id] = (pending[b.trip.id] ?? 0) + 1;
         }

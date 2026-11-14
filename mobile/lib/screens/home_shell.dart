@@ -130,18 +130,18 @@ class _NextRideCardState extends State<NextRideCard> {
     final app = context.read<AppState>();
     try {
       if (widget.driver) {
-        final trips = (await app.api.myTrips()).items.where((t) => !t.cancelled && (t.commute || (t.leaveDate?.isAfter(DateTime.now()) ?? false))).toList()
+        final trips = (await app.api.myTrips()).items.where((t) => t.upcoming).toList()
           ..sort((a, b) => (a.leaveDate ?? DateTime(2100)).compareTo(b.leaveDate ?? DateTime(2100)));
         if (trips.isEmpty) return;
         final pending = (await app.api.bookings()).received.where((b) => b.trip.id == trips.first.id && b.status == 'pending').length;
         final t = trips.first;
-        _set((id: t.id, title: '${t.startAddress} → ${t.endAddress}', when: t.commute ? (t.scheduleSummary ?? '') : formatDateTime(t.leaveDate!, locale: app.locale), status: null, pending: pending));
+        _set((id: t.id, title: '${t.from} → ${t.to}', when: t.commute ? (t.scheduleSummary ?? '') : formatDateTime(t.leaveDate!, locale: app.locale), status: tripActive(t.status) ? 'trip_status_${t.status}' : null, pending: pending));
       } else {
-        final mine = (await app.api.bookings()).made.where((b) => b.isActive && !b.completed && !b.trip.cancelled && (b.trip.commute || (b.trip.leaveDate?.isAfter(DateTime.now()) ?? false))).toList()
+        final mine = (await app.api.bookings()).made.where((b) => b.isActive && !b.completed && b.trip.upcoming).toList()
           ..sort((a, b) => (a.trip.leaveDate ?? DateTime(2100)).compareTo(b.trip.leaveDate ?? DateTime(2100)));
         if (mine.isEmpty) return;
         final b = mine.first;
-        _set((id: b.trip.id, title: '${b.trip.startAddress} → ${b.trip.endAddress}', when: b.trip.commute ? (b.trip.scheduleSummary ?? '') : formatDateTime(b.trip.leaveDate!, locale: app.locale), status: b.status, pending: 0));
+        _set((id: b.trip.id, title: '${b.trip.from} → ${b.trip.to}', when: b.trip.commute ? (b.trip.scheduleSummary ?? '') : formatDateTime(b.trip.leaveDate!, locale: app.locale), status: tripActive(b.trip.status) ? 'trip_status_${b.trip.status}' : 'status_${b.status}', pending: 0));
       }
     } catch (_) {
       // The home screen works without this card.
@@ -179,7 +179,7 @@ class _NextRideCardState extends State<NextRideCard> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                      child: Text(next.status != null ? context.t('status_${next.status}') : '${next.pending} ${context.t('requests').toLowerCase()}', style: const TextStyle(color: brand, fontWeight: FontWeight.w800, fontSize: 12)),
+                      child: Text(next.status != null ? context.t(next.status!) : '${next.pending} ${context.t('requests').toLowerCase()}', style: const TextStyle(color: brand, fontWeight: FontWeight.w800, fontSize: 12)),
                     ),
                   ],
                 ]),

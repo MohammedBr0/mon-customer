@@ -84,6 +84,33 @@ void main() {
     });
   });
 
+  group('trip day', () {
+    test('a trip carries its status, edit window, start gate and riders', () {
+      final trip = Trip.fromJson({
+        'id': 1, 'status': 'boarding', 'editable': false, 'driver': _profile,
+        'start': {'allowed': false, 'reason': 'waiting', 'opens_at': '2026-11-14T06:30:00Z'},
+        'riders': [{'booking_id': 7, 'name': 'Rahel', 'seats': 2, 'status': 'waiting', 'can_no_show': true}],
+      });
+      expect(trip.status, 'boarding');
+      expect(trip.upcoming, isTrue);
+      expect(trip.start!.reason, 'waiting');
+      expect(trip.riders.single.canNoShow, isTrue);
+      expect(trip.riders.single.resolved, isFalse);
+    });
+
+    test('a completed trip is no longer upcoming, and an old server still works', () {
+      expect(Trip.fromJson({'id': 1, 'status': 'completed', 'driver': _profile}).upcoming, isFalse);
+      expect(Trip.fromJson({'id': 2, 'live': true, 'driver': _profile}).status, 'in_progress');
+      expect(Trip.fromJson({'id': 3, 'driver': _profile}).start, isNull);
+    });
+
+    test('live state knows when the car has arrived', () {
+      final live = LiveState.fromJson({'active': true, 'arrived': true, 'riders': [{'booking_id': 1, 'name': 'A', 'status': 'boarded'}]});
+      expect(live.arrived, isTrue);
+      expect(live.riders.single.status, 'boarded');
+    });
+  });
+
   group('city commutes', () {
     test('config lists cities with their neighbourhoods', () {
       final config = AppConfig.fromJson({

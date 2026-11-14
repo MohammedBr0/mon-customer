@@ -1,0 +1,5 @@
+/ The trip's status: in progress, boarding, arrived, completed... Plain "scheduled" trips show nothing.
+- status = itinerary.trip_status
+- unless status == 'scheduled'
+  - css = { 'in_progress' => 'chip--live', 'arrived' => 'chip--live', 'boarding' => 'chip--warn', 'completed' => 'chip--muted', 'cancelled' => 'chip--muted' }[status]
+  span.chip class=css = t("trip.status.#{status}")

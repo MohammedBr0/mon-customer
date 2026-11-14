@@ -12,6 +12,16 @@ en-US:
     otp_sms: "Your %{app} code is"
     trip_cancelled: This trip was cancelled
     trip_not_live: Start the trip first
+    trip_edit_locked: Trips can be changed until 30 minutes before they leave
+    trip_seats_taken: More seats are already booked than that
+    board_not_yet: You can check in from 30 minutes before the ride leaves
+    no_show_not_yet: You can mark a no-show once the departure time has passed
+    start_blocked:
+      cancelled: This trip was cancelled
+      too_early: You can start the trip from 30 minutes before it leaves
+      not_today: There is no ride to start right now
+      waiting: Mark every passenger as picked up or as a no-show first
+      finished: This ride has already been driven
     maps_unavailable: Maps are not available right now
     no_route: No driving route found between those places
   notifications:
@@ -39,6 +49,15 @@ en-US:
     review_received:
       title: New review
       body: "%{person} rated you %{rating}/5"
+    trip_changed:
+      title: Your trip was changed
+      body: "%{person} changed %{trip}. Check the new time and meeting points."
+    dropoff_confirm:
+      title: You have arrived
+      body: "Confirm you were dropped off for %{trip}."
+    arrived:
+      title: You're at the destination
+      body: "Finish %{trip} once everyone is out of the car."
     trip_started:
       title: Your ride has started
       body: "%{person} is on the way for %{trip}. Open the trip to follow the car."

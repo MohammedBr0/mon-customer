@@ -12,6 +12,16 @@ am-ET:
     otp_sms: "የ%{app} ኮድዎ"
     trip_cancelled: ይህ ጉዞ ተሰርዟል
     trip_not_live: መጀመሪያ ጉዞውን ይጀምሩ
+    trip_edit_locked: ጉዞ መቀየር የሚቻለው ከመነሳቱ 30 ደቂቃ በፊት ድረስ ነው
+    trip_seats_taken: ከዚህ በላይ ወንበሮች ቀድሞውኑ ተይዘዋል
+    board_not_yet: ጉዞው ከመነሳቱ 30 ደቂቃ በፊት ጀምሮ መግባትዎን ማሳወቅ ይችላሉ
+    no_show_not_yet: የመነሻ ሰዓቱ ካለፈ በኋላ ብቻ አልመጣም ማለት ይቻላል
+    start_blocked:
+      cancelled: ይህ ጉዞ ተሰርዟል
+      too_early: ጉዞውን ከመነሳቱ 30 ደቂቃ በፊት ጀምሮ መጀመር ይችላሉ
+      not_today: አሁን የሚጀመር ጉዞ የለም
+      waiting: መጀመሪያ እያንዳንዱን ተሳፋሪ እንደተሳፈረ ወይም እንዳልመጣ ያመልክቱ
+      finished: ይህ ጉዞ ቀድሞውኑ ተጠናቋል
     maps_unavailable: ካርታዎች አሁን አይገኙም
     no_route: በእነዚህ ቦታዎች መካከል የመኪና መንገድ አልተገኘም
   notifications:
@@ -39,6 +49,15 @@ am-ET:
     review_received:
       title: አዲስ አስተያየት
       body: "%{person} %{rating}/5 ሰጥተዎታል"
+    trip_changed:
+      title: ጉዞዎ ተቀይሯል
+      body: "%{person} %{trip}ን ቀይረዋል። አዲሱን ሰዓትና መገናኛ ቦታ ይመልከቱ።"
+    dropoff_confirm:
+      title: ደርሰዋል
+      body: "ለ%{trip} መውረድዎን ያረጋግጡ።"
+    arrived:
+      title: መድረሻው ደርሰዋል
+      body: "ሁሉም ከመኪናው ሲወርዱ %{trip}ን ይጨርሱ።"
     trip_started:
       title: ጉዞዎ ተጀምሯል
       body: "%{person} ለ%{trip} በመንገድ ላይ ናቸው። መኪናውን ለመከታተል ጉዞውን ይክፈቱ።"

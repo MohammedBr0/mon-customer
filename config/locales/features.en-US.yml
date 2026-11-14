@@ -9,6 +9,13 @@ en-US:
       greater_than_or_equal_to: is too small
       less_than_or_equal_to: is too large
   trip:
+    status:
+      scheduled: Scheduled
+      boarding: Boarding
+      in_progress: In progress
+      arrived: Arrived
+      completed: Completed
+      cancelled: Cancelled
     seats: Seats
     seats_unlimited: Not limited
     seats_left: "%{available} of %{total} left"
